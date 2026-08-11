@@ -27,11 +27,11 @@ export function CountdownTimer({ targetSecs }: { targetSecs: number }) {
 
   return (
     <div className="flex items-end gap-2">
-      <TimeBox value={h} label="Hrs" />
+      <TimeBox value={h} label="Hs" />
       <span className="text-primary font-bold text-xl mb-5">:</span>
       <TimeBox value={m} label="Min" />
       <span className="text-primary font-bold text-xl mb-5">:</span>
-      <TimeBox value={s} label="Sec" />
+      <TimeBox value={s} label="Seg" />
     </div>
   );
 }

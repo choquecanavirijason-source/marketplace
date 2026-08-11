@@ -6,7 +6,7 @@ const allProducts: Product[] = [...productsSeed, ...flashDealsSeed];
 
 export class InMemoryProductRepository implements ProductRepository {
   async list(params?: ListProductsParams): Promise<Product[]> {
-    if (!params?.category || params.category === "All") return productsSeed;
+    if (!params?.category || params.category === "Todos") return productsSeed;
     return productsSeed.filter((p) => p.category === params.category);
   }
 

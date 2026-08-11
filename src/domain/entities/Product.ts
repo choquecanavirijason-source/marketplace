@@ -14,5 +14,5 @@ export interface Product {
   sku?: string;
   tags?: string[];
   description?: string;
-  shelfLife?: string;
+  warranty?: string;
 }

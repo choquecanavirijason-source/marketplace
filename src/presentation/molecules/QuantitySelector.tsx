@@ -10,11 +10,11 @@ export function QuantitySelector({
 }) {
   return (
     <div className="flex items-center border-2 border-border rounded-xl overflow-hidden">
-      <QuantityButton onClick={() => onChange(Math.max(1, qty - 1))} aria-label="Decrease quantity">
+      <QuantityButton onClick={() => onChange(Math.max(1, qty - 1))} aria-label="Disminuir cantidad">
         <Minus className="w-4 h-4" />
       </QuantityButton>
       <span className="w-12 text-center font-bold text-base">{qty}</span>
-      <QuantityButton onClick={() => onChange(qty + 1)} aria-label="Increase quantity">
+      <QuantityButton onClick={() => onChange(qty + 1)} aria-label="Aumentar cantidad">
         <Plus className="w-4 h-4" />
       </QuantityButton>
     </div>

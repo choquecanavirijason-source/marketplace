@@ -17,8 +17,8 @@ export function BestSellersSection() {
     <section className="max-w-7xl mx-auto px-4 py-6">
       <div className="flex items-end justify-between mb-6">
         <div>
-          <SectionEyebrow icon={Star}>Community picks</SectionEyebrow>
-          <h2 className="text-2xl font-black text-foreground">Best Sellers</h2>
+          <SectionEyebrow icon={Star}>Elegidos por la comunidad</SectionEyebrow>
+          <h2 className="text-2xl font-black text-foreground">Más Vendidos</h2>
         </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

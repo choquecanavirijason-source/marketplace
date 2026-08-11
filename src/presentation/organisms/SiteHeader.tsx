@@ -7,8 +7,8 @@ import { Logo } from "@/presentation/atoms/Logo";
 import { SearchBar } from "@/presentation/molecules/SearchBar";
 import { CartPopover } from "@/presentation/organisms/CartPopover";
 
-const NAV_ITEMS = ["Home", "Shop", "Fresh Produce", "Dairy & Eggs", "Bakery", "Beverages", "Deals", "Blog"];
-const NAV_WITH_CARET = ["Shop", "Fresh Produce", "Deals"];
+const NAV_ITEMS = ["Inicio", "Tienda", "Calefacción", "Herramientas", "Pinturas", "Climatización", "Ofertas", "Blog"];
+const NAV_WITH_CARET = ["Tienda", "Calefacción", "Ofertas"];
 
 export function SiteHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -21,9 +21,9 @@ export function SiteHeader() {
           <Logo />
         </Link>
 
-        <div className="hidden lg:flex items-center gap-1.5 bg-primary text-primary-foreground px-4 py-2.5 rounded-xl cursor-pointer hover:bg-green-700 transition-colors">
+        <div className="hidden lg:flex items-center gap-1.5 bg-primary text-primary-foreground px-4 py-2.5 rounded-xl cursor-pointer hover:bg-orange-700 transition-colors">
           <Menu className="w-4 h-4" />
-          <span className="text-sm font-semibold">All Categories</span>
+          <span className="text-sm font-semibold">Todas las Categorías</span>
           <ChevronDown className="w-3.5 h-3.5" />
         </div>
 
@@ -32,11 +32,11 @@ export function SiteHeader() {
         <div className="flex items-center gap-1 ml-auto">
           <button className="hidden md:flex flex-col items-center p-2 hover:text-primary transition-colors text-foreground/70 gap-0.5">
             <User className="w-5 h-5" />
-            <span className="text-[10px] font-medium">Account</span>
+            <span className="text-[10px] font-medium">Cuenta</span>
           </button>
           <button className="hidden md:flex flex-col items-center p-2 hover:text-primary transition-colors text-foreground/70 gap-0.5 relative">
             <Heart className="w-5 h-5" />
-            <span className="text-[10px] font-medium">Wishlist</span>
+            <span className="text-[10px] font-medium">Favoritos</span>
             <span className="absolute top-1 right-1 w-4 h-4 bg-accent text-white text-[9px] font-bold rounded-full flex items-center justify-center">
               3
             </span>

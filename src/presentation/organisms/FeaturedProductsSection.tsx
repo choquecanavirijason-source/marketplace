@@ -8,7 +8,7 @@ import { SectionEyebrow } from "@/presentation/atoms/SectionEyebrow";
 import { ProductCard } from "@/presentation/organisms/ProductCard";
 import { cn } from "@/shared/lib/utils";
 
-const QUICK_FILTERS = ["All", "Fresh Vegetables", "Fresh Fruits", "Dairy & Eggs", "Bakery"];
+const QUICK_FILTERS = ["Todos", "Calefactores Eléctricos", "Herramientas Eléctricas", "Herramientas Manuales", "Pinturas"];
 
 export function FeaturedProductsSection({
   activeCategory,
@@ -25,8 +25,8 @@ export function FeaturedProductsSection({
     <section className="max-w-7xl mx-auto px-4 py-6">
       <div className="flex items-end justify-between mb-6">
         <div>
-          <SectionEyebrow icon={Zap}>Handpicked</SectionEyebrow>
-          <h2 className="text-2xl font-black text-foreground">Featured Products</h2>
+          <SectionEyebrow icon={Zap}>Selección Especial</SectionEyebrow>
+          <h2 className="text-2xl font-black text-foreground">Productos Destacados</h2>
         </div>
         <div className="flex items-center gap-2">
           {QUICK_FILTERS.map((cat) => (
@@ -59,7 +59,7 @@ export function FeaturedProductsSection({
           type="button"
           className="border-2 border-primary text-primary font-bold px-8 py-3 rounded-xl hover:bg-primary hover:text-white transition-all duration-200 flex items-center gap-2"
         >
-          View All Products <ArrowRight className="w-4 h-4" />
+          Ver Todos los Productos <ArrowRight className="w-4 h-4" />
         </button>
       </div>
     </section>

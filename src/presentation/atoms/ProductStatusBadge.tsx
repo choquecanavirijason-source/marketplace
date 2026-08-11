@@ -5,8 +5,8 @@ export function ProductStatusBadge({ badge, className }: { badge: string; classN
     <span
       className={cn(
         "text-xs font-bold px-2.5 py-1 rounded-full",
-        badge === "New" ? "bg-blue-500 text-white"
-          : badge === "Hot" ? "bg-red-500 text-white"
+        badge === "Nuevo" ? "bg-blue-500 text-white"
+          : badge === "Popular" ? "bg-red-500 text-white"
           : "bg-primary text-primary-foreground",
         className,
       )}

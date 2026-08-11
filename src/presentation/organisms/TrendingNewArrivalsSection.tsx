@@ -14,8 +14,8 @@ export function TrendingNewArrivalsSection() {
   const router = useRouter();
 
   const columns: { title: string; items: Product[] }[] = [
-    { title: "Trending Now", items: products?.slice(4, 8) ?? [] },
-    { title: "New Arrivals", items: flashDeals ?? [] },
+    { title: "Tendencias", items: products?.slice(4, 8) ?? [] },
+    { title: "Nuevos Ingresos", items: flashDeals ?? [] },
   ];
 
   return (
@@ -26,7 +26,7 @@ export function TrendingNewArrivalsSection() {
             <div className="flex items-end justify-between mb-4">
               <h2 className="text-xl font-black text-foreground">{title}</h2>
               <a href="#" className="text-xs font-semibold text-primary flex items-center gap-1">
-                View all <ChevronRight className="w-3 h-3" />
+                Ver todo <ChevronRight className="w-3 h-3" />
               </a>
             </div>
             <div className="space-y-3">

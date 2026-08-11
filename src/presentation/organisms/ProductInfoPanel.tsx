@@ -12,9 +12,9 @@ import { discountPercent, formatPrice } from "@/shared/lib/format";
 import { cn } from "@/shared/lib/utils";
 
 const TRUST_ITEMS = [
-  { icon: Truck, text: "Free delivery on orders over $50" },
-  { icon: RotateCcw, text: "Easy 30-day returns — no questions asked" },
-  { icon: Shield, text: "100% secure payment & data protection" },
+  { icon: Truck, text: "Envío gratis en compras superiores a $50" },
+  { icon: RotateCcw, text: "Devoluciones fáciles dentro de 30 días" },
+  { icon: Shield, text: "Pago 100% seguro y protección de datos" },
 ];
 
 export function ProductInfoPanel({ product }: { product: Product }) {
@@ -36,10 +36,10 @@ export function ProductInfoPanel({ product }: { product: Product }) {
         <span className="bg-secondary text-primary text-xs font-bold px-3 py-1 rounded-full">{product.category}</span>
         {product.inStock ? (
           <span className="flex items-center gap-1 text-xs font-bold text-green-600 bg-green-50 px-2.5 py-1 rounded-full">
-            <Check className="w-3 h-3" /> In Stock
+            <Check className="w-3 h-3" /> En Stock
           </span>
         ) : (
-          <span className="text-xs font-bold text-red-600 bg-red-50 px-2.5 py-1 rounded-full">Out of Stock</span>
+          <span className="text-xs font-bold text-red-600 bg-red-50 px-2.5 py-1 rounded-full">Sin Stock</span>
         )}
       </div>
 
@@ -47,9 +47,9 @@ export function ProductInfoPanel({ product }: { product: Product }) {
 
       <div className="flex items-center gap-3">
         <StarRating rating={product.rating} />
-        <span className="text-sm text-muted-foreground">({product.reviews} reviews)</span>
+        <span className="text-sm text-muted-foreground">({product.reviews} reseñas)</span>
         <span className="w-px h-4 bg-border" />
-        <span className="text-xs font-semibold text-green-600">✓ 94% recommend this</span>
+        <span className="text-xs font-semibold text-green-600">✓ 94% lo recomienda</span>
       </div>
 
       <div className="flex items-baseline gap-3 py-3 border-y border-border">
@@ -57,7 +57,7 @@ export function ProductInfoPanel({ product }: { product: Product }) {
         {product.originalPrice && (
           <span className="text-lg text-muted-foreground line-through">{formatPrice(product.originalPrice)}</span>
         )}
-        {percent > 0 && <span className="bg-accent/10 text-accent font-bold text-sm px-2 py-0.5 rounded-lg">Save {percent}%</span>}
+        {percent > 0 && <span className="bg-accent/10 text-accent font-bold text-sm px-2 py-0.5 rounded-lg">Ahorrás {percent}%</span>}
       </div>
 
       {product.description && (
@@ -73,21 +73,21 @@ export function ProductInfoPanel({ product }: { product: Product }) {
         )}
         {product.weight && (
           <div className="flex items-center gap-2">
-            <span className="text-muted-foreground">Weight:</span>
+            <span className="text-muted-foreground">Peso:</span>
             <span className="font-semibold">{product.weight}</span>
           </div>
         )}
-        {product.shelfLife && (
+        {product.warranty && (
           <div className="flex items-center gap-2 col-span-2">
-            <span className="text-muted-foreground">Shelf life:</span>
-            <span className="font-semibold">{product.shelfLife}</span>
+            <span className="text-muted-foreground">Garantía:</span>
+            <span className="font-semibold">{product.warranty}</span>
           </div>
         )}
       </div>
 
       {product.tags && (
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-xs text-muted-foreground">Tags:</span>
+          <span className="text-xs text-muted-foreground">Etiquetas:</span>
           {product.tags.map((tag) => (
             <span
               key={tag}
@@ -106,11 +106,11 @@ export function ProductInfoPanel({ product }: { product: Product }) {
           onClick={handleAddCart}
           className={cn(
             "flex-1 h-12 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all duration-200 shadow-sm",
-            addedToCart ? "bg-green-500 text-white" : "bg-primary text-white hover:bg-green-700",
+            addedToCart ? "bg-green-500 text-white" : "bg-primary text-white hover:bg-orange-700",
           )}
         >
           <ShoppingCart className="w-4 h-4" />
-          {addedToCart ? "Added to Cart!" : `Add to Cart · ${formatPrice(product.price * qty)}`}
+          {addedToCart ? "¡Agregado al Carrito!" : `Agregar al Carrito · ${formatPrice(product.price * qty)}`}
         </button>
       </div>
 
@@ -121,15 +121,15 @@ export function ProductInfoPanel({ product }: { product: Product }) {
           className={cn("flex items-center gap-1.5 font-semibold transition-colors", wished ? "text-red-500" : "text-muted-foreground hover:text-red-500")}
         >
           <Heart className={cn("w-4 h-4", wished && "fill-red-500")} />
-          {wished ? "Wishlisted" : "Add to Wishlist"}
+          {wished ? "En Favoritos" : "Agregar a Favoritos"}
         </button>
         <span className="w-px h-4 bg-border" />
         <button type="button" className="flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors font-semibold">
-          <GitCompare className="w-4 h-4" /> Compare
+          <GitCompare className="w-4 h-4" /> Comparar
         </button>
         <span className="w-px h-4 bg-border" />
         <button type="button" className="flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors font-semibold">
-          <Share2 className="w-4 h-4" /> Share
+          <Share2 className="w-4 h-4" /> Compartir
         </button>
       </div>
 
@@ -140,7 +140,7 @@ export function ProductInfoPanel({ product }: { product: Product }) {
       </div>
 
       <div>
-        <p className="text-xs text-muted-foreground mb-2 font-semibold uppercase tracking-wider">Guaranteed safe checkout</p>
+        <p className="text-xs text-muted-foreground mb-2 font-semibold uppercase tracking-wider">Pago 100% seguro garantizado</p>
         <PaymentIconsRow />
       </div>
     </div>

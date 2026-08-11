@@ -37,6 +37,6 @@ export const useCartStore = create<CartState>()(
         })),
       clear: () => set({ items: [] }),
     }),
-    { name: "ekomart-cart" },
+    { name: "ferromax-cart" },
   ),
 );

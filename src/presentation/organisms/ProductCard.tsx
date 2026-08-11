@@ -21,7 +21,7 @@ export function ProductCard({
   const [added, setAdded] = useState(false);
 
   return (
-    <div className="group bg-card rounded-2xl overflow-hidden border border-border hover:shadow-xl hover:shadow-green-100 transition-all duration-300 hover:-translate-y-1 relative">
+    <div className="group bg-card rounded-2xl overflow-hidden border border-border hover:shadow-xl hover:shadow-orange-100 transition-all duration-300 hover:-translate-y-1 relative">
       {product.badge && <ProductStatusBadge badge={product.badge} className="absolute top-3 left-3 z-10" />}
 
       <button
@@ -48,7 +48,7 @@ export function ProductCard({
             }}
             className="bg-white text-foreground text-xs font-semibold px-4 py-1.5 rounded-full shadow flex items-center gap-1.5 hover:bg-primary hover:text-white transition-colors"
           >
-            <Eye className="w-3.5 h-3.5" /> Quick View
+            <Eye className="w-3.5 h-3.5" /> Vista Rápida
           </button>
         </div>
       </div>
@@ -82,7 +82,7 @@ export function ProductCard({
           )}
         >
           <ShoppingCart className="w-4 h-4" />
-          {added ? "Added!" : "Add to Cart"}
+          {added ? "¡Agregado!" : "Agregar al Carrito"}
         </button>
       </div>
     </div>

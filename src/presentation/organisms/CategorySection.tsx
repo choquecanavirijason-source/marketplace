@@ -18,11 +18,11 @@ export function CategorySection({
     <section className="max-w-7xl mx-auto px-4 py-10">
       <div className="flex items-end justify-between mb-6">
         <div>
-          <SectionEyebrow icon={Tag}>Browse by</SectionEyebrow>
-          <h2 className="text-2xl font-black text-foreground">Popular Categories</h2>
+          <SectionEyebrow icon={Tag}>Explorar por</SectionEyebrow>
+          <h2 className="text-2xl font-black text-foreground">Categorías Populares</h2>
         </div>
         <a href="#" className="text-sm font-semibold text-primary flex items-center gap-1 hover:gap-2 transition-all">
-          All Categories
+          Todas las Categorías
         </a>
       </div>
       <div className="grid grid-cols-4 md:grid-cols-8 gap-3">
@@ -31,7 +31,7 @@ export function CategorySection({
             key={category.name}
             category={category}
             active={activeCategory === category.name}
-            onClick={() => onCategoryChange(category.name === activeCategory ? "All" : category.name)}
+            onClick={() => onCategoryChange(category.name === activeCategory ? "Todos" : category.name)}
           />
         ))}
       </div>

@@ -4,18 +4,18 @@ import { SocialIconRow } from "@/presentation/molecules/SocialIconRow";
 import { FooterLinkColumn } from "@/presentation/molecules/FooterLinkColumn";
 
 const CONTACT_ITEMS = [
-  { Icon: MapPin, text: "420 Green Lane, Portland, OR 97201" },
-  { Icon: Phone, text: "+1 (800) 123-4567" },
-  { Icon: Mail, text: "hello@ekomart.com" },
+  { Icon: MapPin, text: "Av. Siempre Viva 420, Buenos Aires, Argentina" },
+  { Icon: Phone, text: "+54 (11) 4123-4567" },
+  { Icon: Mail, text: "hola@ferromax.com" },
 ];
 
 const LINK_COLUMNS = [
-  { title: "Quick Links", links: ["Home", "About Us", "Shop", "Blog", "Contact"] },
-  { title: "Categories", links: ["Fresh Vegetables", "Fresh Fruits", "Dairy & Eggs", "Bakery", "Beverages"] },
-  { title: "My Account", links: ["My Profile", "Order History", "Wishlist", "Track Order", "Returns"] },
+  { title: "Enlaces Rápidos", links: ["Inicio", "Sobre Nosotros", "Tienda", "Blog", "Contacto"] },
+  { title: "Categorías", links: ["Calefactores Eléctricos", "Herramientas Eléctricas", "Herramientas Manuales", "Radiadores", "Pinturas"] },
+  { title: "Mi Cuenta", links: ["Mi Perfil", "Historial de Pedidos", "Favoritos", "Seguir Pedido", "Devoluciones"] },
 ];
 
-const LEGAL_LINKS = ["Privacy Policy", "Terms of Service", "Cookie Policy"];
+const LEGAL_LINKS = ["Política de Privacidad", "Términos de Servicio", "Política de Cookies"];
 const PAYMENT_ICONS = ["💳", "🏦", "📱", "🔐"];
 
 export function SiteFooter() {
@@ -28,7 +28,7 @@ export function SiteFooter() {
               <Logo variant="dark" />
             </div>
             <p className="text-sm text-white/60 leading-relaxed mb-5 max-w-xs">
-              Your trusted online grocery store. Fresh, organic, and sustainably sourced produce delivered daily.
+              Tu ferretería de confianza. Calefacción, herramientas, pinturas y todo lo que necesitás para el hogar, con envío rápido a todo el país.
             </p>
             <div className="space-y-2 mb-6">
               {CONTACT_ITEMS.map(({ Icon, text }) => (
@@ -46,7 +46,7 @@ export function SiteFooter() {
       </div>
       <div className="border-t border-white/10">
         <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row items-center justify-between gap-3">
-          <p className="text-xs text-white/40">© 2026 EkoMart. All rights reserved.</p>
+          <p className="text-xs text-white/40">© 2026 FerroMax. Todos los derechos reservados.</p>
           <div className="flex items-center gap-4">
             {LEGAL_LINKS.map((item) => (
               <a key={item} href="#" className="text-xs text-white/40 hover:text-white/70 transition-colors">

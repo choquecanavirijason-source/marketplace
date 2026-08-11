@@ -18,7 +18,7 @@ export function ReviewCard({ review }: { review: Review }) {
       </div>
       <p className="text-sm text-muted-foreground leading-relaxed">{review.text}</p>
       <button type="button" className="text-xs text-muted-foreground mt-3 hover:text-primary transition-colors">
-        👍 Helpful ({review.helpful})
+        👍 Útil ({review.helpful})
       </button>
     </div>
   );

@@ -14,13 +14,13 @@ export default function ProductDetailPage() {
   return (
     <StorefrontTemplate>
       {isLoading ? (
-        <div className="max-w-7xl mx-auto px-4 py-24 text-center text-muted-foreground">Loading product…</div>
+        <div className="max-w-7xl mx-auto px-4 py-24 text-center text-muted-foreground">Cargando producto…</div>
       ) : !product ? (
         <div className="max-w-7xl mx-auto px-4 py-24 text-center">
-          <h1 className="text-2xl font-black text-foreground mb-2">Product not found</h1>
-          <p className="text-muted-foreground mb-6">This product may have been removed or is no longer available.</p>
+          <h1 className="text-2xl font-black text-foreground mb-2">Producto no encontrado</h1>
+          <p className="text-muted-foreground mb-6">Este producto pudo haber sido eliminado o ya no está disponible.</p>
           <Link href="/" className="text-primary font-semibold hover:underline">
-            Back to shop
+            Volver a la tienda
           </Link>
         </div>
       ) : (

@@ -2,10 +2,10 @@ import { Headphones, RotateCcw, Shield, Truck } from "lucide-react";
 import { FeatureBarItem } from "@/presentation/molecules/TrustBadgeItem";
 
 const FEATURES = [
-  { icon: Truck, title: "Free Delivery", desc: "On orders over $50", color: "text-green-600" },
-  { icon: RotateCcw, title: "Easy Returns", desc: "30-day return policy", color: "text-blue-600" },
-  { icon: Shield, title: "Secure Payment", desc: "100% protected", color: "text-purple-600" },
-  { icon: Headphones, title: "24/7 Support", desc: "Always here to help", color: "text-orange-600" },
+  { icon: Truck, title: "Envío Gratis", desc: "En compras superiores a $50", color: "text-green-600" },
+  { icon: RotateCcw, title: "Devoluciones Fáciles", desc: "Política de 30 días", color: "text-blue-600" },
+  { icon: Shield, title: "Pago Seguro", desc: "100% protegido", color: "text-purple-600" },
+  { icon: Headphones, title: "Soporte 24/7", desc: "Siempre listos para ayudar", color: "text-orange-600" },
 ];
 
 export function FeaturesBar() {

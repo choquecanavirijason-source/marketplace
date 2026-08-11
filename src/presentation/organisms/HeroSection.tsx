@@ -6,14 +6,14 @@ import { useHeroSlides } from "@/presentation/hooks/useCatalog";
 
 const SIDE_CARDS = [
   {
-    title: "Daily Flash\nDeals", sub: "Up to 60% off", label: "Limited Time",
+    title: "Ofertas Flash\nDiarias", sub: "Hasta 60% off", label: "Tiempo Limitado",
     color: "from-orange-50 to-red-100", textColor: "text-red-700", subColor: "text-red-600",
-    img: "https://images.unsplash.com/photo-1550989460-0adf9ea622e2?w=200&h=200&fit=crop&auto=format",
+    img: "https://images.unsplash.com/photo-1783477108548-ed63e5766c42?w=200&h=200&fit=crop&auto=format",
   },
   {
-    title: "New Arrivals\nThis Week", sub: "Fresh every day", label: "Organic",
+    title: "Nuevos Ingresos\nEsta Semana", sub: "Stock renovado", label: "Novedades",
     color: "from-purple-50 to-violet-100", textColor: "text-violet-700", subColor: "text-violet-600",
-    img: "https://images.unsplash.com/photo-1597362925123-77861d3fbac7?w=200&h=200&fit=crop&auto=format",
+    img: "https://images.unsplash.com/photo-1627257062083-0b09fafdeed5?w=200&h=200&fit=crop&auto=format",
   },
 ];
 
@@ -94,7 +94,7 @@ export function HeroSection() {
                 <p className={`text-xs ${subColor}/70 mt-1`}>{sub}</p>
               </div>
               <button type="button" className={`mt-3 text-xs font-bold ${subColor} flex items-center gap-1 hover:gap-2 transition-all`}>
-                Shop Now <ArrowRight className="w-3 h-3" />
+                Comprar Ahora <ArrowRight className="w-3 h-3" />
               </button>
               <img src={img} alt="" className="absolute right-0 bottom-0 h-full w-1/2 object-cover opacity-50" />
             </div>

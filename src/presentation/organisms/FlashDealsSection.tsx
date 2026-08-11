@@ -20,9 +20,9 @@ export function FlashDealsSection() {
       <div className="bg-card rounded-3xl border border-border p-6 md:p-8">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8">
           <div>
-            <SectionEyebrow icon={Clock} tone="accent">Limited time</SectionEyebrow>
-            <h2 className="text-2xl font-black text-foreground">Flash Deals</h2>
-            <p className="text-sm text-muted-foreground mt-1">Ends in:</p>
+            <SectionEyebrow icon={Clock} tone="accent">Tiempo limitado</SectionEyebrow>
+            <h2 className="text-2xl font-black text-foreground">Ofertas Flash</h2>
+            <p className="text-sm text-muted-foreground mt-1">Termina en:</p>
           </div>
           <CountdownTimer targetSecs={FLASH_DEAL_DURATION_SECS} />
         </div>

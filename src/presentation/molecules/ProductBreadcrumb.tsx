@@ -12,7 +12,7 @@ export function ProductBreadcrumb({
     <div className="bg-card border-b border-border">
       <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-2 text-xs text-muted-foreground">
         <Link href="/" className="flex items-center gap-1 hover:text-primary transition-colors">
-          <Home className="w-3.5 h-3.5" /> Home
+          <Home className="w-3.5 h-3.5" /> Inicio
         </Link>
         <ChevronRight className="w-3 h-3" />
         <span className="hover:text-primary cursor-pointer">{category}</span>

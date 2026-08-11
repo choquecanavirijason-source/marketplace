@@ -9,11 +9,11 @@ import { ReviewCard } from "@/presentation/molecules/ReviewCard";
 import { cn } from "@/shared/lib/utils";
 
 const WHY_CHOOSE = [
-  "Sourced from certified organic and sustainable farms",
-  "Harvested at peak ripeness and delivered within 24 hours",
-  "No artificial preservatives, waxes, or post-harvest chemicals",
-  "Supports small family farms and fair-trade practices",
-  "Packaged in 100% compostable or recyclable materials",
+  "Productos certificados con normas de seguridad eléctrica y de gas",
+  "Garantía oficial del fabricante en todos nuestros equipos",
+  "Servicio técnico y repuestos originales disponibles",
+  "Envío asegurado y embalaje reforzado para equipos frágiles",
+  "Atención personalizada para elegir el equipo ideal según el ambiente",
 ];
 
 type Tab = "details" | "info" | "reviews";
@@ -50,7 +50,7 @@ export function ProductTabsSection({ product }: { product: Product }) {
               activeTab === tab ? "text-primary bg-secondary/50" : "text-muted-foreground hover:text-foreground",
             )}
           >
-            {tab === "details" ? "Product Details" : tab === "info" ? "Additional Information" : `Customer Reviews (${reviews.length})`}
+            {tab === "details" ? "Detalles del Producto" : tab === "info" ? "Información Adicional" : `Reseñas de Clientes (${reviews.length})`}
             {activeTab === tab && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />}
           </button>
         ))}
@@ -60,7 +60,7 @@ export function ProductTabsSection({ product }: { product: Product }) {
         {activeTab === "details" && (
           <div className="prose prose-sm max-w-none">
             <p className="text-muted-foreground leading-relaxed mb-4">{product.description}</p>
-            <h4 className="font-bold text-foreground mb-3">Why choose EkoMart produce?</h4>
+            <h4 className="font-bold text-foreground mb-3">¿Por qué elegir FerroMax?</h4>
             <ul className="space-y-2">
               {WHY_CHOOSE.map((item) => (
                 <li key={item} className="flex items-start gap-2.5 text-sm text-muted-foreground">
@@ -76,15 +76,15 @@ export function ProductTabsSection({ product }: { product: Product }) {
             <table className="w-full text-sm">
               <tbody>
                 {[
-                  ["Product Name", product.name],
-                  ["SKU / Item Code", product.sku ?? "—"],
-                  ["Category", product.category],
-                  ["Net Weight", product.weight ?? "—"],
-                  ["Shelf Life", product.shelfLife ?? "—"],
-                  ["Origin", "USA / Certified Organic Farms"],
-                  ["Product Type", "Fresh Produce"],
-                  ["Return Policy", "7 days from delivery for quality issues"],
-                  ["Certifications", "USDA Organic · Non-GMO · Fair Trade"],
+                  ["Nombre del Producto", product.name],
+                  ["SKU / Código", product.sku ?? "—"],
+                  ["Categoría", product.category],
+                  ["Peso Neto", product.weight ?? "—"],
+                  ["Garantía", product.warranty ?? "—"],
+                  ["Origen", "Importado / Ensamblado en Argentina"],
+                  ["Tipo de Producto", "Calefacción para el Hogar"],
+                  ["Política de Devolución", "7 días desde la entrega por fallas de fábrica"],
+                  ["Certificaciones", "IRAM · Seguridad Eléctrica · Garantía Oficial"],
                 ].map(([label, value], i) => (
                   <tr key={label} className={i % 2 === 0 ? "bg-secondary/40" : "bg-card"}>
                     <td className="py-3 px-4 font-semibold text-foreground w-1/3">{label}</td>
@@ -101,7 +101,7 @@ export function ProductTabsSection({ product }: { product: Product }) {
             <div className="bg-secondary rounded-2xl p-6 flex flex-col items-center text-center">
               <span className="text-5xl font-black text-foreground">{summary.average || "—"}</span>
               <StarRating rating={summary.average} />
-              <p className="text-xs text-muted-foreground mt-2">{summary.total} verified reviews</p>
+              <p className="text-xs text-muted-foreground mt-2">{summary.total} reseñas verificadas</p>
               <div className="w-full mt-4 space-y-2">
                 {([5, 4, 3, 2, 1] as const).map((star) => {
                   const count = summary.distribution[star];
@@ -128,27 +128,27 @@ export function ProductTabsSection({ product }: { product: Product }) {
               </div>
 
               <div className="border-t border-border pt-6">
-                <h4 className="font-bold text-foreground mb-4">Write a Review</h4>
+                <h4 className="font-bold text-foreground mb-4">Escribir una Reseña</h4>
                 {justSubmitted && (
                   <div className="bg-green-50 text-green-700 rounded-xl p-3 text-sm font-semibold mb-4 flex items-center gap-2">
-                    <Check className="w-4 h-4" /> Review submitted — thank you!
+                    <Check className="w-4 h-4" /> ¡Reseña enviada — gracias!
                   </div>
                 )}
                 <div className="space-y-3">
                   <div>
-                    <label className="text-xs font-bold text-muted-foreground mb-1 block">Your Rating</label>
+                    <label className="text-xs font-bold text-muted-foreground mb-1 block">Tu Calificación</label>
                     <StarRating rating={reviewRating} interactive onChange={setReviewRating} />
                   </div>
                   <input
                     value={reviewName}
                     onChange={(e) => setReviewName(e.target.value)}
-                    placeholder="Your name"
+                    placeholder="Tu nombre"
                     className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary transition-colors"
                   />
                   <textarea
                     value={reviewText}
                     onChange={(e) => setReviewText(e.target.value)}
-                    placeholder="Share your experience with this product..."
+                    placeholder="Compartí tu experiencia con este producto..."
                     rows={3}
                     className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary transition-colors resize-none"
                   />
@@ -156,9 +156,9 @@ export function ProductTabsSection({ product }: { product: Product }) {
                     type="button"
                     onClick={submitReview}
                     disabled={!reviewRating || !reviewText || !reviewName || isSubmitting}
-                    className="bg-primary text-white font-bold px-6 py-2.5 rounded-xl text-sm hover:bg-green-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="bg-primary text-white font-bold px-6 py-2.5 rounded-xl text-sm hover:bg-orange-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                   >
-                    Submit Review
+                    Enviar Reseña
                   </button>
                 </div>
               </div>

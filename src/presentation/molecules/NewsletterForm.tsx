@@ -20,13 +20,13 @@ export function NewsletterForm() {
         type="email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
-        placeholder="Enter your email address"
+        placeholder="Ingresá tu correo electrónico"
         className="flex-1 w-full sm:w-auto bg-white/10 border border-white/20 text-white placeholder:text-white/50 rounded-xl px-4 py-3 text-sm outline-none focus:bg-white/20 transition-colors"
       />
       <button
         type="button"
         onClick={() => email && setSubscribed(true)}
-        className="w-full sm:w-auto bg-white text-primary font-bold px-6 py-3 rounded-xl hover:bg-green-50 transition-colors whitespace-nowrap"
+        className="w-full sm:w-auto bg-white text-primary font-bold px-6 py-3 rounded-xl hover:bg-orange-50 transition-colors whitespace-nowrap"
       >
         Subscribe
       </button>

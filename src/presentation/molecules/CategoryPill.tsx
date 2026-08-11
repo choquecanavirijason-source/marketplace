@@ -26,7 +26,7 @@ export function CategoryPill({
         {category.icon}
       </span>
       <span className="text-xs font-semibold text-center text-foreground leading-tight">{category.name}</span>
-      <span className="text-[10px] text-muted-foreground">{category.count} items</span>
+      <span className="text-[10px] text-muted-foreground">{category.count} productos</span>
     </button>
   );
 }

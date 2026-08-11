@@ -2,19 +2,19 @@ import { ArrowRight } from "lucide-react";
 
 const BANNERS = [
   {
-    title: "Fresh Organic Vegetables", sub: "Save up to 25%", cta: "Shop Now",
-    bg: "from-green-400 to-emerald-600",
-    image: "https://images.unsplash.com/photo-1579113800032-c38bd7635818?w=400&h=300&fit=crop&auto=format",
+    title: "Radiadores de Aceite", sub: "Ahorrá hasta 25%", cta: "Comprar",
+    bg: "from-blue-400 to-cyan-600",
+    image: "https://images.unsplash.com/photo-1669725341213-7379ff6c90d5?w=400&h=300&fit=crop&auto=format",
   },
   {
-    title: "Premium Dairy Selection", sub: "Everyday essentials", cta: "Explore",
+    title: "Termotanques Premium", sub: "Confort todo el año", cta: "Explorar",
     bg: "from-amber-400 to-orange-500",
-    image: "https://images.unsplash.com/photo-1488459716781-31db52582fe9?w=400&h=300&fit=crop&auto=format",
+    image: "https://images.unsplash.com/photo-1601914697928-0b536e76d048?w=400&h=300&fit=crop&auto=format",
   },
   {
-    title: "Seasonal Fruit Baskets", sub: "Freshness guaranteed", cta: "Order Now",
-    bg: "from-pink-400 to-rose-500",
-    image: "https://images.unsplash.com/photo-1543168256-418811576931?w=400&h=300&fit=crop&auto=format",
+    title: "Estufas a Gas", sub: "Calidez garantizada", cta: "Pedir Ahora",
+    bg: "from-red-400 to-rose-500",
+    image: "https://images.unsplash.com/photo-1608454770647-01dc0f7dd97d?w=400&h=300&fit=crop&auto=format",
   },
 ];
 
