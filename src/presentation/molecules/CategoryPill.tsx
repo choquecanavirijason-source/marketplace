@@ -20,10 +20,10 @@ export function CategoryPill({
       )}
     >
       <span
-        className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
+        className="w-12 h-12 rounded-xl flex items-center justify-center"
         style={{ background: category.color }}
       >
-        {category.icon}
+        <category.icon className="w-5 h-5 text-foreground/70" strokeWidth={1.75} />
       </span>
       <span className="text-xs font-semibold text-center text-foreground leading-tight">{category.name}</span>
       <span className="text-[10px] text-muted-foreground">{category.count} productos</span>

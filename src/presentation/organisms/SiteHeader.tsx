@@ -7,8 +7,8 @@ import { Logo } from "@/presentation/atoms/Logo";
 import { SearchBar } from "@/presentation/molecules/SearchBar";
 import { CartPopover } from "@/presentation/organisms/CartPopover";
 
-const NAV_ITEMS = ["Inicio", "Tienda", "Calefacción", "Herramientas", "Pinturas", "Climatización", "Ofertas", "Blog"];
-const NAV_WITH_CARET = ["Tienda", "Calefacción", "Ofertas"];
+const NAV_ITEMS = ["Inicio", "Tienda", "Herramientas", "Pinturas", "Plomería", "Electricidad", "Ofertas", "Blog"];
+const NAV_WITH_CARET = ["Tienda", "Herramientas", "Ofertas"];
 
 export function SiteHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);

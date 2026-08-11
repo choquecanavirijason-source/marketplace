@@ -11,7 +11,7 @@ const CONTACT_ITEMS = [
 
 const LINK_COLUMNS = [
   { title: "Enlaces Rápidos", links: ["Inicio", "Sobre Nosotros", "Tienda", "Blog", "Contacto"] },
-  { title: "Categorías", links: ["Calefactores Eléctricos", "Herramientas Eléctricas", "Herramientas Manuales", "Radiadores", "Pinturas"] },
+  { title: "Categorías", links: ["Herramientas Eléctricas", "Herramientas Manuales", "Pinturas", "Plomería", "Electricidad"] },
   { title: "Mi Cuenta", links: ["Mi Perfil", "Historial de Pedidos", "Favoritos", "Seguir Pedido", "Devoluciones"] },
 ];
 

@@ -8,7 +8,7 @@ import { SectionEyebrow } from "@/presentation/atoms/SectionEyebrow";
 import { ProductCard } from "@/presentation/organisms/ProductCard";
 import { cn } from "@/shared/lib/utils";
 
-const QUICK_FILTERS = ["Todos", "Calefactores Eléctricos", "Herramientas Eléctricas", "Herramientas Manuales", "Pinturas"];
+const QUICK_FILTERS = ["Todos", "Herramientas Eléctricas", "Herramientas Manuales", "Pinturas", "Electricidad"];
 
 export function FeaturedProductsSection({
   activeCategory,

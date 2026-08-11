@@ -2,17 +2,17 @@ import { ArrowRight } from "lucide-react";
 
 const BANNERS = [
   {
-    title: "Radiadores de Aceite", sub: "Ahorrá hasta 25%", cta: "Comprar",
+    title: "Herramientas Eléctricas", sub: "Ahorrá hasta 25%", cta: "Comprar",
+    bg: "from-orange-400 to-amber-600",
+    image: "https://images.unsplash.com/photo-1502343019212-cc6a09783255?w=400&h=300&fit=crop&auto=format",
+  },
+  {
+    title: "Electricidad y Plomería", sub: "Todo para tu instalación", cta: "Explorar",
     bg: "from-blue-400 to-cyan-600",
-    image: "https://images.unsplash.com/photo-1669725341213-7379ff6c90d5?w=400&h=300&fit=crop&auto=format",
+    image: "https://images.unsplash.com/photo-1521905219644-65e6d65124cf?w=400&h=300&fit=crop&auto=format",
   },
   {
-    title: "Termotanques Premium", sub: "Confort todo el año", cta: "Explorar",
-    bg: "from-amber-400 to-orange-500",
-    image: "https://images.unsplash.com/photo-1601914697928-0b536e76d048?w=400&h=300&fit=crop&auto=format",
-  },
-  {
-    title: "Estufas a Gas", sub: "Calidez garantizada", cta: "Pedir Ahora",
+    title: "Calefacción", sub: "Calidez garantizada", cta: "Pedir Ahora",
     bg: "from-red-400 to-rose-500",
     image: "https://images.unsplash.com/photo-1608454770647-01dc0f7dd97d?w=400&h=300&fit=crop&auto=format",
   },
