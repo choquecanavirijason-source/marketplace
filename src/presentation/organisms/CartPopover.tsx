@@ -1,15 +1,27 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { ShoppingCart, X } from "lucide-react";
 import { useCart } from "@/presentation/hooks/useCart";
 import { CartLineItem } from "@/presentation/molecules/CartLineItem";
 import { formatPrice } from "@/shared/lib/format";
+import { isCustomerAuthenticated } from "@/shared/lib/marketplaceStorage";
 
 export function CartPopover() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const router = useRouter();
   const { items, total, count, updateQty, removeFromCart } = useCart();
+
+  const handleCheckout = () => {
+    setOpen(false);
+    if (isCustomerAuthenticated()) {
+      router.push("/checkout");
+    } else {
+      router.push("/cuenta/ingresar?redirect=/checkout");
+    }
+  };
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -68,6 +80,7 @@ export function CartPopover() {
               </div>
               <button
                 type="button"
+                onClick={handleCheckout}
                 className="w-full bg-primary text-white py-2.5 rounded-xl text-sm font-semibold hover:bg-orange-700 transition-colors"
               >
                 Finalizar Compra

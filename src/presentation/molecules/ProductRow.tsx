@@ -1,7 +1,11 @@
-import { Plus, ShoppingCart } from "lucide-react";
+"use client";
+
+import { useState } from "react";
+import { Check, Plus, ShoppingCart } from "lucide-react";
 import type { Product } from "@/domain/entities/Product";
 import { StarRating } from "@/presentation/molecules/StarRating";
 import { formatPrice } from "@/shared/lib/format";
+import { cn } from "@/shared/lib/utils";
 
 export function RankedProductRow({
   product,
@@ -14,6 +18,8 @@ export function RankedProductRow({
   onSelect: () => void;
   onAddToCart: () => void;
 }) {
+  const [added, setAdded] = useState(false);
+
   return (
     <div
       onClick={onSelect}
@@ -34,10 +40,16 @@ export function RankedProductRow({
             onClick={(e) => {
               e.stopPropagation();
               onAddToCart();
+              setAdded(true);
+              setTimeout(() => setAdded(false), 1500);
             }}
-            className="w-7 h-7 bg-secondary rounded-lg flex items-center justify-center hover:bg-primary hover:text-white transition-colors"
+            className={cn(
+              "flex items-center gap-1 rounded-lg transition-colors px-2 h-7",
+              added ? "bg-green-500 text-white" : "bg-secondary hover:bg-primary hover:text-white",
+            )}
           >
-            <Plus className="w-3.5 h-3.5" />
+            {added ? <Check className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+            {added && <span className="text-[10px] font-bold whitespace-nowrap">Agregado</span>}
           </button>
         </div>
       </div>
@@ -54,6 +66,8 @@ export function CompactProductRow({
   onSelect: () => void;
   onAddToCart: () => void;
 }) {
+  const [added, setAdded] = useState(false);
+
   return (
     <div
       onClick={onSelect}
@@ -76,10 +90,16 @@ export function CompactProductRow({
         onClick={(e) => {
           e.stopPropagation();
           onAddToCart();
+          setAdded(true);
+          setTimeout(() => setAdded(false), 1500);
         }}
-        className="flex-shrink-0 w-8 h-8 bg-secondary rounded-lg flex items-center justify-center hover:bg-primary hover:text-white transition-colors"
+        className={cn(
+          "flex-shrink-0 flex items-center justify-center gap-1 rounded-lg transition-colors",
+          added ? "h-8 px-2.5 bg-green-500 text-white" : "w-8 h-8 bg-secondary hover:bg-primary hover:text-white",
+        )}
       >
-        <ShoppingCart className="w-3.5 h-3.5" />
+        {added ? <Check className="w-3.5 h-3.5" /> : <ShoppingCart className="w-3.5 h-3.5" />}
+        {added && <span className="text-[10px] font-bold whitespace-nowrap">Agregado</span>}
       </button>
     </div>
   );

@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ChevronDown, Heart, Menu, User } from "lucide-react";
+import { ChevronDown, Heart, Menu } from "lucide-react";
 import { Logo } from "@/presentation/atoms/Logo";
 import { SearchBar } from "@/presentation/molecules/SearchBar";
 import { CartPopover } from "@/presentation/organisms/CartPopover";
+import { AccountMenu } from "@/presentation/organisms/AccountMenu";
+import { useFavorites } from "@/presentation/hooks/useFavorites";
 
 const NAV_ITEMS = ["Inicio", "Tienda", "Herramientas", "Pinturas", "Plomería", "Electricidad", "Ofertas", "Blog"];
 const NAV_WITH_CARET = ["Tienda", "Herramientas", "Ofertas"];
@@ -13,6 +15,7 @@ const NAV_WITH_CARET = ["Tienda", "Herramientas", "Ofertas"];
 export function SiteHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchVal, setSearchVal] = useState("");
+  const { count: favoritesCount } = useFavorites();
 
   return (
     <header className="bg-card shadow-sm sticky top-0 z-50 border-b border-border">
@@ -30,17 +33,16 @@ export function SiteHeader() {
         <SearchBar value={searchVal} onChange={setSearchVal} />
 
         <div className="flex items-center gap-1 ml-auto">
-          <button className="hidden md:flex flex-col items-center p-2 hover:text-primary transition-colors text-foreground/70 gap-0.5">
-            <User className="w-5 h-5" />
-            <span className="text-[10px] font-medium">Cuenta</span>
-          </button>
-          <button className="hidden md:flex flex-col items-center p-2 hover:text-primary transition-colors text-foreground/70 gap-0.5 relative">
+          <AccountMenu />
+          <Link href="/favoritos" className="hidden md:flex flex-col items-center p-2 hover:text-primary transition-colors text-foreground/70 gap-0.5 relative">
             <Heart className="w-5 h-5" />
             <span className="text-[10px] font-medium">Favoritos</span>
-            <span className="absolute top-1 right-1 w-4 h-4 bg-accent text-white text-[9px] font-bold rounded-full flex items-center justify-center">
-              3
-            </span>
-          </button>
+            {favoritesCount > 0 && (
+              <span className="absolute top-1 right-1 w-4 h-4 bg-accent text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                {favoritesCount}
+              </span>
+            )}
+          </Link>
 
           <CartPopover />
 
@@ -55,14 +57,14 @@ export function SiteHeader() {
           <ul className="flex items-center">
             {NAV_ITEMS.map((item) => (
               <li key={item}>
-                <a
-                  href="#"
+                <Link
+                  href={item === "Inicio" ? "/" : "#"}
                   className="flex items-center gap-1 px-4 py-3 text-sm font-semibold text-foreground/80 hover:text-primary transition-colors relative group"
                 >
                   {item}
                   {NAV_WITH_CARET.includes(item) && <ChevronDown className="w-3 h-3" />}
                   <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary scale-x-0 group-hover:scale-x-100 transition-transform" />
-                </a>
+                </Link>
               </li>
             ))}
           </ul>
@@ -72,13 +74,13 @@ export function SiteHeader() {
       {mobileMenuOpen && (
         <div className="md:hidden bg-card border-t border-border px-4 pb-4">
           {NAV_ITEMS.map((item) => (
-            <a
+            <Link
               key={item}
-              href="#"
+              href={item === "Inicio" ? "/" : "#"}
               className="block py-2.5 text-sm font-semibold border-b border-border last:border-0 text-foreground/80 hover:text-primary transition-colors"
             >
               {item}
-            </a>
+            </Link>
           ))}
         </div>
       )}

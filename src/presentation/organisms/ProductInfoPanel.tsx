@@ -8,6 +8,7 @@ import { QuantitySelector } from "@/presentation/molecules/QuantitySelector";
 import { TrustBadgeItem } from "@/presentation/molecules/TrustBadgeItem";
 import { PaymentIconsRow } from "@/presentation/molecules/PaymentIconsRow";
 import { useCart } from "@/presentation/hooks/useCart";
+import { useFavorites } from "@/presentation/hooks/useFavorites";
 import { discountPercent, formatPrice } from "@/shared/lib/format";
 import { cn } from "@/shared/lib/utils";
 
@@ -19,9 +20,10 @@ const TRUST_ITEMS = [
 
 export function ProductInfoPanel({ product }: { product: Product }) {
   const [qty, setQty] = useState(1);
-  const [wished, setWished] = useState(false);
   const [addedToCart, setAddedToCart] = useState(false);
   const { addToCart } = useCart();
+  const { isFavorite, toggleFavorite } = useFavorites();
+  const wished = isFavorite(product.id);
   const percent = discountPercent(product.price, product.originalPrice);
 
   const handleAddCart = () => {
@@ -117,7 +119,7 @@ export function ProductInfoPanel({ product }: { product: Product }) {
       <div className="flex items-center gap-4 text-sm">
         <button
           type="button"
-          onClick={() => setWished(!wished)}
+          onClick={() => toggleFavorite(product)}
           className={cn("flex items-center gap-1.5 font-semibold transition-colors", wished ? "text-red-500" : "text-muted-foreground hover:text-red-500")}
         >
           <Heart className={cn("w-4 h-4", wished && "fill-red-500")} />

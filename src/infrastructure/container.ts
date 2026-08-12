@@ -3,6 +3,7 @@ import { InMemoryReviewRepository } from "@/infrastructure/repositories/InMemory
 import { InMemoryCategoryRepository } from "@/infrastructure/repositories/InMemoryCategoryRepository";
 import { InMemoryHeroSlideRepository } from "@/infrastructure/repositories/InMemoryHeroSlideRepository";
 import { ZustandCartRepository } from "@/infrastructure/repositories/ZustandCartRepository";
+import { ZustandFavoriteRepository } from "@/infrastructure/repositories/ZustandFavoriteRepository";
 
 import { ListProductsUseCase } from "@/application/products/ListProductsUseCase";
 import { ListFlashDealsUseCase } from "@/application/products/ListFlashDealsUseCase";
@@ -21,12 +22,18 @@ import { AddToCartUseCase } from "@/application/cart/AddToCartUseCase";
 import { RemoveFromCartUseCase } from "@/application/cart/RemoveFromCartUseCase";
 import { UpdateCartQtyUseCase } from "@/application/cart/UpdateCartQtyUseCase";
 import { GetCartSummaryUseCase } from "@/application/cart/GetCartSummaryUseCase";
+import { ClearCartUseCase } from "@/application/cart/ClearCartUseCase";
+
+import { ListFavoritesUseCase } from "@/application/favorites/ListFavoritesUseCase";
+import { ToggleFavoriteUseCase } from "@/application/favorites/ToggleFavoriteUseCase";
+import { RemoveFavoriteUseCase } from "@/application/favorites/RemoveFavoriteUseCase";
 
 const productRepository = new InMemoryProductRepository();
 const reviewRepository = new InMemoryReviewRepository();
 const categoryRepository = new InMemoryCategoryRepository();
 const heroSlideRepository = new InMemoryHeroSlideRepository();
 const cartRepository = new ZustandCartRepository();
+const favoriteRepository = new ZustandFavoriteRepository();
 
 export const container = {
   listProducts: new ListProductsUseCase(productRepository),
@@ -46,4 +53,9 @@ export const container = {
   removeFromCart: new RemoveFromCartUseCase(cartRepository),
   updateCartQty: new UpdateCartQtyUseCase(cartRepository),
   getCartSummary: new GetCartSummaryUseCase(),
+  clearCart: new ClearCartUseCase(cartRepository),
+
+  listFavorites: new ListFavoritesUseCase(favoriteRepository),
+  toggleFavorite: new ToggleFavoriteUseCase(favoriteRepository),
+  removeFavorite: new RemoveFavoriteUseCase(favoriteRepository),
 };

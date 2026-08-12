@@ -6,6 +6,7 @@ import type { Product } from "@/domain/entities/Product";
 import { ProductStatusBadge } from "@/presentation/atoms/ProductStatusBadge";
 import { StarRating } from "@/presentation/molecules/StarRating";
 import { ProductPriceBlock } from "@/presentation/molecules/ProductPriceBlock";
+import { useFavorites } from "@/presentation/hooks/useFavorites";
 import { cn } from "@/shared/lib/utils";
 
 export function ProductCard({
@@ -17,8 +18,9 @@ export function ProductCard({
   onAddToCart: (product: Product) => void;
   onSelect: (product: Product) => void;
 }) {
-  const [wished, setWished] = useState(false);
   const [added, setAdded] = useState(false);
+  const { isFavorite, toggleFavorite } = useFavorites();
+  const wished = isFavorite(product.id);
 
   return (
     <div className="group bg-card rounded-2xl overflow-hidden border border-border hover:shadow-xl hover:shadow-orange-100 transition-all duration-300 hover:-translate-y-1 relative">
@@ -26,8 +28,14 @@ export function ProductCard({
 
       <button
         type="button"
-        onClick={() => setWished(!wished)}
-        className="absolute top-3 right-3 z-10 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50"
+        onClick={(e) => {
+          e.stopPropagation();
+          toggleFavorite(product);
+        }}
+        className={cn(
+          "absolute top-3 right-3 z-10 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm transition-opacity hover:bg-red-50",
+          wished ? "opacity-100" : "opacity-0 group-hover:opacity-100",
+        )}
       >
         <Heart className={cn("w-4 h-4", wished ? "fill-red-500 text-red-500" : "text-gray-400")} />
       </button>

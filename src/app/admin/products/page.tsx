@@ -4,7 +4,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/presentation/atoms/button";
 import type { Product } from "@/domain/entities/Product";
-import { isAuthenticated, readAddedProducts, setAuthenticated, writeAddedProducts } from "@/shared/lib/marketplaceStorage";
+import { isCustomerAuthenticated, logoutCustomer, readAddedProducts, writeAddedProducts } from "@/shared/lib/marketplaceStorage";
 
 const defaultImage =
   "https://images.unsplash.com/photo-1581147036324-c17ac5b5df98?w=600&h=600&fit=crop&auto=format";
@@ -30,8 +30,8 @@ export default function AdminProductsPage() {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    if (!isAuthenticated()) {
-      router.push("/login");
+    if (!isCustomerAuthenticated()) {
+      router.push("/cuenta/ingresar?redirect=/admin/products");
       return;
     }
 
@@ -82,8 +82,8 @@ export default function AdminProductsPage() {
   };
 
   const logout = () => {
-    setAuthenticated(false);
-    router.push("/login");
+    logoutCustomer();
+    router.push("/cuenta/ingresar");
   };
 
   return (

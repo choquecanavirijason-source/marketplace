@@ -1,4 +1,4 @@
-import { Mail, MapPin, Phone } from "lucide-react";
+import { Banknote, CreditCard, Landmark, Mail, MapPin, Phone, Smartphone } from "lucide-react";
 import { Logo } from "@/presentation/atoms/Logo";
 import { SocialIconRow } from "@/presentation/molecules/SocialIconRow";
 import { FooterLinkColumn } from "@/presentation/molecules/FooterLinkColumn";
@@ -16,7 +16,7 @@ const LINK_COLUMNS = [
 ];
 
 const LEGAL_LINKS = ["Política de Privacidad", "Términos de Servicio", "Política de Cookies"];
-const PAYMENT_ICONS = ["💳", "🏦", "📱", "🔐"];
+const PAYMENT_ICONS = [CreditCard, Landmark, Smartphone, Banknote];
 
 export function SiteFooter() {
   return (
@@ -55,9 +55,9 @@ export function SiteFooter() {
             ))}
           </div>
           <div className="flex items-center gap-2">
-            {PAYMENT_ICONS.map((icon, i) => (
-              <div key={i} className="w-10 h-6 bg-white/10 rounded flex items-center justify-center text-xs">
-                {icon}
+            {PAYMENT_ICONS.map((Icon, i) => (
+              <div key={i} className="w-10 h-6 bg-white/10 rounded flex items-center justify-center">
+                <Icon className="w-3.5 h-3.5 text-white/60" strokeWidth={1.75} />
               </div>
             ))}
           </div>

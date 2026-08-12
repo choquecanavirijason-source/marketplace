@@ -1,4 +1,4 @@
-import { ChevronDown, Mail, Phone } from "lucide-react";
+import { ChevronDown, Mail, Phone, Truck } from "lucide-react";
 
 export function TopBarStrip() {
   return (
@@ -12,7 +12,9 @@ export function TopBarStrip() {
             <Mail className="w-3 h-3" /> hola@ferromax.com
           </span>
         </div>
-        <span className="hidden sm:block font-medium">🚚 Envío gratis en compras superiores a $50</span>
+        <span className="hidden sm:flex items-center gap-1.5 font-medium">
+          <Truck className="w-3 h-3" /> Envío gratis en compras superiores a $50
+        </span>
         <div className="flex items-center gap-3">
           <span className="flex items-center gap-1 cursor-pointer hover:opacity-80">
             USD <ChevronDown className="w-3 h-3" />

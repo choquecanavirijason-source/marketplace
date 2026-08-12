@@ -15,5 +15,6 @@ export function useCart() {
     addToCart: (product: Product) => container.addToCart.execute(product),
     removeFromCart: (productId: number) => container.removeFromCart.execute(productId),
     updateQty: (productId: number, delta: number) => container.updateCartQty.execute(productId, delta),
+    clearCart: () => container.clearCart.execute(),
   };
 }

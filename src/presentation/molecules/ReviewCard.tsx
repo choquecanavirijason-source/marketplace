@@ -1,3 +1,4 @@
+import { ThumbsUp } from "lucide-react";
 import type { Review } from "@/domain/entities/Review";
 import { StarRating } from "@/presentation/molecules/StarRating";
 
@@ -17,8 +18,8 @@ export function ReviewCard({ review }: { review: Review }) {
         <StarRating rating={review.rating} small />
       </div>
       <p className="text-sm text-muted-foreground leading-relaxed">{review.text}</p>
-      <button type="button" className="text-xs text-muted-foreground mt-3 hover:text-primary transition-colors">
-        👍 Útil ({review.helpful})
+      <button type="button" className="flex items-center gap-1.5 text-xs text-muted-foreground mt-3 hover:text-primary transition-colors">
+        <ThumbsUp className="w-3.5 h-3.5" strokeWidth={1.75} /> Útil ({review.helpful})
       </button>
     </div>
   );
