@@ -2,12 +2,12 @@
 
 import { ArrowRight, Zap } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useProducts } from "@/presentation/hooks/useProducts";
 import { useCart } from "@/presentation/hooks/useCart";
 import { useCategories } from "@/presentation/hooks/useCatalog";
+import { useInfiniteProducts } from "@/presentation/hooks/useInfiniteProducts";
 import { SectionEyebrow } from "@/presentation/atoms/SectionEyebrow";
 import { ProductCard } from "@/presentation/organisms/ProductCard";
-import { cn } from "@/shared/lib/utils";
+import { LoadMoreButton } from "@/presentation/molecules/LoadMoreButton";
 
 export function FeaturedProductsSection({
   activeCategory,
@@ -16,35 +16,40 @@ export function FeaturedProductsSection({
   activeCategory: string;
   onCategoryChange: (category: string) => void;
 }) {
-  const { data: products, isLoading } = useProducts(activeCategory);
   const { data: categories } = useCategories();
   const { addToCart } = useCart();
   const router = useRouter();
 
   const quickFilters = ["Todos", ...(categories ?? []).map((category) => category.name)];
+  const activeSlug =
+    activeCategory === "Todos"
+      ? undefined
+      : categories?.find((category) => category.name === activeCategory)?.slug;
+
+  const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage } = useInfiniteProducts({
+    category: activeSlug,
+    pageSize: 12,
+  });
+  const products = data?.pages.flatMap((page) => page.items) ?? [];
 
   return (
     <section className="max-w-7xl mx-auto px-4 py-6">
-      <div className="flex items-end justify-between mb-6">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <SectionEyebrow icon={Zap}>Selección Especial</SectionEyebrow>
           <h2 className="text-2xl font-black text-foreground">Productos Destacados</h2>
         </div>
-        <div className="flex items-center gap-2">
+        <select
+          value={activeCategory}
+          onChange={(event) => onCategoryChange(event.target.value)}
+          className="w-full sm:w-64 rounded-xl border border-border bg-background px-3 py-2 text-sm font-semibold text-foreground outline-none focus:border-primary"
+        >
           {quickFilters.map((cat) => (
-            <button
-              key={cat}
-              type="button"
-              onClick={() => onCategoryChange(cat)}
-              className={cn(
-                "hidden md:block text-xs font-semibold px-3 py-1.5 rounded-full transition-colors",
-                activeCategory === cat ? "bg-primary text-white" : "bg-secondary text-foreground hover:bg-primary/10",
-              )}
-            >
+            <option key={cat} value={cat}>
               {cat}
-            </button>
+            </option>
           ))}
-        </div>
+        </select>
       </div>
       {isLoading ? (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -60,17 +65,24 @@ export function FeaturedProductsSection({
             </div>
           ))}
         </div>
-      ) : products && products.length > 0 ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {products.map((product) => (
-            <ProductCard
-              key={product.id}
-              product={product}
-              onAddToCart={addToCart}
-              onSelect={(p) => router.push(`/product/${p.id}`)}
-            />
-          ))}
-        </div>
+      ) : products.length > 0 ? (
+        <>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {products.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                onAddToCart={addToCart}
+                onSelect={(p) => router.push(`/product/${p.id}`)}
+              />
+            ))}
+          </div>
+          <LoadMoreButton
+            hasMore={hasNextPage}
+            isLoading={isFetchingNextPage}
+            onLoadMore={() => fetchNextPage()}
+          />
+        </>
       ) : (
         <div className="rounded-2xl border border-border bg-card p-14 text-center">
           <Zap className="w-10 h-10 mx-auto text-muted-foreground" />

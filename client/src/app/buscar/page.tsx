@@ -5,14 +5,20 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { PackageSearch, Search } from "lucide-react";
 import { StorefrontTemplate } from "@/presentation/templates/StorefrontTemplate";
 import { ProductCard } from "@/presentation/organisms/ProductCard";
-import { useProducts } from "@/presentation/hooks/useProducts";
+import { LoadMoreButton } from "@/presentation/molecules/LoadMoreButton";
+import { useInfiniteProducts } from "@/presentation/hooks/useInfiniteProducts";
 import { useCart } from "@/presentation/hooks/useCart";
 
 function BuscarContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const q = searchParams.get("q")?.trim() ?? "";
-  const { data: products, isLoading } = useProducts(undefined, q);
+  const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage } = useInfiniteProducts({
+    search: q || undefined,
+    enabled: !!q,
+  });
+  const products = data?.pages.flatMap((page) => page.items) ?? [];
+  const total = data?.pages[0]?.total ?? 0;
   const { addToCart } = useCart();
 
   return (
@@ -29,7 +35,7 @@ function BuscarContent() {
             {q
               ? isLoading
                 ? "Buscando productos…"
-                : `${products?.length ?? 0} resultado${(products?.length ?? 0) === 1 ? "" : "s"}`
+                : `${total} resultado${total === 1 ? "" : "s"}`
               : "Escribí lo que buscás en la barra de búsqueda"}
           </p>
         </div>
@@ -54,16 +60,23 @@ function BuscarContent() {
             ))}
           </div>
         ) : products && products.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {products.map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                onAddToCart={addToCart}
-                onSelect={(p) => router.push(`/product/${p.id}`)}
-              />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {products.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  onAddToCart={addToCart}
+                  onSelect={(p) => router.push(`/product/${p.id}`)}
+                />
+              ))}
+            </div>
+            <LoadMoreButton
+              hasMore={hasNextPage}
+              isLoading={isFetchingNextPage}
+              onLoadMore={() => fetchNextPage()}
+            />
+          </>
         ) : (
           <div className="rounded-2xl border border-border bg-card p-14 text-center">
             <PackageSearch className="w-10 h-10 mx-auto text-muted-foreground" />

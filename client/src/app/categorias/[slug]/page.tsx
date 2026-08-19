@@ -5,7 +5,8 @@ import { ArrowLeft, PackageSearch } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { StorefrontTemplate } from "@/presentation/templates/StorefrontTemplate";
 import { ProductCard } from "@/presentation/organisms/ProductCard";
-import { useProducts } from "@/presentation/hooks/useProducts";
+import { LoadMoreButton } from "@/presentation/molecules/LoadMoreButton";
+import { useInfiniteProducts } from "@/presentation/hooks/useInfiniteProducts";
 import { useCart } from "@/presentation/hooks/useCart";
 import { container } from "@/infrastructure/container";
 
@@ -19,7 +20,12 @@ export default function CategoryDetailPage() {
     queryFn: () => container.getCategoryBySlug.execute(slug),
   });
 
-  const { data: products, isLoading } = useProducts(category?.name);
+  const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage } = useInfiniteProducts({
+    category: category?.slug,
+    enabled: !!category?.slug,
+  });
+  const products = data?.pages.flatMap((page) => page.items) ?? [];
+  const total = data?.pages[0]?.total ?? 0;
   const { addToCart } = useCart();
 
   if (category === null) {
@@ -60,7 +66,7 @@ export default function CategoryDetailPage() {
             <div>
               <h1 className="text-3xl font-black text-foreground">{category.name}</h1>
               <p className="text-sm text-muted-foreground">
-                {isLoading ? "Cargando productos…" : `${products?.length ?? 0} producto${(products?.length ?? 0) === 1 ? "" : "s"}`}
+                {isLoading ? "Cargando productos…" : `${total} producto${total === 1 ? "" : "s"}`}
               </p>
             </div>
           </div>
@@ -83,16 +89,23 @@ export default function CategoryDetailPage() {
             ))}
           </div>
         ) : products && products.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {products.map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                onAddToCart={addToCart}
-                onSelect={(p) => router.push(`/product/${p.id}`)}
-              />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {products.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  onAddToCart={addToCart}
+                  onSelect={(p) => router.push(`/product/${p.id}`)}
+                />
+              ))}
+            </div>
+            <LoadMoreButton
+              hasMore={hasNextPage}
+              isLoading={isFetchingNextPage}
+              onLoadMore={() => fetchNextPage()}
+            />
+          </>
         ) : (
           <div className="rounded-2xl border border-border bg-card p-14 text-center">
             <PackageSearch className="w-10 h-10 mx-auto text-muted-foreground" />

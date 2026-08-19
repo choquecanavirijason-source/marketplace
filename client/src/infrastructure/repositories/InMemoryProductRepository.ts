@@ -1,6 +1,7 @@
 import type {
   AdminListProductsParams,
   ListProductsParams,
+  PaginateProductsParams,
   ProductRepository,
   UpsertProductData,
 } from "@/domain/repositories/ProductRepository";
@@ -45,6 +46,31 @@ export class InMemoryProductRepository implements ProductRepository {
 
   async listFlashDeals(): Promise<Product[]> {
     return [...flashDealsSeed, ...readAddedProducts().filter((p) => p.badge?.toLowerCase() === "nuevo" || p.badge?.toLowerCase() === "oferta")];
+  }
+
+  async paginate(params?: PaginateProductsParams): Promise<Paginated<Product>> {
+    let products = getAllProducts();
+
+    if (params?.search) {
+      const term = params.search.toLowerCase();
+      products = products.filter(
+        (p) =>
+          p.name.toLowerCase().includes(term) ||
+          p.category.toLowerCase().includes(term) ||
+          (p.sku ?? "").toLowerCase().includes(term),
+      );
+    }
+
+    if (params?.category && params.category !== "Todos") {
+      products = products.filter((p) => p.category.toLowerCase() === params.category?.toLowerCase());
+    }
+
+    if (params?.tag) {
+      const tags = params.tag.split(",").map((t) => t.trim().toLowerCase());
+      products = products.filter((p) => p.badge && tags.includes(p.badge.toLowerCase()));
+    }
+
+    return paginate(products, params?.page, params?.limit ?? 12);
   }
 
   async getById(id: number): Promise<Product | null> {

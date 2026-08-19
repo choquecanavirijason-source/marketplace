@@ -2,6 +2,7 @@ import { apiRequest } from "@/infrastructure/http/client";
 import type {
   AdminListProductsParams,
   ListProductsParams,
+  PaginateProductsParams,
   ProductRepository,
   UpsertProductData,
 } from "@/domain/repositories/ProductRepository";
@@ -97,6 +98,20 @@ export class HttpProductRepository implements ProductRepository {
       const tag = p.badge?.toLowerCase();
       return tag !== undefined && FLASH_DEAL_TAGS.some((t) => t.toLowerCase() === tag);
     });
+  }
+
+  async paginate(params?: PaginateProductsParams): Promise<Paginated<Product>> {
+    const query = new URLSearchParams({
+      limit: String(params?.limit ?? 12),
+      page: String(params?.page ?? 1),
+    });
+
+    if (params?.category) query.set("category", params.category);
+    if (params?.search) query.set("search", params.search);
+    if (params?.tag) query.set("tag", params.tag);
+
+    const payload = await apiRequest<PaginatedPayload<ApiProduct>>(`/products?${query.toString()}`);
+    return paginated({ data: payload.data.map(mapProduct), meta: payload.meta });
   }
 
   async getById(id: number): Promise<Product | null> {

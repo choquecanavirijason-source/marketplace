@@ -13,6 +13,7 @@ class DatabaseSeeder extends Seeder
             AssignRolePermissionSeeder::class,
             PassportSeeder::class,
             MarketplaceSeeder::class,
+            RedlenicProductSeeder::class,
         ]);
     }
 }

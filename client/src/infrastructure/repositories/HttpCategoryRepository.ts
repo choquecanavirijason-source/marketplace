@@ -1,6 +1,7 @@
 import { apiRequest } from "@/infrastructure/http/client";
-import type { CategoryRepository } from "@/domain/repositories/CategoryRepository";
+import type { AdminListCategoriesParams, CategoryRepository } from "@/domain/repositories/CategoryRepository";
 import type { Category } from "@/domain/entities/Category";
+import { paginated, type Paginated } from "@/domain/entities/Order";
 import { Package } from "lucide-react";
 import { categoriesSeed } from "@/infrastructure/data/categories.data";
 
@@ -9,6 +10,15 @@ interface ApiCategory {
   name: string;
   slug: string;
   products_count: number;
+}
+
+interface PaginatedPayload<T> {
+  data: T[];
+  meta?: {
+    total?: number;
+    current_page?: number;
+    last_page?: number;
+  };
 }
 
 const DEFAULT_COLOR = "#f3f4f6";
@@ -38,6 +48,21 @@ export class HttpCategoryRepository implements CategoryRepository {
     } catch {
       return null;
     }
+  }
+
+  async adminList(params?: AdminListCategoriesParams): Promise<Paginated<Category>> {
+    const query = new URLSearchParams({
+      limit: String(params?.limit ?? 10),
+      page: String(params?.page ?? 1),
+    });
+
+    if (params?.search) query.set("search", params.search);
+
+    const payload = await apiRequest<PaginatedPayload<ApiCategory>>(`/admin/categories?${query.toString()}`, {
+      auth: true,
+    });
+
+    return paginated({ data: payload.data.map(mapCategory), meta: payload.meta });
   }
 
   async create(name: string): Promise<Category> {

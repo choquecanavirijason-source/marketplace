@@ -14,6 +14,7 @@ import { ListFlashDealsUseCase } from "@/application/products/ListFlashDealsUseC
 import { GetProductByIdUseCase } from "@/application/products/GetProductByIdUseCase";
 import { ListRelatedProductsUseCase } from "@/application/products/ListRelatedProductsUseCase";
 import { AdminListProductsUseCase } from "@/application/products/AdminListProductsUseCase";
+import { PaginateProductsUseCase } from "@/application/products/PaginateProductsUseCase";
 import { ToggleProductActiveUseCase } from "@/application/products/ToggleProductActiveUseCase";
 import { DeleteProductUseCase } from "@/application/products/DeleteProductUseCase";
 import { UpdateProductUseCase } from "@/application/products/UpdateProductUseCase";
@@ -27,6 +28,7 @@ import { GetCategoryBySlugUseCase } from "@/application/catalog/GetCategoryBySlu
 import { CreateCategoryUseCase } from "@/application/catalog/CreateCategoryUseCase";
 import { UpdateCategoryUseCase } from "@/application/catalog/UpdateCategoryUseCase";
 import { DeleteCategoryUseCase } from "@/application/catalog/DeleteCategoryUseCase";
+import { AdminListCategoriesUseCase } from "@/application/catalog/AdminListCategoriesUseCase";
 import { ListHeroSlidesUseCase } from "@/application/catalog/ListHeroSlidesUseCase";
 
 import { GetCartUseCase } from "@/application/cart/GetCartUseCase";
@@ -68,6 +70,7 @@ const favoriteRepository = new ZustandFavoriteRepository();
 
 export const container = {
   listProducts: new ListProductsUseCase(productRepository),
+  paginateProducts: new PaginateProductsUseCase(productRepository),
   listFlashDeals: new ListFlashDealsUseCase(productRepository),
   getProductById: new GetProductByIdUseCase(productRepository),
   listRelatedProducts: new ListRelatedProductsUseCase(productRepository),
@@ -82,6 +85,7 @@ export const container = {
 
   listCategories: new ListCategoriesUseCase(categoryRepository),
   getCategoryBySlug: new GetCategoryBySlugUseCase(categoryRepository),
+  adminListCategories: new AdminListCategoriesUseCase(categoryRepository),
   createCategory: new CreateCategoryUseCase(categoryRepository),
   updateCategory: new UpdateCategoryUseCase(categoryRepository),
   deleteCategory: new DeleteCategoryUseCase(categoryRepository),

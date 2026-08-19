@@ -2,21 +2,30 @@
 
 import { ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useFlashDeals, useProducts } from "@/presentation/hooks/useProducts";
 import { useCart } from "@/presentation/hooks/useCart";
+import { useInfiniteProducts } from "@/presentation/hooks/useInfiniteProducts";
 import { CompactProductRow } from "@/presentation/molecules/ProductRow";
+import { LoadMoreButton } from "@/presentation/molecules/LoadMoreButton";
 import type { Product } from "@/domain/entities/Product";
 
 export function TrendingNewArrivalsSection() {
-  const { data: products } = useProducts();
-  const { data: flashDeals } = useFlashDeals();
+  const trending = useInfiniteProducts({ pageSize: 4, startPage: 2 });
+  const newArrivals = useInfiniteProducts({ tag: "Nuevo", pageSize: 4 });
   const { addToCart } = useCart();
   const router = useRouter();
 
-  const columns: { title: string; items: Product[] }[] = [
-    { title: "Tendencias", items: products?.slice(4, 8) ?? [] },
-    { title: "Nuevos Ingresos", items: flashDeals ?? [] },
+  const trendingItems = trending.data?.pages.flatMap((page) => page.items) ?? [];
+  const newArrivalItems = newArrivals.data?.pages.flatMap((page) => page.items) ?? [];
+
+  const columns: { title: "Tendencias" | "Nuevos Ingresos"; items: Product[] }[] = [
+    { title: "Tendencias", items: trendingItems },
+    { title: "Nuevos Ingresos", items: newArrivalItems },
   ];
+
+  const loadMore = {
+    Tendencias: () => trending.fetchNextPage(),
+    "Nuevos Ingresos": () => newArrivals.fetchNextPage(),
+  } as const;
 
   return (
     <section className="max-w-7xl mx-auto px-4 py-6">
@@ -39,6 +48,15 @@ export function TrendingNewArrivalsSection() {
                 />
               ))}
             </div>
+            <LoadMoreButton
+              hasMore={
+                title === "Tendencias" ? trending.hasNextPage : newArrivals.hasNextPage
+              }
+              isLoading={
+                title === "Tendencias" ? trending.isFetchingNextPage : newArrivals.isFetchingNextPage
+              }
+              onLoadMore={loadMore[title]}
+            />
           </div>
         ))}
       </div>

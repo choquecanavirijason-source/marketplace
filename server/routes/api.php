@@ -60,6 +60,7 @@ Route::prefix('/v1')
         Route::middleware(['auth:api', 'permission:categoria.crear'])->post('categories', [CategoryController::class, 'store']);
         Route::middleware(['auth:api', 'permission:categoria.editar'])->put('categories/{category}', [CategoryController::class, 'update']);
         Route::middleware(['auth:api', 'permission:categoria.eliminar'])->delete('categories/{category}', [CategoryController::class, 'destroy']);
+        Route::middleware(['auth:api', 'permission:categoria.ver'])->get('admin/categories', [CategoryController::class, 'index']);
 
         Route::middleware(['auth:api', 'permission:testimonio.crear'])->post('testimonials', [TestimonialController::class, 'store']);
         Route::middleware(['auth:api', 'permission:testimonio.editar'])->put('testimonials/{testimonial}', [TestimonialController::class, 'update']);

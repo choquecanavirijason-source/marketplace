@@ -6,6 +6,14 @@ export interface ListProductsParams {
   search?: string;
 }
 
+export interface PaginateProductsParams {
+  category?: string;
+  search?: string;
+  tag?: string;
+  page?: number;
+  limit?: number;
+}
+
 export interface AdminListProductsParams {
   search?: string;
   category?: string;
@@ -33,6 +41,7 @@ export interface ProductRepository {
   list(params?: ListProductsParams): Promise<Product[]>;
   listFlashDeals(): Promise<Product[]>;
   getById(id: number): Promise<Product | null>;
+  paginate(params?: PaginateProductsParams): Promise<Paginated<Product>>;
   adminList(params?: AdminListProductsParams): Promise<Paginated<Product>>;
   toggleActive(id: number, isActive: boolean): Promise<Product>;
   delete(id: number): Promise<void>;

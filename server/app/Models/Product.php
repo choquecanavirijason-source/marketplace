@@ -94,7 +94,7 @@ class Product extends Model
             return $query;
         }
 
-        return $query->where('tag', $tag);
+        return $query->whereIn('tag', array_filter(array_map('trim', explode(',', $tag))));
     }
 
     public function scopeFilterByCategory(Builder $query, ?string $category): Builder

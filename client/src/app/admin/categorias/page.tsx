@@ -2,25 +2,31 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, Pencil, Plus, Tags, Trash2, X } from "lucide-react";
+import { CheckCircle2, ChevronLeft, ChevronRight, Pencil, Plus, Search, Tags, Trash2, X } from "lucide-react";
 import { Button } from "@/presentation/atoms/button";
 import { DashboardLayout, adminNavItems } from "@/presentation/organisms/DashboardLayout";
-import { useCategories } from "@/presentation/hooks/useCatalog";
+import { useAdminCategories } from "@/presentation/hooks/useAdminCategories";
 import { getCurrentUser, isCustomerAuthenticated } from "@/shared/lib/marketplaceStorage";
 import { ApiError } from "@/infrastructure/http/client";
-import { container } from "@/infrastructure/container";
 import { cn } from "@/shared/lib/utils";
+
+const PAGE_SIZE = 10;
 
 export default function AdminCategoriesPage() {
   const router = useRouter();
-  const queryClient = useQueryClient();
   const [authChecked, setAuthChecked] = useState(false);
   const [error, setError] = useState("");
   const [name, setName] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
 
-  const { data: categories, isLoading } = useCategories();
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+
+  const { data, isLoading, create, isCreating, update, isUpdating, remove, isRemoving } = useAdminCategories({
+    search,
+    page,
+    limit: PAGE_SIZE,
+  });
 
   useEffect(() => {
     if (!isCustomerAuthenticated()) {
@@ -35,25 +41,6 @@ export default function AdminCategoriesPage() {
     setAuthChecked(true);
   }, [router]);
 
-  const invalidate = () => {
-    queryClient.invalidateQueries({ queryKey: ["categories"] });
-  };
-
-  const createMutation = useMutation({
-    mutationFn: (value: string) => container.createCategory.execute(value),
-    onSuccess: invalidate,
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: ({ id, value }: { id: number; value: string }) => container.updateCategory.execute(id, value),
-    onSuccess: invalidate,
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (id: number) => container.deleteCategory.execute(id),
-    onSuccess: invalidate,
-  });
-
   const handleSubmit = async () => {
     const value = name.trim();
     if (!value) {
@@ -63,9 +50,9 @@ export default function AdminCategoriesPage() {
     setError("");
     try {
       if (editingId !== null) {
-        await updateMutation.mutateAsync({ id: editingId, value });
+        await update({ id: editingId, name: value });
       } else {
-        await createMutation.mutateAsync(value);
+        await create(value);
       }
       setName("");
       setEditingId(null);
@@ -83,11 +70,13 @@ export default function AdminCategoriesPage() {
   const handleDelete = async (id: number, categoryName: string) => {
     if (!window.confirm(`¿Eliminar la categoría "${categoryName}"? Esta acción no se puede deshacer.`)) return;
     try {
-      await deleteMutation.mutateAsync(id);
+      await remove(id);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "No se pudo eliminar la categoría.");
     }
   };
+
+  const totalPages = Math.max(1, data?.lastPage ?? 1);
 
   if (!authChecked) {
     return (
@@ -121,7 +110,7 @@ export default function AdminCategoriesPage() {
               className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
             />
             <div className="flex gap-2">
-              <Button onClick={handleSubmit} disabled={createMutation.isPending || updateMutation.isPending}>
+              <Button onClick={handleSubmit} disabled={isCreating || isUpdating}>
                 {editingId !== null ? <CheckCircle2 className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
                 {editingId !== null ? "Guardar cambios" : "Crear categoría"}
               </Button>
@@ -145,7 +134,7 @@ export default function AdminCategoriesPage() {
         </section>
 
         <section className="rounded-2xl border border-border bg-card shadow-sm">
-          <div className="flex items-center justify-between border-b border-border p-5">
+          <div className="flex flex-col gap-4 border-b border-border p-5 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
                 <Tags className="w-5 h-5 text-primary" />
@@ -153,9 +142,23 @@ export default function AdminCategoriesPage() {
               <div>
                 <h2 className="text-xl font-black text-foreground">Listado</h2>
                 <p className="text-xs text-muted-foreground">
-                  {isLoading ? "Cargando…" : `${categories?.length ?? 0} categoría${(categories?.length ?? 0) === 1 ? "" : "s"}`}
+                  {isLoading ? "Cargando…" : `${data?.total ?? 0} categoría${(data?.total ?? 0) === 1 ? "" : "s"}`}
                 </p>
               </div>
+            </div>
+
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 w-4 h-4 -translate-y-1/2 text-muted-foreground" />
+              <input
+                type="search"
+                value={search}
+                onChange={(event) => {
+                  setSearch(event.target.value);
+                  setPage(1);
+                }}
+                className="w-full rounded-xl border border-border bg-background pl-9 pr-3 py-2 text-sm outline-none focus:border-primary sm:w-64"
+                placeholder="Buscar categoría…"
+              />
             </div>
           </div>
 
@@ -174,8 +177,8 @@ export default function AdminCategoriesPage() {
                   <tr>
                     <td colSpan={4} className="px-5 py-10 text-center text-muted-foreground">Cargando categorías…</td>
                   </tr>
-                ) : categories && categories.length > 0 ? (
-                  categories.map((category) => (
+                ) : data && data.items.length > 0 ? (
+                  data.items.map((category) => (
                     <tr
                       key={category.id}
                       className={cn("border-b border-border last:border-0 hover:bg-muted/40", editingId === category.id && "bg-primary/5")}
@@ -206,7 +209,7 @@ export default function AdminCategoriesPage() {
                           <button
                             type="button"
                             title="Eliminar categoría"
-                            disabled={deleteMutation.isPending}
+                            disabled={isRemoving}
                             onClick={() => handleDelete(Number(category.id), category.name)}
                             className="rounded-lg border border-border p-2 text-muted-foreground transition-colors hover:border-red-300 hover:text-red-600 disabled:opacity-50"
                           >
@@ -219,12 +222,41 @@ export default function AdminCategoriesPage() {
                 ) : (
                   <tr>
                     <td colSpan={4} className="px-5 py-10 text-center text-muted-foreground">
-                      No hay categorías todavía.
+                      {search ? "No hay categorías que coincidan con la búsqueda." : "No hay categorías todavía."}
                     </td>
                   </tr>
                 )}
               </tbody>
             </table>
+          </div>
+
+          <div className="flex flex-col items-center justify-between gap-3 border-t border-border px-5 py-4 sm:flex-row">
+            <p className="text-xs text-muted-foreground">
+              {data
+                ? `${(data.currentPage - 1) * PAGE_SIZE + 1}–${Math.min(data.currentPage * PAGE_SIZE, data.total)} de ${data.total} categorías`
+                : ""}
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                disabled={page <= 1}
+                onClick={() => setPage((current) => Math.max(1, current - 1))}
+                className="flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-bold text-foreground transition-colors hover:border-primary disabled:opacity-40"
+              >
+                <ChevronLeft className="w-4 h-4" /> Anterior
+              </button>
+              <span className="text-xs font-semibold text-muted-foreground">
+                Página {data?.currentPage ?? 1} de {totalPages}
+              </span>
+              <button
+                type="button"
+                disabled={page >= totalPages}
+                onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+                className="flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-bold text-foreground transition-colors hover:border-primary disabled:opacity-40"
+              >
+                Siguiente <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </section>
       </div>
