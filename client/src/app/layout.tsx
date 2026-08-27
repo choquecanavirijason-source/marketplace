@@ -11,8 +11,41 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="es">
-      <body style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+    <html lang="es" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                function isExtensionError(event) {
+                  var reason = event.reason;
+                  var stack = (reason && reason.stack) || '';
+                  var message = (reason && reason.message) || String(reason || '');
+                  return stack.includes('chrome-extension://') || message.includes('chrome-extension://') || message.includes('M_ID');
+                }
+                window.addEventListener('unhandledrejection', function(event) {
+                  if (isExtensionError(event)) {
+                    event.stopImmediatePropagation();
+                    event.preventDefault();
+                  }
+                }, true);
+                window.addEventListener('error', function(event) {
+                  var filename = event.filename || '';
+                  var message = event.message || '';
+                  if (filename.includes('chrome-extension://') || message.includes('M_ID')) {
+                    event.stopImmediatePropagation();
+                    event.preventDefault();
+                  }
+                }, true);
+              })();
+            `,
+          }}
+        />
+      </head>
+      <body
+        style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+        suppressHydrationWarning
+      >
         <Providers>{children}</Providers>
       </body>
     </html>

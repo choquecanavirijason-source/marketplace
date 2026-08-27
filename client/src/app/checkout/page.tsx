@@ -3,7 +3,23 @@
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, ChevronRight, Home, Lock, MapPin, Phone, RotateCcw, Shield, ShoppingBag, ShoppingCart, Truck, User } from "lucide-react";
+import {
+  CheckCircle2,
+  ChevronRight,
+  ExternalLink,
+  Home,
+  Loader2,
+  Lock,
+  MapPin,
+  Navigation,
+  Phone,
+  RotateCcw,
+  Shield,
+  ShoppingBag,
+  ShoppingCart,
+  Truck,
+  User,
+} from "lucide-react";
 import { Button } from "@/presentation/atoms/button";
 import { StorefrontTemplate } from "@/presentation/templates/StorefrontTemplate";
 import { TrustBadgeItem } from "@/presentation/molecules/TrustBadgeItem";
@@ -11,7 +27,12 @@ import { PaymentIconsRow } from "@/presentation/molecules/PaymentIconsRow";
 import { useCart } from "@/presentation/hooks/useCart";
 import { useCreateOrder } from "@/presentation/hooks/useOrders";
 import { formatPrice } from "@/shared/lib/format";
-import { getCurrentCustomerEmail, getCurrentCustomerName, getCurrentUser, isCustomerAuthenticated } from "@/shared/lib/marketplaceStorage";
+import {
+  getCurrentCustomerEmail,
+  getCurrentCustomerName,
+  getCurrentUser,
+  isCustomerAuthenticated,
+} from "@/shared/lib/marketplaceStorage";
 import { ApiError } from "@/infrastructure/http/client";
 
 const TRUST_ITEMS = [
@@ -37,6 +58,11 @@ export default function CheckoutPage() {
   const [shippingPhone, setShippingPhone] = useState("");
   const [notes, setNotes] = useState("");
 
+  // Estado de geolocalización
+  const [isLocating, setIsLocating] = useState(false);
+  const [locationError, setLocationError] = useState("");
+  const [locationCoords, setLocationCoords] = useState<{ lat: number; lng: number } | null>(null);
+
   useEffect(() => {
     if (!isCustomerAuthenticated()) {
       router.push("/cuenta/ingresar?redirect=/checkout");
@@ -53,6 +79,84 @@ export default function CheckoutPage() {
     setShippingPhone(current?.mobileNumber ?? "");
     setAuthChecked(true);
   }, [router]);
+
+  const handleGetCurrentLocation = () => {
+    if (typeof window === "undefined" || !navigator.geolocation) {
+      setLocationError("Tu navegador no soporta geolocalización.");
+      return;
+    }
+
+    setIsLocating(true);
+    setLocationError("");
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        setLocationCoords({ lat: latitude, lng: longitude });
+
+        try {
+          // Consultamos reverse geocoding en OpenStreetMap Nominatim
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1`,
+            {
+              headers: {
+                "Accept-Language": "es",
+              },
+            },
+          );
+
+          if (response.ok) {
+            const data = await response.json();
+            const addr = data.address || {};
+
+            const road = addr.road || addr.pedestrian || addr.street || addr.footway || "";
+            const houseNumber = addr.house_number ? ` #${addr.house_number}` : "";
+            const neighbourhood = addr.neighbourhood || addr.suburb || addr.residential || addr.quarter || "";
+            const streetParts = [road + houseNumber, neighbourhood].filter(Boolean).join(", ");
+
+            const city =
+              addr.city ||
+              addr.town ||
+              addr.municipality ||
+              addr.county ||
+              addr.state_district ||
+              addr.state ||
+              "";
+
+            if (streetParts) {
+              setShippingAddress(streetParts);
+            } else if (data.display_name) {
+              const shortName = data.display_name.split(",").slice(0, 3).join(",").trim();
+              setShippingAddress(shortName);
+            } else {
+              setShippingAddress(`Ubicación GPS (${latitude.toFixed(5)}, ${longitude.toFixed(5)})`);
+            }
+
+            if (city) {
+              setShippingCity(city);
+            }
+          } else {
+            setShippingAddress(`Ubicación GPS (${latitude.toFixed(5)}, ${longitude.toFixed(5)})`);
+          }
+        } catch {
+          setShippingAddress(`Ubicación GPS (${latitude.toFixed(5)}, ${longitude.toFixed(5)})`);
+        } finally {
+          setIsLocating(false);
+        }
+      },
+      (err) => {
+        setIsLocating(false);
+        if (err.code === err.PERMISSION_DENIED) {
+          setLocationError("Permiso de ubicación denegado. Puedes ingresar tu dirección manualmente.");
+        } else if (err.code === err.POSITION_UNAVAILABLE) {
+          setLocationError("No se pudo detectar tu ubicación GPS.");
+        } else {
+          setLocationError("Tiempo de espera agotado al obtener la ubicación.");
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
+    );
+  };
 
   const shipping = total >= 50 ? 0 : 5;
   const grandTotal = total + shipping;
@@ -189,9 +293,55 @@ export default function CheckoutPage() {
             </div>
 
             <div className="bg-card rounded-2xl border border-border p-5">
-              <h2 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-primary" /> Datos de envío
-              </h2>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-primary" /> Datos de envío
+                </h2>
+                <button
+                  type="button"
+                  onClick={handleGetCurrentLocation}
+                  disabled={isLocating}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/20 disabled:opacity-50 px-3 py-1.5 rounded-lg transition-colors cursor-pointer self-start sm:self-auto"
+                >
+                  {isLocating ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      Detectando ubicación…
+                    </>
+                  ) : (
+                    <>
+                      <Navigation className="w-3.5 h-3.5" />
+                      Usar mi ubicación actual
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {locationError ? (
+                <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                  {locationError}
+                </div>
+              ) : null}
+
+              {locationCoords ? (
+                <div className="mb-4 rounded-xl border border-green-200 bg-green-50 p-3 text-xs text-green-900 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0" />
+                    <span>
+                      Ubicación GPS detectada ({locationCoords.lat.toFixed(5)}, {locationCoords.lng.toFixed(5)})
+                    </span>
+                  </div>
+                  <a
+                    href={`https://www.google.com/maps?q=${locationCoords.lat},${locationCoords.lng}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 font-bold text-green-700 hover:underline flex-shrink-0"
+                  >
+                    Ver mapa <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+              ) : null}
+
               <div className="space-y-4">
                 <div className="space-y-2">
                   <label htmlFor="shipping-address" className="text-sm font-medium text-foreground">Dirección</label>
@@ -202,6 +352,7 @@ export default function CheckoutPage() {
                     onChange={(event) => setShippingAddress(event.target.value)}
                     className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none ring-0 transition focus:border-primary"
                     placeholder="Calle, número, barrio"
+                    required
                   />
                 </div>
 

@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:laravel": "next build && node scripts/copy-to-laravel.js",
+    "copy:laravel": "node scripts/copy-to-laravel.js",
     "start": "next start",
     "lint": "eslint ."
   },

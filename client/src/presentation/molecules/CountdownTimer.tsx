@@ -15,18 +15,21 @@ function TimeBox({ value, label }: { value: number; label: string }) {
 
 export function CountdownTimer({ targetSecs }: { targetSecs: number }) {
   const [secs, setSecs] = useState(targetSecs);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     const timer = setInterval(() => setSecs((s) => (s > 0 ? s - 1 : 0)), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  const h = Math.floor(secs / 3600);
-  const m = Math.floor((secs % 3600) / 60);
-  const s = secs % 60;
+  const currentSecs = mounted ? secs : targetSecs;
+  const h = Math.floor(currentSecs / 3600);
+  const m = Math.floor((currentSecs % 3600) / 60);
+  const s = currentSecs % 60;
 
   return (
-    <div className="flex items-end gap-2">
+    <div className="flex items-end gap-2" suppressHydrationWarning>
       <TimeBox value={h} label="Hs" />
       <span className="text-primary font-bold text-xl mb-5">:</span>
       <TimeBox value={m} label="Min" />
