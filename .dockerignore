@@ -1,0 +1,31 @@
+# Git / editor
+.git
+.gitignore
+.idea
+.vscode
+
+# Frontend
+client/node_modules
+client/.next
+client/out
+client/.env.local
+client/.env*.local
+
+# Backend
+server/vendor
+server/node_modules
+server/.env
+server/.env.*
+server/storage/*.key
+server/storage/logs
+server/storage/framework/cache
+server/storage/framework/sessions
+server/storage/framework/views
+server/storage/framework/testing
+server/bootstrap/cache/*.php
+server/.phpunit.cache
+server/tests
+
+# Docs
+*.md
+html.txt

@@ -1,0 +1,92 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: app
+    container_name: marketplace_app
+    restart: unless-stopped
+    env_file:
+      - ./server/.env
+    volumes:
+      - storage_data:/var/www/html/storage
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - marketplace
+
+  nginx:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: web
+    container_name: marketplace_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - storage_data:/var/www/html/storage:ro
+    depends_on:
+      - app
+    networks:
+      - marketplace
+
+  queue:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: app
+    container_name: marketplace_queue
+    restart: unless-stopped
+    env_file:
+      - ./server/.env
+    volumes:
+      - storage_data:/var/www/html/storage
+    depends_on:
+      db:
+        condition: service_healthy
+    entrypoint: ["/usr/local/bin/entrypoint.sh"]
+    command: ["php", "artisan", "queue:work", "--tries=3", "--sleep=3"]
+    networks:
+      - marketplace
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: marketplace_tunnel
+    restart: unless-stopped
+    command: tunnel --no-autoupdate --url http://nginx:80
+    depends_on:
+      - nginx
+    networks:
+      - marketplace
+
+  db:
+    image: mysql:8.0
+    container_name: marketplace_db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u$$MYSQL_USER", "-p$$MYSQL_PASSWORD"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - marketplace
+    # Sin "ports": la base de datos SOLO es accesible dentro de la red
+    # interna de Docker (por el nombre de servicio "db"), nunca desde
+    # internet. Esto es intencional por seguridad.
+
+networks:
+  marketplace:
+    driver: bridge
+
+volumes:
+  db_data:
+  storage_data:
