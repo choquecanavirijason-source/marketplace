@@ -81,17 +81,9 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") || "/";
 
-  const [authMode, setAuthMode] = useState<"password" | "otp">("password");
   const [formError, setFormError] = useState<string | null>(null);
 
-  const [otpIdentifier, setOtpIdentifier] = useState("");
-  const [otpCode, setOtpCode] = useState("");
-  const [isSubmittingOtp, setIsSubmittingOtp] = useState(false);
-  const [isSendingOtp, setIsSendingOtp] = useState(false);
-  const [countdown, setCountdown] = useState(0);
-  const [otpSent, setOtpSent] = useState(false);
-
-  const { login, loginOtp, sendEmailOtp, isLoggingIn, isAuthenticated } = useAuth();
+  const { login, isLoggingIn, isAuthenticated } = useAuth();
 
   const methods = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -103,14 +95,6 @@ function LoginForm() {
   });
 
   const { setValue, handleSubmit } = methods;
-
-  useEffect(() => {
-    if (countdown <= 0) return;
-    const timer = setInterval(() => {
-      setCountdown((prev) => (prev <= 1 ? 0 : prev - 1));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [countdown]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -141,88 +125,14 @@ function LoginForm() {
           ? err.message
           : err?.response?.data?.detail ||
             err?.response?.data?.message ||
-            "Credenciales incorrectas o problema de conexión con el servidor.";
+            "Credenciales incorrectas. Verifica tu correo y contraseña.";
 
       setFormError(message);
       toast.error(message);
-    }
-  };
-
-  const handleRequestOtp = async () => {
-    const email = otpIdentifier.trim();
-    if (!email || !email.includes("@")) {
-      setFormError("Ingresa un correo electrónico válido para recibir el código.");
-      return;
-    }
-
-    setFormError(null);
-    setIsSendingOtp(true);
-    try {
-      if (!sendEmailOtp) {
-        throw new Error("El servicio de envío de código OTP no está disponible.");
-      }
-      const res = await sendEmailOtp(email);
-      setOtpSent(true);
-      setCountdown(60);
-      toast.success(res.message || "Código enviado a tu correo.");
-      if (res.debugOtp) {
-        setOtpCode(res.debugOtp);
-      }
-    } catch (err: any) {
-      const message =
-        err instanceof ApiError
-          ? err.message
-          : err?.response?.data?.detail ||
-            err?.response?.data?.message ||
-            "Error al solicitar el código de verificación.";
-      setFormError(message);
-      toast.error(message);
-    } finally {
-      setIsSendingOtp(false);
-    }
-  };
-
-  const handleOtpSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const email = otpIdentifier.trim();
-    const code = otpCode.trim();
-
-    if (!email || !code) {
-      setFormError("Ingresa tu correo y el código recibido.");
-      return;
-    }
-
-    setFormError(null);
-    setIsSubmittingOtp(true);
-
-    try {
-      if (!loginOtp) {
-        throw new Error("El inicio de sesión por OTP no está disponible.");
-      }
-
-      const session = await loginOtp({
-        email,
-        code,
-      });
-
-      toast.success(`¡Bienvenido, ${session.user.name || "Usuario"}!`);
-      router.push(redirectTo);
-    } catch (err: any) {
-      const message =
-        err instanceof ApiError
-          ? err.message
-          : err?.response?.data?.detail ||
-            err?.response?.data?.message ||
-            "Código OTP inválido o expirado.";
-      setFormError(message);
-      toast.error(message);
-    } finally {
-      setIsSubmittingOtp(false);
     }
   };
 
   const handleFillAccount = (email: string, pass: string) => {
-    setAuthMode("password");
     setValue("email", email, { shouldValidate: true });
     setValue("password", pass, { shouldValidate: true });
     setFormError(null);
@@ -261,188 +171,70 @@ function LoginForm() {
           <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
             Accede a tu cuenta de comprador, vendedor o administración
           </p>
-        </div>
-
-        {}
-        <div className="flex rounded-xl bg-secondary/60 p-1 mb-5">
-          <button
-            type="button"
-            onClick={() => {
-              setAuthMode("password");
-              setFormError(null);
-            }}
-            className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
-              authMode === "password"
-                ? "bg-card text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <KeyRound className="w-3.5 h-3.5" />
-            <span>Contraseña</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setAuthMode("otp");
-              setFormError(null);
-            }}
-            className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
-              authMode === "otp"
-                ? "bg-card text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <Mail className="w-3.5 h-3.5" />
-            <span>Código Gmail</span>
-          </button>
-        </div>
-
-        {}
-        {formError && (
-          <div className="mb-4 rounded-xl border border-red-200 bg-red-50/90 p-3.5 text-xs text-red-700 flex items-start gap-2.5 animate-in fade-in duration-200">
+          {formError && (
+          <div className="mt-4 rounded-xl border border-red-200 bg-red-50/90 p-3.5 text-xs text-red-700 flex items-start gap-2.5 animate-in fade-in duration-200">
             <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-red-600" />
             <div className="flex-1 font-medium">{formError}</div>
           </div>
         )}
+        </div>
 
-        {}
-        {authMode === "password" ? (
-          <FormProvider {...methods}>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              <TextInput
-                name="email"
-                type="email"
-                label="Correo Electrónico"
-                placeholder="tu@email.com"
-                required
-                autoComplete="email"
-              />
+        <FormProvider {...methods}>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <TextInput
+              name="email"
+              type="email"
+              label="Correo Electrónico"
+              placeholder="tu@email.com"
+              required
+              autoComplete="email"
+            />
 
-              <PasswordInput
-                name="password"
-                label="Contraseña"
-                placeholder="••••••••"
-                required
-                autoComplete="current-password"
-              />
+            <PasswordInput
+              name="password"
+              label="Contraseña"
+              placeholder="••••••••"
+              required
+              autoComplete="current-password"
+            />
 
-              {}
-              <div className="flex items-center justify-between pt-1">
-                <label className="flex items-center gap-2 cursor-pointer text-xs text-muted-foreground hover:text-foreground select-none">
-                  <input
-                    type="checkbox"
-                    {...methods.register("remember")}
-                    className="rounded border-border text-primary focus:ring-primary w-3.5 h-3.5 cursor-pointer"
-                  />
-                  Recordar mi sesión
-                </label>
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    toast.info(
-                      "Utiliza el endpoint POST /auth/forgot-password o contacta a soporte para reestablecer tu clave.",
-                    )
-                  }
-                  className="text-xs font-semibold text-primary hover:underline"
-                >
-                  ¿Olvidaste tu clave?
-                </button>
-              </div>
-
-              {}
-              <Button
-                type="submit"
-                disabled={isLoggingIn}
-                className="w-full h-11 rounded-xl text-sm font-bold shadow-md gap-2"
-              >
-                {isLoggingIn ? (
-                  <>
-                    <div className="w-4 h-4 rounded-full border-2 border-primary-foreground border-t-transparent animate-spin" />
-                    <span>Verificando credenciales...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>Ingresar a la Plataforma</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </>
-                )}
-              </Button>
-            </form>
-          </FormProvider>
-        ) : (
-          
-          <form onSubmit={handleOtpSubmit} className="space-y-4">
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-foreground uppercase tracking-wider">
-                Correo Electrónico (Gmail)
-              </label>
-              <div className="flex gap-2">
+            <div className="flex items-center justify-between pt-1">
+              <label className="flex items-center gap-2 cursor-pointer text-xs text-muted-foreground select-none">
                 <input
-                  type="email"
-                  value={otpIdentifier}
-                  onChange={(e) => setOtpIdentifier(e.target.value)}
-                  placeholder="usuario@gmail.com"
-                  required
-                  className="flex-1 rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm outline-none transition focus:border-primary"
+                  type="checkbox"
+                  {...methods.register("remember")}
+                  className="rounded border-border text-primary focus:ring-primary h-3.5 w-3.5"
                 />
-                <Button
-                  type="button"
-                  onClick={handleRequestOtp}
-                  disabled={isSendingOtp || countdown > 0}
-                  variant="outline"
-                  className="shrink-0 rounded-xl text-xs font-bold px-3.5 h-[42px]"
-                >
-                  {isSendingOtp ? (
-                    <div className="w-3.5 h-3.5 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-                  ) : countdown > 0 ? (
-                    `${countdown}s`
-                  ) : (
-                    "Enviar código"
-                  )}
-                </Button>
-              </div>
-              {otpSent && (
-                <p className="text-[11px] text-green-600 font-medium pt-0.5">
-                  ✓ Código enviado por correo. Revisa tu bandeja de entrada o spam.
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-foreground uppercase tracking-wider">
-                Código de 6 dígitos
+                <span>Recordar sesión</span>
               </label>
-              <input
-                type="text"
-                maxLength={6}
-                value={otpCode}
-                onChange={(e) => setOtpCode(e.target.value)}
-                placeholder="123456"
-                required
-                className="w-full text-center tracking-widest text-lg font-bold rounded-xl border border-border bg-background px-3.5 py-2.5 outline-none transition focus:border-primary"
-              />
+
+              <Link
+                href="/forgot-password"
+                className="text-xs font-semibold text-primary hover:underline"
+              >
+                ¿Olvidaste tu contraseña?
+              </Link>
             </div>
 
             <Button
               type="submit"
-              disabled={isSubmittingOtp}
+              disabled={isLoggingIn}
               className="w-full h-11 rounded-xl text-sm font-bold shadow-md gap-2 mt-2"
             >
-              {isSubmittingOtp ? (
+              {isLoggingIn ? (
                 <>
                   <div className="w-4 h-4 rounded-full border-2 border-primary-foreground border-t-transparent animate-spin" />
-                  <span>Validando código...</span>
+                  <span>Verificando credenciales...</span>
                 </>
               ) : (
                 <>
-                  <span>Ingresar con código</span>
+                  <span>Ingresar a la Plataforma</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
             </Button>
           </form>
-        )}
+        </FormProvider>
 
         {}
         <div className="relative my-6">

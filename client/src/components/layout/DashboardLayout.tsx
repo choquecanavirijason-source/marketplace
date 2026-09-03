@@ -45,6 +45,7 @@ export const adminNavItems: DashboardNavItem[] = [
 
 export const customerNavItems: DashboardNavItem[] = [
   { href: "/account/dashboard", label: "Mi cuenta", icon: LayoutDashboard },
+  { href: "/account/profile", label: "Mi Perfil", icon: User },
   { href: "/favorites", label: "Favoritos", icon: Heart },
   { href: "/", label: "Ver tienda", icon: Store },
 ];

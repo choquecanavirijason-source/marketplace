@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Banknote, CreditCard, Landmark, Mail, MapPin, Phone, Smartphone } from "lucide-react";
 import { Logo } from "@/components/layout/Logo";
 import { SocialIconRow } from "@/components/common/SocialIconRow";
@@ -33,7 +34,7 @@ const LINK_COLUMNS = [
   {
     title: "Mi Cuenta",
     links: [
-      { label: "Mi Perfil", href: "/account/dashboard" },
+      { label: "Mi Perfil", href: "/account/profile" },
       { label: "Historial de Pedidos", href: "/account/dashboard" },
       { label: "Favoritos", href: "/favorites" },
       { label: "Seguir Pedido", href: "#" },
@@ -42,7 +43,11 @@ const LINK_COLUMNS = [
   },
 ];
 
-const LEGAL_LINKS = ["Política de Privacidad", "Términos de Servicio", "Política de Cookies"];
+const LEGAL_LINKS = [
+  { label: "Política de Privacidad", href: "/privacy" },
+  { label: "Términos de Servicio", href: "/terms" },
+  { label: "Política de Cookies", href: "/privacy#cookies" },
+];
 const PAYMENT_ICONS = [CreditCard, Landmark, Smartphone, Banknote];
 
 export function SiteFooter() {
@@ -76,9 +81,9 @@ export function SiteFooter() {
           <p className="text-xs text-white/40">© 2026 FerroMax. Todos los derechos reservados.</p>
           <div className="flex items-center gap-4">
             {LEGAL_LINKS.map((item) => (
-              <a key={item} href="#" className="text-xs text-white/40 hover:text-white/70 transition-colors">
-                {item}
-              </a>
+              <Link key={item.label} href={item.href} className="text-xs text-white/40 hover:text-white/70 transition-colors">
+                {item.label}
+              </Link>
             ))}
           </div>
           <div className="flex items-center gap-2">

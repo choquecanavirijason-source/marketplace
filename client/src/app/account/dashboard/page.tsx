@@ -29,7 +29,7 @@ import { Button } from "@/components/ui/button";
 import { DashboardLayout, customerNavItems } from "@/components/layout/DashboardLayout";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { EmailVerificationModal } from "@/components/auth/EmailVerificationModal";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth, useAuthStore } from "@/hooks/useAuth";
 import { useMyOrders } from "@/hooks/useOrders";
 import { formatPrice } from "@/shared/lib/format";
 import { ORDER_STATUS_CLASSES, ORDER_STATUS_LABELS, formatOrderDate } from "@/shared/lib/orderStatus";
@@ -1105,8 +1105,18 @@ export default function CustomerDashboardPage() {
         <EmailVerificationModal
           isOpen={isVerifyModalOpen}
           onClose={() => setIsVerifyModalOpen(false)}
-          onSuccess={() => {
-            if (refreshUser) refreshUser();
+          onSuccess={async () => {
+            if (user) {
+              useAuthStore.setState({
+                user: {
+                  ...user,
+                  emailVerified: true,
+                },
+              });
+            }
+            if (refreshUser) {
+              await refreshUser();
+            }
           }}
           email={email || user?.email || ""}
         />

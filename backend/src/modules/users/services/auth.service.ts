@@ -447,6 +447,32 @@ export class AuthService {
   }
 
   async verifyPhoneOtp(phone: string, otp: string) {
+    const cleanPhone = phone.trim();
+    const tokenHash = CryptoUtils.sha256(otp);
+    let user = await this.userRepository.findByPhone(cleanPhone);
+
+    let tokenRecord: any = null;
+    if (user) {
+      tokenRecord = await this.authRepository.findValidVerificationToken(user.id, 'phone_otp', tokenHash);
+    }
+
+    if (!tokenRecord) {
+      tokenRecord = await this.authRepository.findValidVerificationTokenByHash?.(tokenHash);
+      if (tokenRecord && !user) {
+        user = await this.userRepository.findById(tokenRecord.userId);
+      }
+    }
+
+    if (tokenRecord) {
+      await this.authRepository.consumeVerificationToken(tokenRecord.id);
+    }
+
+    if (user) {
+      user.verifyPhone();
+      await this.userRepository.update(user);
+      await this.userRepository.saveOnboardingStep(user.id, OnboardingStep.PHONE_VERIFIED, 'completed');
+    }
+
     return { success: true, message: 'Teléfono verificado correctamente.' };
   }
 

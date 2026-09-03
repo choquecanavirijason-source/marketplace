@@ -43,6 +43,8 @@ export interface AuthService {
   forgotPassword?(email: string): Promise<{ message: string }>;
   resetPassword?(token: string, password: string): Promise<{ success: boolean; message: string }>;
   verifyEmail?(email: string, token: string): Promise<{ success: boolean; message: string }>;
+  sendPhoneOtp?(phone: string): Promise<{ message: string; debugOtp?: string }>;
+  verifyPhoneOtp?(phone: string, code: string): Promise<{ success: boolean; message: string }>;
   logout(): Promise<void>;
 }
 
@@ -117,8 +119,8 @@ const mapUser = (u?: any): AuthUser => {
     status: u.status,
     roles: u.roles || (u.role ? [u.role] : ["buyer"]),
     completionPct: u.completionPct ?? 20,
-    emailVerified: u.emailVerified ?? false,
-    phoneVerified: u.phoneVerified ?? false,
+    emailVerified: Boolean(u.emailVerified || u.emailVerifiedAt),
+    phoneVerified: Boolean(u.phoneVerified || u.phoneVerifiedAt),
     businessProfile: u.businessProfile || null,
   };
 };
@@ -215,8 +217,13 @@ export class HttpAuthService implements AuthService {
   async me(): Promise<AuthSession> {
     const payload = await apiRequest<ApiAuthPayload>("/identity/me", { auth: true });
     const session = mapSession(payload);
-    setSession(session.user, session.accessToken);
-    setAuthPermissions(session.permissions);
+    setCurrentUser(session.user);
+    if (session.accessToken && session.accessToken.trim() !== "") {
+      setAuthToken(session.accessToken);
+    }
+    if (session.permissions && session.permissions.length > 0) {
+      setAuthPermissions(session.permissions);
+    }
     return session;
   }
 
@@ -290,6 +297,20 @@ export class HttpAuthService implements AuthService {
     return apiRequest("/identity/verify-email", {
       method: "POST",
       body: { email, token },
+    });
+  }
+
+  async sendPhoneOtp(phone: string): Promise<{ message: string; debugOtp?: string }> {
+    return apiRequest("/identity/otp/send-phone", {
+      method: "POST",
+      body: { phone },
+    });
+  }
+
+  async verifyPhoneOtp(phone: string, code: string): Promise<{ success: boolean; message: string }> {
+    return apiRequest("/identity/otp/verify-phone", {
+      method: "POST",
+      body: { phone, code },
     });
   }
 }

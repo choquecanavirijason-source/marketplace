@@ -35,6 +35,7 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
   const [isVerifying, setIsVerifying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [codeSent, setCodeSent] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
 
   const handleSendCode = async () => {
     if (!email) return;
@@ -60,10 +61,14 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
     setError(null);
     try {
       await authService.verifyEmail(email, code.trim());
+      setIsSuccess(true);
       toast.success("¡Correo verificado con éxito!");
       setCode("");
       onSuccess();
-      onClose();
+      setTimeout(() => {
+        setIsSuccess(false);
+        onClose();
+      }, 2500);
     } catch (err: any) {
       setError(err?.response?.data?.detail || err?.message || "Código inválido o expirado. Inténtalo de nuevo.");
       toast.error("Error en la verificación del código.");
@@ -73,30 +78,65 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) {
+          setIsSuccess(false);
+          onClose();
+        }
+      }}
+    >
       <DialogContent className="sm:max-w-md rounded-2xl p-6">
-        <DialogHeader className="text-left space-y-2">
-          <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-1">
-            <ShieldCheck className="w-6 h-6" />
+        {isSuccess ? (
+          <div className="text-center py-6 space-y-4">
+            <div className="w-16 h-16 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-inner">
+              <CheckCircle2 className="w-9 h-9" />
+            </div>
+            <div className="space-y-1">
+              <DialogTitle className="text-xl font-bold text-foreground">
+                ¡Correo Verificado con Éxito!
+              </DialogTitle>
+              <DialogDescription className="text-xs text-muted-foreground">
+                Tu dirección de correo ({email}) ha sido confirmada correctamente. Tu cuenta ahora cuenta con protección y acceso completo.
+              </DialogDescription>
+            </div>
+            <div className="pt-2">
+              <Button
+                onClick={() => {
+                  setIsSuccess(false);
+                  onClose();
+                }}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl h-10 px-8 text-xs font-semibold shadow-sm"
+              >
+                Continuar
+              </Button>
+            </div>
           </div>
-          <DialogTitle className="text-lg font-bold text-foreground">
-            Verificar Correo Electrónico
-          </DialogTitle>
-          <DialogDescription className="text-xs text-muted-foreground">
-            Para garantizar la seguridad de tu cuenta, ingresa el código de 6 dígitos enviado a:
-          </DialogDescription>
-          <p className="text-sm font-semibold text-foreground bg-muted/50 px-3 py-2 rounded-xl flex items-center gap-2">
-            <Mail className="w-4 h-4 text-primary shrink-0" />
-            <span className="truncate">{email}</span>
-          </p>
-        </DialogHeader>
+        ) : (
+          <>
+            <DialogHeader className="text-left space-y-2">
+              <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-1">
+                <ShieldCheck className="w-6 h-6" />
+              </div>
+              <DialogTitle className="text-lg font-bold text-foreground">
+                Verificar Correo Electrónico
+              </DialogTitle>
+              <DialogDescription className="text-xs text-muted-foreground">
+                Para garantizar la seguridad de tu cuenta, ingresa el código de 6 dígitos enviado a:
+              </DialogDescription>
+              <p className="text-sm font-semibold text-foreground bg-muted/50 px-3 py-2 rounded-xl flex items-center gap-2">
+                <Mail className="w-4 h-4 text-primary shrink-0" />
+                <span className="truncate">{email}</span>
+              </p>
+            </DialogHeader>
 
-        {error && (
-          <div className="rounded-xl border border-destructive/20 bg-destructive/10 p-3 text-xs text-destructive flex items-center gap-2">
-            <AlertCircle className="h-4 w-4 shrink-0" />
-            <span>{error}</span>
-          </div>
-        )}
+            {error && (
+              <div className="rounded-xl border border-destructive/20 bg-destructive/10 p-3 text-xs text-destructive flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
 
         <form onSubmit={handleVerify} className="space-y-4 pt-2">
           <div className="space-y-1.5">
@@ -152,6 +192,8 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
             </Button>
           </div>
         </form>
+        </>
+        )}
       </DialogContent>
     </Dialog>
   );

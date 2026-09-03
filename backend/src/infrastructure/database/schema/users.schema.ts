@@ -19,6 +19,7 @@ export const usersTable = pgTable('users', {
   phone: varchar('phone', { length: 50 }).unique(),
   passwordHash: text('password_hash').notNull(),
   emailVerifiedAt: timestamp('email_verified_at', { withTimezone: true }),
+  emailVerified: boolean('email_verified').default(false),
   phoneVerifiedAt: timestamp('phone_verified_at', { withTimezone: true }),
 
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),

@@ -206,6 +206,7 @@ export class UserRepository implements UserRepositoryPort {
         phone: json.phone?.trim() || null,
         passwordHash: user.passwordHash,
         emailVerifiedAt: json.emailVerifiedAt ? new Date(json.emailVerifiedAt) : null,
+        emailVerified: Boolean(json.emailVerifiedAt),
         phoneVerifiedAt: json.phoneVerifiedAt ? new Date(json.phoneVerifiedAt) : null,
         createdAt: json.createdAt,
         updatedAt: json.updatedAt,
@@ -262,6 +263,7 @@ export class UserRepository implements UserRepositoryPort {
         phone: json.phone?.trim() || null,
         passwordHash: user.passwordHash,
         emailVerifiedAt: json.emailVerifiedAt ? new Date(json.emailVerifiedAt) : null,
+        emailVerified: Boolean(json.emailVerifiedAt),
         phoneVerifiedAt: json.phoneVerifiedAt ? new Date(json.phoneVerifiedAt) : null,
         updatedAt: new Date(),
       })

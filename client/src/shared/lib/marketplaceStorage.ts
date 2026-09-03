@@ -282,11 +282,15 @@ export function getAuthPermissions(): string[] {
   }
 }
 
-export function setSession(user: CurrentUser, token: string, permissions: string[] = []) {
+export function setSession(user: CurrentUser, token?: string | null, permissions: string[] = []) {
   setCustomerAuthenticated(true);
   setCurrentUser(user);
-  setAuthToken(token);
-  setAuthPermissions(permissions);
+  if (token && token.trim() !== "") {
+    setAuthToken(token);
+  }
+  if (permissions && permissions.length > 0) {
+    setAuthPermissions(permissions);
+  }
 }
 
 export function isAdminUser(): boolean {
