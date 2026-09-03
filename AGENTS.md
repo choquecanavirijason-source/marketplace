@@ -9,7 +9,21 @@ Este documento define las reglas de desarrollo y estándares de ingeniería para
   - En `client`: `npx tsc --noEmit` y `npm run build`
 
 ## 2. Arquitectura del Backend (`backend/`)
-- **Clean Architecture & DDD**: Respeta siempre la separación en 4 capas (`domain`, `application`, `infrastructure`, `presentation`).
+- **Estructura Modular**: Cada módulo en `src/modules/[nombre-modulo]/` debe implementar la siguiente estructura:
+  - `controllers/`: `[nombre].controller.ts`
+  - `services/`: `[nombre].service.ts` y `[nombre]-orchestrator.service.ts` (si aplica)
+  - `repositories/`: `[nombre].repository.ts`
+  - `entities/`: `[nombre].entity.ts`
+  - `dto/`: `create-[nombre].dto.ts`, `update-[nombre].dto.ts`, `[nombre]-response.dto.ts`
+  - `interfaces/`: `[nombre]-interface.ts`
+  - `enums/`: `[nombre]-status.enum.ts`
+  - `validators/`: `[nombre].validator.ts`
+  - `events/`: `[nombre].event.ts`
+  - `adapters/`: `[proveedor].adapter.ts` (para integraciones externas)
+  - `tests/`: `unit/` e `integration/`
+- **Capas Globales**:
+  - `common/`: `decorators/`, `guards/`, `interceptors/`, `filters/`, `middlewares/`
+  - `config/`: `[modulo].config.ts`
 - **Validación**: Valida todas las entradas HTTP utilizando esquemas **Zod** y `ZodValidationPipe`.
 - **Errores**: Emite siempre excepciones estandarizadas bajo **RFC 7807 (Problem Details)**.
 - **Seguridad**: Protege rutas administrativas usando `@RequireRoles(...)` y `@RequirePermissions(...)` con sus respectivos Guards.

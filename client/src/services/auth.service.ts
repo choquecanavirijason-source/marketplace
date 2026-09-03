@@ -40,7 +40,9 @@ export interface AuthService {
   updateBusinessProfile?(data: UpdateBusinessProfileData): Promise<any>;
   getSessions?(): Promise<UserSessionItem[]>;
   revokeSession?(sessionId: string): Promise<void>;
-  logoutAll?(): Promise<void>;
+  forgotPassword?(email: string): Promise<{ message: string }>;
+  resetPassword?(token: string, password: string): Promise<{ success: boolean; message: string }>;
+  verifyEmail?(email: string, token: string): Promise<{ success: boolean; message: string }>;
   logout(): Promise<void>;
 }
 
@@ -85,36 +87,48 @@ interface ApiAuthPayload {
   permissions?: string[];
 }
 
-const mapUser = (u: ApiUser): AuthUser => {
+const mapUser = (u?: any): AuthUser => {
+  if (!u) {
+    return {
+      id: "",
+      name: "Usuario",
+      email: "",
+      roleName: "buyer",
+      roles: ["buyer"],
+    };
+  }
+
   const displayName =
     u.name ||
     u.fullName ||
-    (u.firstName && u.lastName ? `${u.firstName} ${u.lastName}` : u.firstName || u.email);
+    (u.firstName && u.lastName ? `${u.firstName} ${u.lastName}` : u.firstName || u.email || "Usuario");
 
   return {
-    id: u.id,
+    id: u.id || "",
     name: displayName,
-    email: u.email,
+    email: u.email || "",
     mobileNumber: u.mobile_number || u.mobileNumber || u.phone || null,
+    phone: u.phone || u.mobileNumber || null,
     address: u.address || null,
     roleName: u.role_name || u.roleName || u.role || (u.roles && u.roles[0]) || "buyer",
     firstName: u.firstName,
     lastName: u.lastName,
     type: u.type,
     status: u.status,
-    roles: u.roles || (u.role ? [u.role] : []),
-    completionPct: u.completionPct,
-    emailVerified: u.emailVerified,
-    phoneVerified: u.phoneVerified,
+    roles: u.roles || (u.role ? [u.role] : ["buyer"]),
+    completionPct: u.completionPct ?? 20,
+    emailVerified: u.emailVerified ?? false,
+    phoneVerified: u.phoneVerified ?? false,
+    businessProfile: u.businessProfile || null,
   };
 };
 
-const mapSession = (payload: ApiAuthPayload): AuthSession => {
-  const rawData = payload.data || payload;
-  const token = rawData.accessToken || rawData.access_token || "";
+const mapSession = (payload: any): AuthSession => {
+  const rawData = payload?.data || payload || {};
+  const token = rawData.accessToken || rawData.access_token || payload.accessToken || payload.access_token || "";
   const expiresAt = rawData.expiresAt || rawData.expires_at || null;
-  const rawUser = rawData.user || (payload.user as ApiUser);
-  const permissions = rawData.permissions || payload.permissions || [];
+  const rawUser = rawData.user || (rawData.email || rawData.id ? rawData : payload.user);
+  const permissions = rawData.permissions || payload.permissions || rawUser?.permissions || [];
 
   return {
     accessToken: token,
@@ -157,13 +171,22 @@ export class HttpAuthService implements AuthService {
   }
 
   async register(data: RegisterData): Promise<AuthSession> {
-    const payload = await apiRequest<ApiAuthPayload>("/identity/register", {
+    const rawName = (data.name || `${data.firstName || ""} ${data.lastName || ""}`).trim();
+    const parts = rawName.split(" ").filter(Boolean);
+    const firstName = data.firstName || parts[0] || "Usuario";
+    const lastName = data.lastName || parts.slice(1).join(" ") || "Registrado";
+    const phone = data.phone || data.mobileNumber;
+
+    const payload = await apiRequest<any>("/identity/register", {
       method: "POST",
       body: {
-        name: data.name,
+        name: rawName,
+        firstName,
+        lastName,
         email: data.email,
         password: data.password,
-        mobileNumber: data.mobileNumber,
+        phone,
+        mobileNumber: phone,
         address: data.address,
         type: data.type,
         legalName: data.legalName,
@@ -176,6 +199,14 @@ export class HttpAuthService implements AuthService {
     });
 
     const session = mapSession(payload);
+
+    if (!session.accessToken && data.email && data.password) {
+      try {
+        return await this.login({ email: data.email, password: data.password });
+      } catch {
+      }
+    }
+
     setSession(session.user, session.accessToken);
     setAuthPermissions(session.permissions);
     return session;
@@ -239,6 +270,27 @@ export class HttpAuthService implements AuthService {
       setAuthPermissions([]);
       logoutCustomer();
     }
+  }
+
+  async forgotPassword(email: string): Promise<{ message: string }> {
+    return apiRequest("/identity/forgot-password", {
+      method: "POST",
+      body: { email },
+    });
+  }
+
+  async resetPassword(token: string, password: string): Promise<{ success: boolean; message: string }> {
+    return apiRequest("/identity/reset-password", {
+      method: "POST",
+      body: { token, password },
+    });
+  }
+
+  async verifyEmail(email: string, token: string): Promise<{ success: boolean; message: string }> {
+    return apiRequest("/identity/verify-email", {
+      method: "POST",
+      body: { email, token },
+    });
   }
 }
 

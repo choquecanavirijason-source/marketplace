@@ -33,25 +33,36 @@ src/modules/
 └── admin/            # 🚧 Módulo 15 — Backoffice y Administración
 ```
 
-Cada módulo usa la siguiente estructura interna (Clean Architecture + DDD):
+Cada módulo usa la siguiente estructura interna:
 
 ```text
 src/modules/<modulo>/
-├── domain/                  # Lógica pura de negocio (independiente del framework)
-│   ├── entities/            # Entidades ricas y encapsuladas
-│   ├── value-objects/       # Objetos de valor inmutables (ej: EmailVo)
-│   ├── events/              # Eventos de dominio (ej: UserRegisteredEvent)
-│   └── ports/               # Interfaces de repositorios y servicios externos
-├── application/             # Orquestación de casos de uso (CQRS ligero)
-│   ├── commands/            # DTOs de comando (intención de cambio de estado)
-│   ├── queries/             # DTOs de consulta (lectura de datos)
-│   └── handlers/            # Manejadores ejecutores de la lógica
-├── infrastructure/          # Adaptadores concretos de tecnología
-│   ├── repositories/        # Implementaciones Drizzle ORM / Postgres
-│   └── providers/           # Clientes HTTP, JWT, etc.
-└── presentation/            # Puntos de entrada HTTP
-    ├── dto/                 # Esquemas de validación Zod
-    └── *.controller.ts      # Controladores Fastify de NestJS
+├── controllers/
+│   └── <nombre>.controller.ts
+├── services/
+│   ├── <nombre>.service.ts
+│   └── <nombre>-orchestrator.service.ts (si aplica)
+├── repositories/
+│   └── <nombre>.repository.ts
+├── entities/
+│   └── <nombre>.entity.ts
+├── dto/
+│   ├── create-<nombre>.dto.ts
+│   ├── update-<nombre>.dto.ts
+│   └── <nombre>-response.dto.ts
+├── interfaces/
+│   └── <nombre>-interface.ts
+├── enums/
+│   └── <nombre>-status.enum.ts
+├── validators/
+│   └── <nombre>.validator.ts
+├── events/
+│   └── <nombre>.event.ts
+├── adapters/
+│   └── <proveedor>.adapter.ts (para integraciones externas)
+└── tests/
+    ├── unit/
+    └── integration/
 ```
 
 ### Estado de los módulos

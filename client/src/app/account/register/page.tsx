@@ -11,6 +11,8 @@ import {
   ArrowRight,
   AlertCircle,
   CheckCircle2,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -24,11 +26,14 @@ function RegisterForm() {
   const redirectTo = searchParams.get("redirect") || "/";
 
   const [accountType, setAccountType] = useState<AccountType>("buyer");
-  const [name, setName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(true);
 
   const [legalName, setLegalName] = useState("");
@@ -47,7 +52,7 @@ function RegisterForm() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (!name.trim() || !email.trim() || !password) {
+    if (!firstName.trim() || !lastName.trim() || !email.trim() || !password) {
       setError("Completá todos los campos obligatorios.");
       return;
     }
@@ -75,11 +80,15 @@ function RegisterForm() {
     setError("");
 
     try {
+      const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
       const session = await register({
-        name: name.trim(),
+        name: fullName,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
         email: email.trim(),
         password,
         mobileNumber: phone.trim() || undefined,
+        phone: phone.trim() || undefined,
         type: accountType,
         legalName: legalName.trim() || undefined,
         tradeName: tradeName.trim() || undefined,
@@ -105,6 +114,7 @@ function RegisterForm() {
             ? err.message
             : err?.response?.data?.detail ||
               err?.response?.data?.message ||
+              err?.message ||
               "No se pudo crear la cuenta. Verifica los datos ingresados.",
         );
       }
@@ -200,19 +210,36 @@ function RegisterForm() {
 
         {}
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-1.5">
-            <label htmlFor="name" className="text-xs font-bold text-foreground uppercase tracking-wider">
-              Nombre Completo *
-            </label>
-            <input
-              id="name"
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm outline-none transition focus:border-primary"
-              placeholder="Juan Pérez"
-              required
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <label htmlFor="firstName" className="text-xs font-bold text-foreground uppercase tracking-wider">
+                Nombre *
+              </label>
+              <input
+                id="firstName"
+                type="text"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                className="w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm outline-none transition focus:border-primary"
+                placeholder="Juan"
+                required
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label htmlFor="lastName" className="text-xs font-bold text-foreground uppercase tracking-wider">
+                Apellido *
+              </label>
+              <input
+                id="lastName"
+                type="text"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                className="w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm outline-none transition focus:border-primary"
+                placeholder="Pérez"
+                required
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -304,30 +331,50 @@ function RegisterForm() {
               <label htmlFor="password" className="text-xs font-bold text-foreground uppercase tracking-wider">
                 Contraseña *
               </label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm outline-none transition focus:border-primary"
-                placeholder="Mínimo 8 caracteres"
-                required
-              />
+              <div className="relative">
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full rounded-xl border border-border bg-background px-3.5 py-2.5 pr-10 text-sm outline-none transition focus:border-primary"
+                  placeholder="Mínimo 8 caracteres"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute right-3 top-3 text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label={showPassword ? "Ocultar contraseña" : "Ver contraseña"}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
 
             <div className="space-y-1.5">
               <label htmlFor="confirmPassword" className="text-xs font-bold text-foreground uppercase tracking-wider">
                 Confirmar Contraseña *
               </label>
-              <input
-                id="confirmPassword"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm outline-none transition focus:border-primary"
-                placeholder="••••••••"
-                required
-              />
+              <div className="relative">
+                <input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="w-full rounded-xl border border-border bg-background px-3.5 py-2.5 pr-10 text-sm outline-none transition focus:border-primary"
+                  placeholder="••••••••"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword((prev) => !prev)}
+                  className="absolute right-3 top-3 text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label={showConfirmPassword ? "Ocultar contraseña" : "Ver contraseña"}
+                >
+                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
           </div>
 

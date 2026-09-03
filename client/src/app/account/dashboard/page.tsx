@@ -28,6 +28,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { DashboardLayout, customerNavItems } from "@/components/layout/DashboardLayout";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { EmailVerificationModal } from "@/components/auth/EmailVerificationModal";
 import { useAuth } from "@/hooks/useAuth";
 import { useMyOrders } from "@/hooks/useOrders";
 import { formatPrice } from "@/shared/lib/format";
@@ -50,9 +51,10 @@ type TabType = "pedidos" | "perfil" | "comercial" | "sesiones";
 export default function CustomerDashboardPage() {
   const router = useRouter();
   const { orders, isLoading: ordersLoading } = useMyOrders();
-  const { updateProfile, isUpdatingProfile, user, logoutAll } = useAuth();
+  const { updateProfile, isUpdatingProfile, user, logoutAll, refreshUser } = useAuth();
 
   const [activeTab, setActiveTab] = useState<TabType>("pedidos");
+  const [isVerifyModalOpen, setIsVerifyModalOpen] = useState(false);
 
   const [statusFilter, setStatusFilter] = useState<string>("todos");
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -353,9 +355,20 @@ export default function CustomerDashboardPage() {
                   </div>
 
                   <div className="flex items-center gap-1.5 flex-wrap text-[10px]">
-                    <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-md font-semibold flex items-center gap-1">
-                      <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Email verificado
-                    </span>
+                    {user?.emailVerified ? (
+                      <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-md font-semibold flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Email verificado
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setIsVerifyModalOpen(true)}
+                        className="bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 px-2 py-0.5 rounded-md font-semibold flex items-center gap-1 cursor-pointer transition-colors"
+                        title="Haz clic para verificar tu correo"
+                      >
+                        <AlertCircle className="w-3 h-3 text-amber-600" /> Email pendiente (Verificar)
+                      </button>
+                    )}
                     <span className="bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-md font-semibold flex items-center gap-1">
                       <CheckCircle2 className="w-3 h-3 text-blue-600" /> Términos aceptados
                     </span>
@@ -423,7 +436,31 @@ export default function CustomerDashboardPage() {
           </div>
         </div>
 
-        {}
+        {!user?.emailVerified && (
+          <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="p-2 rounded-xl bg-amber-100 text-amber-800 shrink-0 mt-0.5">
+                <AlertCircle className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-amber-950">Tu correo electrónico no ha sido verificado</h3>
+                <p className="text-xs text-amber-800/90 mt-0.5">
+                  Verifica tu correo ({email || user?.email}) para activar la protección completa de tu cuenta.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <Button
+                size="sm"
+                onClick={() => setIsVerifyModalOpen(true)}
+                className="bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-semibold h-9 px-4 shadow-sm"
+              >
+                Verificar Correo Ahora
+              </Button>
+            </div>
+          </div>
+        )}
+
         <div className="w-full flex items-center justify-between border-b border-border pb-1 gap-2">
           <div className="flex items-center gap-2">
             <button
@@ -1064,6 +1101,15 @@ export default function CustomerDashboardPage() {
           </div>
         ) : null}
         </div>
+
+        <EmailVerificationModal
+          isOpen={isVerifyModalOpen}
+          onClose={() => setIsVerifyModalOpen(false)}
+          onSuccess={() => {
+            if (refreshUser) refreshUser();
+          }}
+          email={email || user?.email || ""}
+        />
       </DashboardLayout>
     </ProtectedRoute>
   );

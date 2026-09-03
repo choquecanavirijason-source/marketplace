@@ -7,6 +7,7 @@ export interface AuthUser {
   id: number | string;
   name: string;
   email: string;
+  phone?: string | null;
   mobileNumber?: string | null;
   address?: string | null;
   roleName: string | null;
@@ -54,8 +55,11 @@ export interface OtpLoginCredentials {
 
 export interface RegisterData {
   name: string;
+  firstName?: string;
+  lastName?: string;
   email: string;
   password: string;
+  phone?: string;
   mobileNumber?: string;
   address?: string;
   type?: "buyer" | "seller_individual" | "seller_company" | "seller_empresa";

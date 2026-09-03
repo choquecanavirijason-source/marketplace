@@ -19,7 +19,12 @@ export class NodemailerEmailService {
 
   private initializeTransporter() {
     const user = process.env.SMTP_USER;
-    const pass = process.env.SMTP_PASS;
+    let pass = (process.env.SMTP_PASS || '').trim();
+    if (pass.startsWith('"') && pass.endsWith('"')) {
+      pass = pass.slice(1, -1);
+    }
+    pass = pass.replace(/\s+/g, '');
+
     const host = process.env.SMTP_HOST || 'smtp.gmail.com';
     const port = Number(process.env.SMTP_PORT || 465);
     const secure = process.env.SMTP_SECURE === 'true' || port === 465;
@@ -43,7 +48,9 @@ export class NodemailerEmailService {
   }
 
   async sendEmail(options: SendEmailOptions): Promise<{ success: boolean; messageId?: string }> {
-    const from = options.from || process.env.SMTP_FROM || '"FerroMax Marketplace" <no-reply@ferromax.com>';
+    const user = process.env.SMTP_USER;
+    const defaultFrom = user ? `"FerroMax Marketplace" <${user}>` : '"FerroMax Marketplace" <no-reply@ferromax.com>';
+    const from = options.from || defaultFrom;
 
     if (!this.transporter) {
       this.logger.log(`[SIMULACIÓN CORREO] Para: ${options.to} | Asunto: ${options.subject}`);

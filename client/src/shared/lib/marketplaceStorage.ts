@@ -187,6 +187,8 @@ export interface CurrentUser {
   name: string;
   email: string;
   roleName: string | null;
+  role?: string | null;
+  phone?: string | null;
   mobileNumber?: string | null;
   address?: string | null;
   firstName?: string;
