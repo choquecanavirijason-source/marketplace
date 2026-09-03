@@ -1,4 +1,4 @@
-import type { OrderStatus } from "@/domain/entities/Order";
+import type { OrderStatus } from "@/types";
 
 export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   pendiente: "Pendiente",

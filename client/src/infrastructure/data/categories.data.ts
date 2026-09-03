@@ -1,5 +1,5 @@
 import { Droplets, Flame, Hammer, Lightbulb, Package, Paintbrush, Snowflake, Zap } from "lucide-react";
-import type { Category } from "@/domain/entities/Category";
+import type { Category } from "@/types";
 
 export const categoriesSeed: Category[] = [
   { name: "Herramientas Eléctricas", icon: Zap, count: 108, color: "#fff8e1" },

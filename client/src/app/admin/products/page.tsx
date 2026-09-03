@@ -3,12 +3,13 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, ChevronLeft, ChevronRight, Eye, EyeOff, Package, Pencil, Plus, Trash2, XCircle } from "lucide-react";
-import { Button } from "@/presentation/atoms/button";
-import { DashboardLayout, adminNavItems } from "@/presentation/organisms/DashboardLayout";
-import { useAdminProducts } from "@/presentation/hooks/useAdminProducts";
-import { useCategories } from "@/presentation/hooks/useCatalog";
-import { getCurrentUser, isCustomerAuthenticated } from "@/shared/lib/marketplaceStorage";
-import { ApiError } from "@/infrastructure/http/client";
+import { Button } from "@/components/ui/button";
+import { Can } from "@/components/auth/Can";
+import { DashboardLayout, adminNavItems } from "@/components/layout/DashboardLayout";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { useAdminProducts } from "@/hooks/useAdminProducts";
+import { useCategories } from "@/hooks/useCatalog";
+import { ApiError } from "@/config/axios";
 import { formatPrice } from "@/shared/lib/format";
 
 const PAGE_SIZE = 8;
@@ -16,7 +17,6 @@ const PAGE_SIZE = 8;
 export default function AdminProductsPage() {
   const router = useRouter();
   const [error, setError] = useState("");
-  const [authChecked, setAuthChecked] = useState(false);
 
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
@@ -31,19 +31,6 @@ export default function AdminProductsPage() {
     page,
     limit: PAGE_SIZE,
   });
-
-  useEffect(() => {
-    if (!isCustomerAuthenticated()) {
-      router.push("/cuenta/ingresar?redirect=/admin/products");
-      return;
-    }
-    if (getCurrentUser()?.roleName !== "admin") {
-      router.push("/");
-      return;
-    }
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setAuthChecked(true);
-  }, [router]);
 
   const handleToggleActive = async (id: number, isActive: boolean) => {
     try {
@@ -64,14 +51,9 @@ export default function AdminProductsPage() {
 
   const totalPages = Math.max(1, data?.lastPage ?? 1);
 
-  if (!authChecked) {
-    return (
-      <main className="min-h-screen bg-background px-4 py-24 text-center text-muted-foreground">Verificando sesión…</main>
-    );
-  }
-
   return (
-    <DashboardLayout navItems={adminNavItems} title="Panel administrador">
+    <ProtectedRoute roles={["admin", "superadmin"]} redirectTo="/account/login?redirect=/admin/products">
+      <DashboardLayout navItems={adminNavItems} title="Panel administrador">
       <div className="mx-auto max-w-7xl px-4 py-10">
         <div className="mb-6 flex flex-col gap-4 rounded-2xl border border-border bg-card p-5 shadow-sm md:flex-row md:items-center md:justify-between">
           <div>
@@ -81,9 +63,11 @@ export default function AdminProductsPage() {
           </div>
 
           <div className="flex gap-3">
-            <Button onClick={() => router.push("/admin/products/crear")}>
-              <Plus className="w-4 h-4" /> Nuevo producto
-            </Button>
+            <Can permission="producto.crear">
+              <Button onClick={() => router.push("/admin/products/create")}>
+                <Plus className="w-4 h-4" /> Nuevo producto
+              </Button>
+            </Can>
           </div>
         </div>
 
@@ -122,159 +106,174 @@ export default function AdminProductsPage() {
                   setCategoryFilter(event.target.value);
                   setPage(1);
                 }}
-                className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary sm:w-48"
+                className="rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
               >
                 <option value="">Todas las categorías</option>
-                {(categories ?? []).map((category) => (
-                  <option key={category.id} value={category.slug}>
-                    {category.name}
+                {(categories ?? []).map((cat) => (
+                  <option key={cat.slug} value={cat.name}>
+                    {cat.name}
                   </option>
                 ))}
               </select>
               <select
-                value={String(activeFilter)}
+                value={activeFilter === "" ? "" : activeFilter ? "active" : "inactive"}
                 onChange={(event) => {
-                  const value = event.target.value;
-                  setActiveFilter(value === "" ? "" : value === "true");
+                  const v = event.target.value;
+                  setActiveFilter(v === "" ? "" : v === "active");
                   setPage(1);
                 }}
-                className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary sm:w-40"
+                className="rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
               >
                 <option value="">Todos los estados</option>
-                <option value="true">Activos</option>
-                <option value="false">Inactivos</option>
+                <option value="active">Activos</option>
+                <option value="inactive">Inactivos</option>
               </select>
             </div>
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] text-left text-sm">
-              <thead>
-                <tr className="border-b border-border text-xs uppercase tracking-wider text-muted-foreground">
-                  <th className="px-5 py-3 font-semibold">Producto</th>
-                  <th className="px-5 py-3 font-semibold">Categoría</th>
-                  <th className="px-5 py-3 font-semibold">Precio</th>
-                  <th className="px-5 py-3 font-semibold">Stock</th>
-                  <th className="px-5 py-3 font-semibold">Estado</th>
-                  <th className="px-5 py-3 text-right font-semibold">Acciones</th>
+            <table className="w-full text-left text-sm">
+              <thead className="border-b border-border bg-muted/40 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                <tr>
+                  <th className="px-5 py-3">Producto</th>
+                  <th className="px-5 py-3">Categoría</th>
+                  <th className="px-5 py-3">Precio</th>
+                  <th className="px-5 py-3">Stock</th>
+                  <th className="px-5 py-3">Estado</th>
+                  <th className="px-5 py-3 text-right">Acciones</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-border">
                 {isLoading ? (
                   <tr>
-                    <td colSpan={6} className="px-5 py-10 text-center text-muted-foreground">Cargando productos…</td>
+                    <td colSpan={6} className="px-5 py-12 text-center text-muted-foreground">
+                      Cargando productos…
+                    </td>
                   </tr>
-                ) : data && data.items.length > 0 ? (
+                ) : !data || data.items.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-5 py-12 text-center text-muted-foreground">
+                      No se encontraron productos con los filtros aplicados.
+                    </td>
+                  </tr>
+                ) : (
                   data.items.map((product) => (
-                    <tr key={product.id} className="border-b border-border last:border-0 hover:bg-muted/40">
+                    <tr key={product.id} className="hover:bg-muted/30 transition-colors">
                       <td className="px-5 py-3">
                         <div className="flex items-center gap-3">
                           <img
                             src={product.image}
                             alt={product.name}
-                            className="h-12 w-12 rounded-lg border border-border object-cover"
+                            className="h-10 w-10 rounded-lg object-cover bg-muted border border-border flex-shrink-0"
                           />
                           <div className="min-w-0">
-                            <p className="max-w-[260px] truncate font-semibold text-foreground">{product.name}</p>
-                            <p className="text-xs text-muted-foreground">{product.sku ?? "Sin SKU"}</p>
+                            <p className="font-semibold text-foreground truncate max-w-xs">{product.name}</p>
+                            <p className="text-xs text-muted-foreground">ID #{product.id}</p>
                           </div>
                         </div>
                       </td>
-                      <td className="px-5 py-3 text-muted-foreground">{product.category || "—"}</td>
-                      <td className="px-5 py-3">
-                        <p className="font-bold text-foreground">{formatPrice(product.price)}</p>
+                      <td className="px-5 py-3 text-muted-foreground">{product.category}</td>
+                      <td className="px-5 py-3 font-semibold text-foreground">
+                        {formatPrice(product.price)}
                         {product.originalPrice ? (
-                          <p className="text-xs text-muted-foreground line-through">{formatPrice(product.originalPrice)}</p>
+                          <span className="ml-1 text-xs line-through text-muted-foreground">
+                            {formatPrice(product.originalPrice)}
+                          </span>
                         ) : null}
                       </td>
                       <td className="px-5 py-3">
-                        <span className={`font-semibold ${(product.stock ?? 0) > 0 ? "text-emerald-600" : "text-red-600"}`}>
-                          {product.stock ?? 0}
-                        </span>
-                      </td>
-                      <td className="px-5 py-3">
                         <span
-                          className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-bold ${
-                            product.isActive
-                              ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                              : "border-red-200 bg-red-50 text-red-700"
+                          className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${
+                            (product.stock ?? 0) > 10
+                              ? "bg-emerald-50 text-emerald-700"
+                              : (product.stock ?? 0) > 0
+                              ? "bg-amber-50 text-amber-700"
+                              : "bg-red-50 text-red-700"
                           }`}
                         >
-                          {product.isActive ? <CheckCircle2 className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
-                          {product.isActive ? "Activo" : "Inactivo"}
+                          {product.stock ?? 0} un.
                         </span>
                       </td>
                       <td className="px-5 py-3">
-                        <div className="flex items-center justify-end gap-2">
-                          <button
-                            type="button"
-                            title="Editar producto"
-                            onClick={() => router.push(`/admin/products/${product.id}/editar`)}
-                            className="rounded-lg border border-border p-2 text-muted-foreground transition-colors hover:border-primary hover:text-primary"
-                          >
-                            <Pencil className="w-4 h-4" />
-                          </button>
-                          <button
-                            type="button"
-                            title={product.isActive ? "Desactivar producto" : "Activar producto"}
-                            disabled={isToggling}
-                            onClick={() => handleToggleActive(product.id, product.isActive ?? true)}
-                            className="rounded-lg border border-border p-2 text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
-                          >
-                            {product.isActive ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                          </button>
-                          <button
-                            type="button"
-                            title="Eliminar producto"
-                            disabled={isRemoving}
-                            onClick={() => handleDelete(product.id, product.name)}
-                            className="rounded-lg border border-border p-2 text-muted-foreground transition-colors hover:border-red-300 hover:text-red-600 disabled:opacity-50"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                        {product.isActive ? (
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700">
+                            <CheckCircle2 className="w-3.5 h-3.5" /> Activo
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground">
+                            <XCircle className="w-3.5 h-3.5" /> Inactivo
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-5 py-3 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <Can permission="producto.editar">
+                            <button
+                              type="button"
+                              onClick={() => handleToggleActive(product.id, product.isActive ?? true)}
+                              disabled={isToggling}
+                              title={product.isActive ? "Desactivar" : "Activar"}
+                              className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+                            >
+                              {product.isActive ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => router.push(`/admin/products/${product.id}/edit`)}
+                              title="Editar"
+                              className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-muted transition-colors"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                          </Can>
+                          <Can permission="producto.eliminar">
+                            <button
+                              type="button"
+                              onClick={() => handleDelete(product.id, product.name)}
+                              disabled={isRemoving}
+                              title="Eliminar"
+                              className="p-1.5 rounded-lg text-muted-foreground hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </Can>
                         </div>
                       </td>
                     </tr>
                   ))
-                ) : (
-                  <tr>
-                    <td colSpan={6} className="px-5 py-10 text-center text-muted-foreground">
-                      No hay productos que coincidan con los filtros.
-                    </td>
-                  </tr>
                 )}
               </tbody>
             </table>
           </div>
 
-          <div className="flex flex-col items-center justify-between gap-3 border-t border-border px-5 py-4 sm:flex-row">
-            <p className="text-xs text-muted-foreground">
-              {data ? `${(data.currentPage - 1) * PAGE_SIZE + 1}–${Math.min(data.currentPage * PAGE_SIZE, data.total)} de ${data.total} productos` : ""}
-            </p>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                disabled={page <= 1}
-                onClick={() => setPage((current) => Math.max(1, current - 1))}
-                className="flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-bold text-foreground transition-colors hover:border-primary disabled:opacity-40"
-              >
-                <ChevronLeft className="w-4 h-4" /> Anterior
-              </button>
-              <span className="text-xs font-semibold text-muted-foreground">
-                Página {data?.currentPage ?? 1} de {totalPages}
-              </span>
-              <button
-                type="button"
-                disabled={page >= totalPages}
-                onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
-                className="flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-bold text-foreground transition-colors hover:border-primary disabled:opacity-40"
-              >
-                Siguiente <ChevronRight className="w-4 h-4" />
-              </button>
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between border-t border-border p-4">
+              <p className="text-xs text-muted-foreground">
+                Página {data?.currentPage ?? page} de {totalPages} ({data?.total ?? 0} resultados)
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page <= 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                >
+                  <ChevronLeft className="w-4 h-4" /> Anterior
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page >= totalPages}
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                >
+                  Siguiente <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
-          </div>
+          )}
         </section>
       </div>
     </DashboardLayout>
-  );
+  </ProtectedRoute>
+);
 }

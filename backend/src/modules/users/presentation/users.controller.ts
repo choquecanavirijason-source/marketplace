@@ -44,7 +44,7 @@ import { AuthenticatedUser, UserType } from '../../../shared';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @RequireRoles(UserType.ADMIN, UserType.SUPERADMIN)
-@Controller('admin/users')
+@Controller(['admin/users', 'identity/users'])
 export class UsersController {
   constructor(
     private readonly getUserQuery: GetUserQuery,

@@ -9,15 +9,12 @@ export const envSchema = z.object({
   HOST: z.string().default('0.0.0.0'),
   CORS_ORIGIN: z.string().default('http://localhost:3000'),
 
-  // Database
   DATABASE_URL: z
     .string()
     .default('postgres://postgres:postgres@localhost:5432/marketplace'),
 
-  // Cache & Queues (Redis)
   REDIS_URL: z.string().default('redis://localhost:6379'),
 
-  // Auth / JWT
   JWT_ACCESS_SECRET: z
     .string()
     .min(32, 'JWT_ACCESS_SECRET debe tener al menos 32 caracteres')
@@ -29,17 +26,14 @@ export const envSchema = z.object({
   JWT_ACCESS_EXPIRES_IN: z.string().default('15m'),
   JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
 
-  // Storage (Cloudflare R2 / AWS S3)
   STORAGE_ENDPOINT: z.string().default('http://localhost:9000'),
   STORAGE_BUCKET: z.string().default('marketplace-documents'),
   STORAGE_ACCESS_KEY_ID: z.string().default('minioadmin'),
   STORAGE_SECRET_ACCESS_KEY: z.string().default('minioadmin'),
   STORAGE_REGION: z.string().default('auto'),
 
-  // KYC Webhooks
   KYC_WEBHOOK_SECRET: z.string().default('kyc_webhook_signature_secret_test'),
 
-  // Notifications
   RESEND_API_KEY: z.string().optional().default('re_mock_api_key'),
   WHATSAPP_API_TOKEN: z.string().optional().default('mock_wa_token'),
   WHATSAPP_PHONE_NUMBER_ID: z.string().optional().default('mock_wa_phone_id'),

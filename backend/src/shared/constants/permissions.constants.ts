@@ -1,45 +1,38 @@
 import { UserRole } from './roles.constants';
 
 export const Permissions = {
-  // Productos
-  PRODUCT_VIEW: 'producto.ver',
-  PRODUCT_CREATE: 'producto.crear',
-  PRODUCT_EDIT: 'producto.editar',
-  PRODUCT_DELETE: 'producto.eliminar',
+  PRODUCT_VIEW: 'product.view',
+  PRODUCT_CREATE: 'product.create',
+  PRODUCT_EDIT: 'product.edit',
+  PRODUCT_DELETE: 'product.delete',
 
-  // Categorías
-  CATEGORY_VIEW: 'categoria.ver',
-  CATEGORY_CREATE: 'categoria.crear',
-  CATEGORY_EDIT: 'categoria.editar',
-  CATEGORY_DELETE: 'categoria.eliminar',
+  CATEGORY_VIEW: 'category.view',
+  CATEGORY_CREATE: 'category.create',
+  CATEGORY_EDIT: 'category.edit',
+  CATEGORY_DELETE: 'category.delete',
 
-  // Pedidos
-  ORDER_VIEW: 'pedido.ver',
-  ORDER_CREATE: 'pedido.crear',
-  ORDER_EDIT: 'pedido.editar',
-  ORDER_CANCEL: 'pedido.cancelar',
+  ORDER_VIEW: 'order.view',
+  ORDER_CREATE: 'order.create',
+  ORDER_EDIT: 'order.edit',
+  ORDER_CANCEL: 'order.cancel',
 
-  // Usuarios
-  USER_VIEW: 'usuario.ver',
-  USER_EDIT: 'usuario.editar',
-  USER_DELETE: 'usuario.eliminar',
+  USER_VIEW: 'user.view',
+  USER_CREATE: 'user.create',
+  USER_EDIT: 'user.edit',
+  USER_DELETE: 'user.delete',
 
-  // KYC
-  KYC_SUBMIT: 'kyc.solicitar',
-  KYC_REVIEW: 'kyc.revisar',
+  KYC_SUBMIT: 'kyc.submit',
+  KYC_REVIEW: 'kyc.review',
 
-  // Reseñas
-  REVIEW_VIEW: 'resena.ver',
-  REVIEW_CREATE: 'resena.crear',
-  REVIEW_DELETE: 'resena.eliminar',
+  REVIEW_VIEW: 'review.view',
+  REVIEW_CREATE: 'review.create',
+  REVIEW_DELETE: 'review.delete',
 
-  // Métricas
-  METRICS_VIEW: 'metricas.ver',
-  METRICS_SELLER: 'metricas.vendedor',
+  METRICS_VIEW: 'metrics.view',
+  METRICS_SELLER: 'metrics.seller',
 
-  // Configuración / Auditoría
-  AUDIT_VIEW: 'auditoria.ver',
-  SETTINGS_EDIT: 'configuracion.editar',
+  AUDIT_VIEW: 'audit.view',
+  SETTINGS_EDIT: 'settings.edit',
 } as const;
 
 export type Permission = (typeof Permissions)[keyof typeof Permissions];
@@ -66,7 +59,7 @@ export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     Permissions.KYC_SUBMIT,
     Permissions.METRICS_SELLER,
   ],
-  [UserRole.SELLER_EMPRESA]: [
+  [UserRole.SELLER_COMPANY]: [
     Permissions.PRODUCT_VIEW,
     Permissions.PRODUCT_CREATE,
     Permissions.PRODUCT_EDIT,
@@ -90,7 +83,9 @@ export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     Permissions.ORDER_EDIT,
     Permissions.ORDER_CANCEL,
     Permissions.USER_VIEW,
+    Permissions.USER_CREATE,
     Permissions.USER_EDIT,
+    Permissions.USER_DELETE,
     Permissions.KYC_REVIEW,
     Permissions.REVIEW_VIEW,
     Permissions.REVIEW_DELETE,

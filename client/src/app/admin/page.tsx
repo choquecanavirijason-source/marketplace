@@ -12,14 +12,14 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/presentation/atoms/alert-dialog";
-import { DashboardLayout, adminNavItems } from "@/presentation/organisms/DashboardLayout";
-import { useAdminOrders, useAdminStats } from "@/presentation/hooks/useOrders";
-import { getCurrentUser, isCustomerAuthenticated } from "@/shared/lib/marketplaceStorage";
+} from "@/components/ui/alert-dialog";
+import { DashboardLayout, adminNavItems } from "@/components/layout/DashboardLayout";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { useAdminOrders, useAdminStats } from "@/hooks/useOrders";
 import { formatPrice } from "@/shared/lib/format";
 import { ORDER_STATUS_CLASSES, ORDER_STATUS_LABELS, formatOrderDate } from "@/shared/lib/orderStatus";
-import { ORDER_STATUSES } from "@/domain/entities/Order";
-import type { OrderStatus } from "@/domain/entities/Order";
+import { ORDER_STATUSES } from "@/types";
+import type { OrderStatus } from "@/types";
 
 function StatusSelect({
   value,
@@ -47,8 +47,6 @@ function StatusSelect({
 }
 
 export default function AdminDashboardPage() {
-  const router = useRouter();
-  const [authChecked, setAuthChecked] = useState(false);
   const [statusFilter, setStatusFilter] = useState<OrderStatus | "todos">("todos");
   const [search, setSearch] = useState("");
   const [pendingStatus, setPendingStatus] = useState<{ orderId: number; orderNumber: string; status: OrderStatus } | null>(null);
@@ -56,27 +54,9 @@ export default function AdminDashboardPage() {
   const { data: stats, isLoading: statsLoading } = useAdminStats();
   const { data: ordersData, isLoading: ordersLoading, updateStatus, isUpdating } = useAdminOrders(statusFilter, search);
 
-  useEffect(() => {
-    if (!isCustomerAuthenticated()) {
-      router.push("/cuenta/ingresar?redirect=/admin");
-      return;
-    }
-    if (getCurrentUser()?.roleName !== "admin") {
-      router.push("/");
-      return;
-    }
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setAuthChecked(true);
-  }, [router]);
-
-  if (!authChecked) {
-    return (
-      <div className="min-h-screen bg-background px-4 py-24 text-center text-muted-foreground">Verificando sesión…</div>
-    );
-  }
-
   return (
-    <DashboardLayout navItems={adminNavItems} title="Panel administrador">
+    <ProtectedRoute roles={["admin", "superadmin"]} redirectTo="/account/login?redirect=/admin">
+      <DashboardLayout navItems={adminNavItems} title="Panel administrador">
       <div className="mx-auto max-w-7xl px-4 py-10">
         <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
           <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
@@ -232,6 +212,7 @@ export default function AdminDashboardPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </DashboardLayout>
+      </DashboardLayout>
+    </ProtectedRoute>
   );
 }

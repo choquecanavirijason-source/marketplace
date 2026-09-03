@@ -7,7 +7,7 @@ import { AuthRepositoryPort } from '../../domain/ports/auth-repository.port';
 import { UserEntity, BusinessProfileProps } from '../../domain/entities/user.entity';
 import { EmailVo } from '../../domain/value-objects/email.vo';
 import { UserRegisteredEvent } from '../../domain/events/user-registered.event';
-import { CryptoUtils, DuplicateEntityException, UserStatus, UserType } from '../../../../shared';
+import { CryptoUtils, DuplicateEntityException, UserStatus, UserType, OnboardingStep } from '../../../../shared';
 
 @Injectable()
 export class RegisterUserHandler {
@@ -60,7 +60,7 @@ export class RegisterUserHandler {
       email: emailVo.getValue(),
       phone: command.phone || null,
       passwordHash,
-      status: UserStatus.ACTIVA,
+      status: UserStatus.ACTIVE,
       type: userType as UserType,
       role: userType as UserType,
       profile: {
@@ -77,13 +77,11 @@ export class RegisterUserHandler {
 
     const saved = await this.userRepository.create(newUser);
 
-    // Onboarding status: registro_base and terminos_aceptados completed
-    await this.userRepository.saveOnboardingStep(saved.id, 'registro_base', 'completed');
+    await this.userRepository.saveOnboardingStep(saved.id, OnboardingStep.BASE_REGISTRATION, 'completed');
     if (command.termsAccepted) {
-      await this.userRepository.saveOnboardingStep(saved.id, 'terminos_aceptados', 'completed');
+      await this.userRepository.saveOnboardingStep(saved.id, OnboardingStep.TERMS_ACCEPTED, 'completed');
     }
 
-    // Security event log
     await this.authRepository.logSecurityEvent(
       saved.id,
       'USER_REGISTERED',

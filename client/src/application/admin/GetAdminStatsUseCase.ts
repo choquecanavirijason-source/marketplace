@@ -1,4 +1,4 @@
-import type { AdminRepository, AdminStats } from "@/domain/repositories/AdminRepository";
+import type { AdminRepository, AdminStats } from "@/services";
 
 export class GetAdminStatsUseCase {
   constructor(private readonly adminRepository: AdminRepository) {}

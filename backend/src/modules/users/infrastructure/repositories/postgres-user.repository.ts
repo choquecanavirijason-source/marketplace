@@ -29,7 +29,6 @@ export class PostgresUserRepository implements UserRepositoryPort {
   private async hydrateUser(userRow: typeof usersTable.$inferSelect): Promise<UserEntity> {
     const userId = userRow.id;
 
-    // Fetch related records in parallel
     const [profileRows, businessRows, userRoleRows, addressRows, onboardingRows] =
       await Promise.all([
         this.drizzle.db
@@ -97,10 +96,11 @@ export class PostgresUserRepository implements UserRepositoryPort {
 
     const roles =
       userRoleRows.length > 0
-        ? userRoleRows.map((r) => r.roleCodename)
-        : [userRow.type || UserType.BUYER];
+        ? userRoleRows.map((r) => r.roleCodename.toLowerCase())
+        : [(userRow.type || UserType.BUYER).toLowerCase()];
 
-    // Compute permissions from roles
+    const primaryRole = (roles[0] || userRow.type || UserType.BUYER).toLowerCase() as UserType;
+
     const permissionSet = new Set<string>();
     for (const r of roles) {
       const perms = getPermissionsForRole(r);
@@ -131,8 +131,8 @@ export class PostgresUserRepository implements UserRepositoryPort {
     return new UserEntity({
       id: userRow.id,
       status: userRow.status as UserStatus,
-      type: userRow.type as UserType,
-      role: userRow.type as UserRole,
+      type: primaryRole,
+      role: primaryRole as unknown as UserRole,
       email: userRow.email,
       phone: userRow.phone,
       passwordHash: userRow.passwordHash,
@@ -186,7 +186,6 @@ export class PostgresUserRepository implements UserRepositoryPort {
   async create(user: UserEntity): Promise<UserEntity> {
     const json = user.toJSON();
 
-    // 1. Insert into usersTable
     const userRows = await this.drizzle.db
       .insert(usersTable)
       .values({
@@ -205,7 +204,6 @@ export class PostgresUserRepository implements UserRepositoryPort {
 
     const createdUser = userRows[0];
 
-    // 2. Insert into userProfilesTable
     await this.drizzle.db.insert(userProfilesTable).values({
       userId: createdUser.id,
       firstName: json.firstName || '',
@@ -219,7 +217,6 @@ export class PostgresUserRepository implements UserRepositoryPort {
       updatedAt: new Date(),
     });
 
-    // 3. Insert into businessProfilesTable if provided
     if (json.businessProfile) {
       await this.drizzle.db.insert(businessProfilesTable).values({
         userId: createdUser.id,
@@ -235,11 +232,9 @@ export class PostgresUserRepository implements UserRepositoryPort {
       });
     }
 
-    // 4. Assign default role
     const defaultRoleCodename = json.type || 'buyer';
     await this.assignRoles(createdUser.id, [defaultRoleCodename]);
 
-    // 5. Initialize onboarding step
     await this.saveOnboardingStep(createdUser.id, 'registro_base', 'completed');
 
     return this.findById(createdUser.id) as Promise<UserEntity>;
@@ -248,7 +243,6 @@ export class PostgresUserRepository implements UserRepositoryPort {
   async update(user: UserEntity): Promise<UserEntity> {
     const json = user.toJSON();
 
-    // 1. Update usersTable
     await this.drizzle.db
       .update(usersTable)
       .set({
@@ -263,7 +257,6 @@ export class PostgresUserRepository implements UserRepositoryPort {
       })
       .where(eq(usersTable.id, user.id));
 
-    // 2. Update userProfilesTable
     if (json.profile) {
       await this.drizzle.db
         .insert(userProfilesTable)
@@ -293,7 +286,6 @@ export class PostgresUserRepository implements UserRepositoryPort {
         });
     }
 
-    // 3. Update businessProfilesTable if present
     if (json.businessProfile) {
       await this.drizzle.db
         .insert(businessProfilesTable)
@@ -327,7 +319,6 @@ export class PostgresUserRepository implements UserRepositoryPort {
   }
 
   async delete(id: string): Promise<void> {
-    // Soft delete according to Rule 6: "Las bajas de usuarios deben ser lógicas (deleted_at), nunca físicas."
     await this.drizzle.db
       .update(usersTable)
       .set({
@@ -417,7 +408,6 @@ export class PostgresUserRepository implements UserRepositoryPort {
   }
 
   async assignRoles(userId: string, roleCodenames: string[], assignedBy?: string): Promise<void> {
-    // 1. Ensure roles exist in `roles` table
     for (const code of roleCodenames) {
       await this.drizzle.db
         .insert(rolesTable)
@@ -430,7 +420,6 @@ export class PostgresUserRepository implements UserRepositoryPort {
         .onConflictDoNothing({ target: rolesTable.codename });
     }
 
-    // 2. Fetch role ids
     const foundRoles = await this.drizzle.db
       .select()
       .from(rolesTable)
@@ -441,7 +430,6 @@ export class PostgresUserRepository implements UserRepositoryPort {
         ),
       );
 
-    // 3. Clear existing user roles and reassign
     await this.drizzle.db.delete(userRolesTable).where(eq(userRolesTable.userId, userId));
 
     for (const r of foundRoles) {

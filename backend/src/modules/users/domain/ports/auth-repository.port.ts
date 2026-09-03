@@ -20,7 +20,6 @@ export abstract class AuthRepositoryPort {
   abstract revokeAllUserSessions(userId: string): Promise<void>;
   abstract updateSessionLastSeen(id: string): Promise<void>;
 
-  // Tokens de verificación uniuso (email, teléfono OTP, forgot-password)
   abstract createVerificationToken(
     userId: string,
     type: string,
@@ -35,7 +34,6 @@ export abstract class AuthRepositoryPort {
   ): Promise<{ id: string; metadata?: string | null } | null>;
   abstract consumeVerificationToken(id: string): Promise<void>;
 
-  // Bitácora de seguridad y auditoría
   abstract logSecurityEvent(
     userId: string | null,
     eventType: string,

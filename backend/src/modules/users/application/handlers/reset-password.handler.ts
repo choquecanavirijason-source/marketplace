@@ -31,10 +31,8 @@ export class ResetPasswordHandler {
       throw new BadRequestException('El token de restablecimiento es inválido o ha expirado.');
     }
 
-    // 1. Consume token
     await this.authRepository.consumeVerificationToken(validToken.id);
 
-    // 2. Hash new password and update user
     const newPasswordHash = await CryptoUtils.hashPassword(newPassword);
     const updatedUser = new (user.constructor as any)({
       ...user.toJSON(),
@@ -42,11 +40,9 @@ export class ResetPasswordHandler {
     });
     await this.userRepository.update(updatedUser);
 
-    // 3. Security: Invalidate all active sessions across all devices
     await this.authRepository.revokeAllUserSessions(user.id);
     await this.cacheService.delPattern(`session:${user.id}:*`);
 
-    // 4. Log security event
     await this.authRepository.logSecurityEvent(
       user.id,
       'PASSWORD_RESET_COMPLETED',

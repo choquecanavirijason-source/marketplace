@@ -22,7 +22,7 @@ export const STATIC_ACCOUNTS: StaticAccount[] = [
     lastName: 'System',
     phone: '+10000000001',
     type: UserType.SUPERADMIN,
-    status: UserStatus.ACTIVA,
+    status: UserStatus.ACTIVE,
     roles: ['superadmin', 'admin'],
   },
   {
@@ -31,7 +31,7 @@ export const STATIC_ACCOUNTS: StaticAccount[] = [
     lastName: 'Moderator',
     phone: '+10000000002',
     type: UserType.SUPPORT,
-    status: UserStatus.ACTIVA,
+    status: UserStatus.ACTIVE,
     roles: ['support', 'admin'],
   },
   {
@@ -39,9 +39,9 @@ export const STATIC_ACCOUNTS: StaticAccount[] = [
     firstName: 'Comercial',
     lastName: 'Ventas',
     phone: '+10000000003',
-    type: UserType.SELLER_EMPRESA,
-    status: UserStatus.ACTIVA,
-    roles: ['seller_empresa', 'seller'],
+    type: UserType.SELLER_COMPANY,
+    status: UserStatus.ACTIVE,
+    roles: ['seller_company', 'seller_empresa', 'seller'],
     legalName: 'Ferretería Industrial S.A.',
     tradeName: 'Ferromax Comercial',
     taxId: '30-71234567-8',
@@ -52,7 +52,7 @@ export const STATIC_ACCOUNTS: StaticAccount[] = [
     lastName: 'Frecuente',
     phone: '+10000000004',
     type: UserType.BUYER,
-    status: UserStatus.ACTIVA,
+    status: UserStatus.ACTIVE,
     roles: ['buyer'],
   },
 ];
@@ -83,7 +83,6 @@ export function generateFakeUsers(count: number, defaultPasswordHash: string): F
     }
     usedEmails.add(email);
 
-    // Distributed types: 75% buyer, 23% seller_individual, 2% admin
     const rand = Math.random();
     let type = UserType.BUYER;
     if (rand > 0.98) {
@@ -92,17 +91,16 @@ export function generateFakeUsers(count: number, defaultPasswordHash: string): F
       type = UserType.SELLER_INDIVIDUAL;
     }
 
-    // Distributed status: 85% activa, 12% pendiente, 3% suspendida
     const randStatus = Math.random();
-    let status = UserStatus.ACTIVA;
+    let status = UserStatus.ACTIVE;
     if (randStatus > 0.97) {
-      status = UserStatus.SUSPENDIDA;
+      status = UserStatus.SUSPENDED;
     } else if (randStatus > 0.85) {
-      status = UserStatus.PENDIENTE;
+      status = UserStatus.PENDING;
     }
 
     const createdAt = faker.date.past({ years: 1 });
-    const isVerified = status === UserStatus.ACTIVA;
+    const isVerified = status === UserStatus.ACTIVE;
 
     users.push({
       id: crypto.randomUUID(),

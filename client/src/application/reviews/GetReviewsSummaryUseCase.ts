@@ -1,4 +1,4 @@
-import type { Review } from "@/domain/entities/Review";
+import type { Review } from "@/types";
 
 export interface ReviewsSummary {
   average: number;

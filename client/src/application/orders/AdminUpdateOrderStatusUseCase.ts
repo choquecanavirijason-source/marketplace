@@ -1,5 +1,5 @@
-import type { OrderRepository } from "@/domain/repositories/OrderRepository";
-import type { Order, OrderStatus } from "@/domain/entities/Order";
+import type { OrderRepository } from "@/services";
+import type { Order, OrderStatus } from "@/types";
 
 export class AdminUpdateOrderStatusUseCase {
   constructor(private readonly orderRepository: OrderRepository) {}

@@ -28,7 +28,6 @@ export class RefreshTokenHandler {
       throw new UnauthorizedException('Refresh token inválido o expirado.');
     }
 
-    // Reuse detection (Regla 5 de marketplace.md: rotación y revocación total preventiva ante reúso)
     if (existingSession.isRevoked) {
       this.logger.error(
         `🚨 Reúso de refresh token detectado para el usuario: ${existingSession.userId}. Revocando todas las sesiones.`,
@@ -50,25 +49,22 @@ export class RefreshTokenHandler {
       throw new UnauthorizedException('La sesión ha caducado.');
     }
 
-    // Load user for new access token claims
     const user = await this.userRepository.findById(existingSession.userId);
     if (!user) {
       throw new UnauthorizedException('Usuario no encontrado.');
     }
 
     if (
-      user.status === UserStatus.SUSPENDIDA ||
-      user.status === UserStatus.RECHAZADA ||
-      user.status === UserStatus.ELIMINADA_LOGICAMENTE
+      user.status === UserStatus.SUSPENDED ||
+      user.status === UserStatus.REJECTED ||
+      user.status === UserStatus.LOGICALLY_DELETED
     ) {
       throw new UnauthorizedException('La cuenta de usuario se encuentra inactiva o suspendida.');
     }
 
-    // Invalidate old session
     await this.authRepository.revokeSession(existingSession.id);
     await this.cacheService.del(`session:${existingSession.userId}:${existingSession.id}`);
 
-    // Rotate tokens with fresh roles & permissions
     const newAccessToken = await this.tokenGenerator.generateAccessToken({
       sub: user.id,
       email: user.email,

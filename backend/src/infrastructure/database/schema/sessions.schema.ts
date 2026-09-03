@@ -1,10 +1,6 @@
 import { pgTable, uuid, text, varchar, timestamp } from 'drizzle-orm/pg-core';
 import { usersTable } from './users.schema';
 
-/**
- * Tabla `sessions` según marketplace.md (Módulo 1, Sección 9)
- * Campos: id, user_id, refresh_token_hash, device_id, ip, user_agent, last_seen_at, revoked_at, expires_at, created_at
- */
 export const sessionsTable = pgTable('sessions', {
   id: uuid('id').defaultRandom().primaryKey(),
   userId: uuid('user_id')

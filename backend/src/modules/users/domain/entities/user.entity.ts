@@ -59,7 +59,6 @@ export interface UserProps {
   updatedAt: Date;
   deletedAt?: Date | null;
 
-  // Profile data
   profile?: UserProfileProps | null;
   businessProfile?: BusinessProfileProps | null;
   roles?: string[];
@@ -172,7 +171,7 @@ export class UserEntity {
   }
 
   calculateCompletionPct(): number {
-    let score = 20; // Base account registered
+    let score = 20;
     if (this.props.emailVerifiedAt) score += 20;
     if (this.props.phoneVerifiedAt) score += 20;
     if (this.props.profile?.firstName && this.props.profile?.lastName) score += 20;
@@ -187,33 +186,33 @@ export class UserEntity {
   }
 
   activate() {
-    this.props.status = UserStatus.ACTIVA;
+    this.props.status = UserStatus.ACTIVE;
     this.props.updatedAt = new Date();
   }
 
   suspend() {
-    this.props.status = UserStatus.SUSPENDIDA;
+    this.props.status = UserStatus.SUSPENDED;
     this.props.updatedAt = new Date();
   }
 
   restrict() {
-    this.props.status = UserStatus.RESTRINGIDA;
+    this.props.status = UserStatus.RESTRICTED;
     this.props.updatedAt = new Date();
   }
 
   sendToReview() {
-    this.props.status = UserStatus.EN_REVISION;
+    this.props.status = UserStatus.IN_REVIEW;
     this.props.updatedAt = new Date();
   }
 
   reject() {
-    this.props.status = UserStatus.RECHAZADA;
+    this.props.status = UserStatus.REJECTED;
     this.props.updatedAt = new Date();
   }
 
   softDelete() {
     const now = new Date();
-    this.props.status = UserStatus.ELIMINADA_LOGICAMENTE;
+    this.props.status = UserStatus.LOGICALLY_DELETED;
     this.props.deletedAt = now;
     this.props.updatedAt = now;
   }

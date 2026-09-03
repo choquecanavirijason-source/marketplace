@@ -1,5 +1,5 @@
-import type { CartRepository } from "@/domain/repositories/CartRepository";
-import type { CartItem } from "@/domain/entities/Cart";
+import type { CartRepository } from "@/services";
+import type { CartItem } from "@/types";
 
 export class UpdateCartQtyUseCase {
   constructor(private readonly cartRepository: CartRepository) {}

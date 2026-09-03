@@ -106,7 +106,6 @@ export class SessionRepository implements AuthRepositoryPort {
       .where(eq(sessionsTable.id, id));
   }
 
-  // --- Tokens de Verificación (Email, OTP, Password Reset) ---
   async createVerificationToken(
     userId: string,
     type: string,
@@ -114,7 +113,6 @@ export class SessionRepository implements AuthRepositoryPort {
     expiresAt: Date,
     metadata?: string,
   ): Promise<void> {
-    // Invalida tokens previos no consumidos del mismo tipo para este usuario
     await this.drizzle.db
       .update(verificationTokensTable)
       .set({ consumedAt: new Date() })
@@ -166,7 +164,6 @@ export class SessionRepository implements AuthRepositoryPort {
       .where(eq(verificationTokensTable.id, id));
   }
 
-  // --- Bitácora de Seguridad y Auditoría Forense ---
   async logSecurityEvent(
     userId: string | null,
     eventType: string,
@@ -186,7 +183,6 @@ export class SessionRepository implements AuthRepositoryPort {
         createdAt: new Date(),
       });
     } catch {
-      // Don't interrupt flow if logging fails
     }
   }
 

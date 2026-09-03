@@ -1,5 +1,5 @@
-import type { ListProductsParams, ProductRepository } from "@/domain/repositories/ProductRepository";
-import type { Product } from "@/domain/entities/Product";
+import type { ListProductsParams, ProductRepository } from "@/services";
+import type { Product } from "@/types";
 
 export class ListProductsUseCase {
   constructor(private readonly productRepository: ProductRepository) {}

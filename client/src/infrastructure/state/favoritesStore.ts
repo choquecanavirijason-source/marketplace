@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { Product } from "@/domain/entities/Product";
+import type { Product } from "@/types";
 
 interface FavoritesState {
   items: Product[];

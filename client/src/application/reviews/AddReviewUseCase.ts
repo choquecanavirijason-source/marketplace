@@ -1,5 +1,5 @@
-import type { ReviewRepository } from "@/domain/repositories/ReviewRepository";
-import type { NewReview, Review } from "@/domain/entities/Review";
+import type { ReviewRepository } from "@/services";
+import type { NewReview, Review } from "@/types";
 
 export class AddReviewUseCase {
   constructor(private readonly reviewRepository: ReviewRepository) {}

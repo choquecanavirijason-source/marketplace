@@ -1,5 +1,5 @@
-import type { AuthRepository, LoginCredentials } from "@/domain/repositories/AuthRepository";
-import type { AuthSession } from "@/domain/repositories/AuthRepository";
+import type { AuthRepository, LoginCredentials } from "@/services";
+import type { AuthSession } from "@/services";
 
 export class LoginUseCase {
   constructor(private readonly authRepository: AuthRepository) {}

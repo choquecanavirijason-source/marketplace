@@ -215,7 +215,7 @@ describe('Auth Handlers - Módulo 1 (marketplace.md)', () => {
         id: 'sess-already-revoked',
         userId: 'usr-victim',
         refreshTokenHash: CryptoUtils.sha256('stolen_token'),
-        revokedAt: new Date(Date.now() - 60000), // revoked 1 min ago
+        revokedAt: new Date(Date.now() - 60000),
         expiresAt: new Date(Date.now() + 3600000),
         createdAt: new Date(),
       });
@@ -228,7 +228,6 @@ describe('Auth Handlers - Módulo 1 (marketplace.md)', () => {
         UnauthorizedException,
       );
 
-      // Verify that reuse detection revoked ALL user sessions immediately
       expect(mockAuthRepo.revokeAllUserSessions).toHaveBeenCalledWith('usr-victim');
       expect(mockCache.delPattern).toHaveBeenCalledWith('session:usr-victim:*');
       expect(mockAuthRepo.logSecurityEvent).toHaveBeenCalledWith(

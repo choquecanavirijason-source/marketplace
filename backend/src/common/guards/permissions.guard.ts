@@ -27,7 +27,6 @@ export class PermissionsGuard implements CanActivate {
       throw new ForbiddenException('Usuario no autenticado.');
     }
 
-    // SUPERADMIN cuenta con bypass total de permisos
     if (user.role === UserRole.SUPERADMIN || user.role === 'SUPERADMIN') {
       return true;
     }

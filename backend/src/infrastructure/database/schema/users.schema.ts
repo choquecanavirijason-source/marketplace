@@ -11,13 +11,9 @@ import {
 } from 'drizzle-orm/pg-core';
 import { UserType, UserStatus } from '../../../shared';
 
-/**
- * Tabla `users` - Modelo de Datos Mínimo según marketplace.md (Módulo 1, Sección 9)
- * Campos: id, status, type, email, phone, password_hash, email_verified_at, phone_verified_at, created_at, updated_at, deleted_at
- */
 export const usersTable = pgTable('users', {
   id: uuid('id').defaultRandom().primaryKey(),
-  status: varchar('status', { length: 50 }).default(UserStatus.PENDIENTE).notNull(),
+  status: varchar('status', { length: 50 }).default(UserStatus.PENDING).notNull(),
   type: varchar('type', { length: 50 }).default(UserType.BUYER).notNull(),
   email: varchar('email', { length: 255 }).notNull().unique(),
   phone: varchar('phone', { length: 50 }).unique(),
@@ -30,10 +26,6 @@ export const usersTable = pgTable('users', {
   deletedAt: timestamp('deleted_at', { withTimezone: true }),
 });
 
-/**
- * Tabla `user_profiles` según marketplace.md (Módulo 1, Sección 9)
- * Campos: id, user_id, first_name, last_name, avatar_url, birth_date, language, currency, completion_pct
- */
 export const userProfilesTable = pgTable('user_profiles', {
   id: uuid('id').defaultRandom().primaryKey(),
   userId: uuid('user_id')
@@ -52,10 +44,6 @@ export const userProfilesTable = pgTable('user_profiles', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
-/**
- * Tabla `business_profiles` según marketplace.md (Módulo 1, Sección 9)
- * Campos: id, user_id, legal_name, trade_name, tax_id, legal_type, billing_email, fiscal_address, review_status
- */
 export const businessProfilesTable = pgTable('business_profiles', {
   id: uuid('id').defaultRandom().primaryKey(),
   userId: uuid('user_id')
@@ -74,10 +62,6 @@ export const businessProfilesTable = pgTable('business_profiles', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
-/**
- * Tabla `roles` según marketplace.md (Módulo 1, Sección 9)
- * Campos: id, codename, name, is_system
- */
 export const rolesTable = pgTable('roles', {
   id: uuid('id').defaultRandom().primaryKey(),
   codename: varchar('codename', { length: 50 }).notNull().unique(),
@@ -86,10 +70,6 @@ export const rolesTable = pgTable('roles', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
-/**
- * Tabla `permissions` según marketplace.md (Módulo 1, Sección 9)
- * Campos: id, resource, action, code
- */
 export const permissionsTable = pgTable('permissions', {
   id: uuid('id').defaultRandom().primaryKey(),
   resource: varchar('resource', { length: 50 }).notNull(),
@@ -98,10 +78,6 @@ export const permissionsTable = pgTable('permissions', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
-/**
- * Tabla `user_roles` según marketplace.md (Módulo 1, Sección 9)
- * Campos: id, user_id, role_id, assigned_by, assigned_at
- */
 export const userRolesTable = pgTable('user_roles', {
   id: uuid('id').defaultRandom().primaryKey(),
   userId: uuid('user_id')
@@ -114,10 +90,6 @@ export const userRolesTable = pgTable('user_roles', {
   assignedAt: timestamp('assigned_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
-/**
- * Tabla `role_permissions` según marketplace.md (Módulo 1, Sección 9)
- * Campos: id, role_id, permission_id
- */
 export const rolePermissionsTable = pgTable('role_permissions', {
   id: uuid('id').defaultRandom().primaryKey(),
   roleId: uuid('role_id')
@@ -128,10 +100,6 @@ export const rolePermissionsTable = pgTable('role_permissions', {
     .references(() => permissionsTable.id, { onDelete: 'cascade' }),
 });
 
-/**
- * Tabla `addresses` según marketplace.md (Módulo 1, Sección 9)
- * Campos: id, user_id, label, country, province, city, street, number, zip, is_default
- */
 export const addressesTable = pgTable('addresses', {
   id: uuid('id').defaultRandom().primaryKey(),
   userId: uuid('user_id')
@@ -150,16 +118,12 @@ export const addressesTable = pgTable('addresses', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
-/**
- * Tabla `verification_tokens` según marketplace.md (Módulo 1, Sección 9)
- * Campos: id, user_id, type, token_hash, expires_at, consumed_at, metadata
- */
 export const verificationTokensTable = pgTable('verification_tokens', {
   id: uuid('id').defaultRandom().primaryKey(),
   userId: uuid('user_id')
     .notNull()
     .references(() => usersTable.id, { onDelete: 'cascade' }),
-  type: varchar('type', { length: 50 }).notNull(), // 'email_verification', 'password_reset', 'phone_otp'
+  type: varchar('type', { length: 50 }).notNull(),
   tokenHash: text('token_hash').notNull(),
   expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
   consumedAt: timestamp('consumed_at', { withTimezone: true }),
@@ -168,10 +132,6 @@ export const verificationTokensTable = pgTable('verification_tokens', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
-/**
- * Tabla `onboarding_states` según marketplace.md (Módulo 1, Sección 9)
- * Campos: id, user_id, step_code, status, completed_at
- */
 export const onboardingStatesTable = pgTable(
   'onboarding_states',
   {

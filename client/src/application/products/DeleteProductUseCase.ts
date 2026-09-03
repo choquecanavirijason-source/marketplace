@@ -1,4 +1,4 @@
-import type { ProductRepository } from "@/domain/repositories/ProductRepository";
+import type { ProductRepository } from "@/services";
 
 export class DeleteProductUseCase {
   constructor(private readonly productRepository: ProductRepository) {}

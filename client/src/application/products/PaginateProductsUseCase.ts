@@ -1,6 +1,6 @@
-import type { PaginateProductsParams, ProductRepository } from "@/domain/repositories/ProductRepository";
-import type { Paginated } from "@/domain/entities/Order";
-import type { Product } from "@/domain/entities/Product";
+import type { PaginateProductsParams, ProductRepository } from "@/services";
+import type { Paginated } from "@/types";
+import type { Product } from "@/types";
 
 export class PaginateProductsUseCase {
   constructor(private readonly productRepository: ProductRepository) {}

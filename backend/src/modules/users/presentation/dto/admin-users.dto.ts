@@ -9,7 +9,6 @@ export const adminUpdateStatusSchema = z.object({
     'en_revision',
     'rechazada',
     'eliminada_logicamente',
-    // Fallback aliases
     'ACTIVE',
     'SUSPENDED',
   ]),

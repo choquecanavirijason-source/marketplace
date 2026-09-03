@@ -27,7 +27,6 @@ export class SendPhoneOtpHandler {
       targetUserId = user.id;
     }
 
-    // Generate 6 digit numeric code
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
     const tokenHash = CryptoUtils.sha256(otpCode);
     const expiresAt = DateUtils.addMinutes(new Date(), 10);

@@ -33,7 +33,7 @@ export class MeController {
     private readonly revokeSessionHandler: RevokeSessionHandler,
   ) {}
 
-  @Get('me')
+  @Get(['', 'me'])
   async getMe(@CurrentUser() currentUser: AuthenticatedUser) {
     const user = await this.getUserQuery.execute(currentUser.id);
     return {
@@ -69,7 +69,6 @@ export class MeController {
     };
   }
 
-  // Compatibilidad con llamada PUT /me del frontend
   @Put('me')
   @UsePipes(new ZodValidationPipe(updateProfileSchema))
   async updateMe(

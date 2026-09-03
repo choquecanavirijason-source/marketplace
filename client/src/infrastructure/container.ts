@@ -1,13 +1,15 @@
-import { HttpProductRepository } from "@/infrastructure/repositories/HttpProductRepository";
-import { HttpReviewRepository } from "@/infrastructure/repositories/HttpReviewRepository";
-import { HttpCategoryRepository } from "@/infrastructure/repositories/HttpCategoryRepository";
-import { HttpAuthRepository } from "@/infrastructure/repositories/HttpAuthRepository";
-import { HttpOrderRepository } from "@/infrastructure/repositories/HttpOrderRepository";
-import { HttpAdminRepository } from "@/infrastructure/repositories/HttpAdminRepository";
-import { HttpCartRepository } from "@/infrastructure/repositories/HttpCartRepository";
-import { InMemoryHeroSlideRepository } from "@/infrastructure/repositories/InMemoryHeroSlideRepository";
-import { ZustandCartRepository } from "@/infrastructure/repositories/ZustandCartRepository";
-import { ZustandFavoriteRepository } from "@/infrastructure/repositories/ZustandFavoriteRepository";
+import { InMemoryProductRepository } from "@/services";
+import { InMemoryCategoryRepository } from "@/services";
+import { InMemoryReviewRepository } from "@/services";
+import { InMemoryHeroSlideRepository } from "@/services";
+import { InMemoryOrderRepository } from "@/services";
+import { InMemoryAdminRepository } from "@/services";
+import { InMemoryServerCartRepository } from "@/services";
+import { ZustandCartRepository } from "@/services";
+import { ZustandFavoriteRepository } from "@/services";
+
+import { HttpAuthRepository } from "@/services";
+import { HttpUserRepository } from "@/services";
 
 import { ListProductsUseCase } from "@/application/products/ListProductsUseCase";
 import { ListFlashDealsUseCase } from "@/application/products/ListFlashDealsUseCase";
@@ -57,16 +59,18 @@ import { AdminUpdateOrderStatusUseCase } from "@/application/orders/AdminUpdateO
 
 import { GetAdminStatsUseCase } from "@/application/admin/GetAdminStatsUseCase";
 
-const productRepository = new HttpProductRepository();
-const reviewRepository = new HttpReviewRepository();
-const categoryRepository = new HttpCategoryRepository();
-const authRepository = new HttpAuthRepository();
-const orderRepository = new HttpOrderRepository();
-const adminRepository = new HttpAdminRepository();
+const productRepository = new InMemoryProductRepository();
+const reviewRepository = new InMemoryReviewRepository();
+const categoryRepository = new InMemoryCategoryRepository();
 const heroSlideRepository = new InMemoryHeroSlideRepository();
 const cartRepository = new ZustandCartRepository();
-const cartServerRepository = new HttpCartRepository();
+const cartServerRepository = new InMemoryServerCartRepository();
 const favoriteRepository = new ZustandFavoriteRepository();
+const orderRepository = new InMemoryOrderRepository();
+const adminRepository = new InMemoryAdminRepository();
+
+const authRepository = new HttpAuthRepository();
+const userRepository = new HttpUserRepository();
 
 export const container = {
   listProducts: new ListProductsUseCase(productRepository),
@@ -117,4 +121,6 @@ export const container = {
   adminUpdateOrderStatus: new AdminUpdateOrderStatusUseCase(orderRepository),
 
   getAdminStats: new GetAdminStatsUseCase(adminRepository),
+  users: userRepository,
+  auth: authRepository,
 };

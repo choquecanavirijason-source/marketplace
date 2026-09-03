@@ -1,4 +1,4 @@
-import type { CartItem } from "@/domain/entities/Cart";
+import type { CartItem } from "@/types";
 
 export interface CartSummary {
   total: number;

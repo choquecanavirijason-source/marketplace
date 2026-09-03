@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { StorefrontTemplate } from "@/presentation/templates/StorefrontTemplate";
-import { HomeTemplate } from "@/presentation/templates/HomeTemplate";
+import { StorefrontTemplate } from "@/components/layout/StorefrontTemplate";
+import { HomeTemplate } from "@/components/home/HomeTemplate";
 
 export default function HomePage() {
   const [activeCategory, setActiveCategory] = useState("Todos");

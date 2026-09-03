@@ -1,5 +1,5 @@
-import type { CartItem } from "@/domain/entities/Cart";
-import type { ServerCartItem, ServerCartRepository } from "@/domain/repositories/ServerCartRepository";
+import type { CartItem } from "@/types";
+import type { ServerCartItem, ServerCartRepository } from "@/services";
 import { useCartStore } from "@/infrastructure/state/cartStore";
 
 export function mapServerCartItem(item: ServerCartItem): CartItem {

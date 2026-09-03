@@ -14,26 +14,22 @@ async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     new FastifyAdapter({
-      logger: false, // NestJS Logger is used
+      logger: false,
       trustProxy: true,
     }),
   );
 
-  // Security Headers via Helmet
   await app.register(helmet, {
     contentSecurityPolicy: appConfig.isProduction,
   });
 
-  // Strict CORS configuration
   app.enableCors({
     origin: appConfig.corsOrigin,
     credentials: true,
   });
 
-  // Global API Version Prefix
   app.setGlobalPrefix('api/v1');
 
-  // Enable Graceful Shutdown
   app.enableShutdownHooks();
 
   await app.listen(appConfig.port, appConfig.host);

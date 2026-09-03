@@ -23,7 +23,21 @@ export class RolesGuard implements CanActivate {
     }
 
     const { user } = context.switchToHttp().getRequest();
-    if (!user || !requiredRoles.includes(user.role)) {
+    if (!user) {
+      throw new ForbiddenException('No posees los roles necesarios para ejecutar esta acción.');
+    }
+
+    const userRole = (user.role || user.type || '').toString().toLowerCase();
+    const userRoles: string[] = Array.isArray(user.roles)
+      ? user.roles.map((r: string) => r.toString().toLowerCase())
+      : userRole ? [userRole] : [];
+
+    const hasRole = requiredRoles.some((reqRole) => {
+      const normalizedReq = reqRole.toString().toLowerCase();
+      return userRole === normalizedReq || userRoles.includes(normalizedReq);
+    });
+
+    if (!hasRole) {
       throw new ForbiddenException('No posees los roles necesarios para ejecutar esta acción.');
     }
 

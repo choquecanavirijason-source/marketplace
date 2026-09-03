@@ -1,6 +1,6 @@
-import type { AdminListOrdersParams, OrderRepository } from "@/domain/repositories/OrderRepository";
-import type { Paginated } from "@/domain/entities/Order";
-import type { Order } from "@/domain/entities/Order";
+import type { AdminListOrdersParams, OrderRepository } from "@/services";
+import type { Paginated } from "@/types";
+import type { Order } from "@/types";
 
 export class AdminListOrdersUseCase {
   constructor(private readonly orderRepository: OrderRepository) {}

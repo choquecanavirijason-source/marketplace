@@ -1,10 +1,15 @@
-import type { Product } from "@/domain/entities/Product";
-
-export const MARKETPLACE_PRODUCTS_KEY = "ferromax-marketplace-products";
-export const CUSTOMER_AUTH_KEY = "ferromax-customer-auth";
-export const CUSTOMERS_KEY = "ferromax-customers";
-export const AUTH_TOKEN_KEY = "ferromax-token";
-export const AUTH_USER_KEY = "ferromax-user";
+import type { Product } from "@/types";
+import { getCookie, setCookie, removeCookie } from "./cookies";
+export {
+  MARKETPLACE_PRODUCTS_KEY,
+  CUSTOMER_AUTH_KEY,
+  CUSTOMERS_KEY,
+  AUTH_TOKEN_KEY,
+  AUTH_USER_KEY,
+  AUTH_PERMISSIONS_KEY,
+  TOKEN_NAME,
+} from "@/config";
+import { MARKETPLACE_PRODUCTS_KEY, CUSTOMER_AUTH_KEY, CUSTOMERS_KEY, AUTH_TOKEN_KEY, AUTH_USER_KEY, AUTH_PERMISSIONS_KEY } from "@/config";
 
 export function readAddedProducts(): Product[] {
   if (typeof window === "undefined") return [];
@@ -71,37 +76,55 @@ function findCustomerByEmail(email: string): Customer | undefined {
 
 export function isCustomerAuthenticated(): boolean {
   if (typeof window === "undefined") return false;
-  return window.localStorage.getItem(CUSTOMER_AUTH_KEY) === "true";
+  return (
+    getCookie(CUSTOMER_AUTH_KEY) === "true" ||
+    window.localStorage.getItem(CUSTOMER_AUTH_KEY) === "true" ||
+    Boolean(getAuthToken())
+  );
 }
 
 export function setCustomerAuthenticated(value: boolean) {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(CUSTOMER_AUTH_KEY, String(value));
+  if (value) {
+    setCookie(CUSTOMER_AUTH_KEY, "true", 7);
+    window.localStorage.setItem(CUSTOMER_AUTH_KEY, "true");
+  } else {
+    removeCookie(CUSTOMER_AUTH_KEY);
+    window.localStorage.removeItem(CUSTOMER_AUTH_KEY);
+  }
 }
 
 export function getCurrentCustomerEmail(): string | null {
   if (typeof window === "undefined") return null;
-  return window.localStorage.getItem(`${CUSTOMER_AUTH_KEY}-email`);
+  const user = getCurrentUser();
+  if (user?.email) return user.email;
+  return getCookie(`${CUSTOMER_AUTH_KEY}-email`) ?? window.localStorage.getItem(`${CUSTOMER_AUTH_KEY}-email`);
 }
 
 function setCurrentCustomerEmail(email: string | null) {
   if (typeof window === "undefined") return;
-  if (email) window.localStorage.setItem(`${CUSTOMER_AUTH_KEY}-email`, email);
-  else window.localStorage.removeItem(`${CUSTOMER_AUTH_KEY}-email`);
+  if (email) {
+    setCookie(`${CUSTOMER_AUTH_KEY}-email`, email, 7);
+    window.localStorage.setItem(`${CUSTOMER_AUTH_KEY}-email`, email);
+  } else {
+    removeCookie(`${CUSTOMER_AUTH_KEY}-email`);
+    window.localStorage.removeItem(`${CUSTOMER_AUTH_KEY}-email`);
+  }
 }
 
 export function getCurrentCustomerName(): string | null {
   if (typeof window === "undefined") return null;
 
-  const stored = window.localStorage.getItem(`${CUSTOMER_AUTH_KEY}-name`);
+  const user = getCurrentUser();
+  if (user?.name) return user.name;
+
+  const stored = getCookie(`${CUSTOMER_AUTH_KEY}-name`) ?? window.localStorage.getItem(`${CUSTOMER_AUTH_KEY}-name`);
   if (stored) return stored;
 
-  // Sesiones creadas antes de guardar el nombre: lo resolvemos desde el email y lo guardamos.
   const email = getCurrentCustomerEmail();
   if (!email) return null;
 
   const known = findCustomerByEmail(email);
-
   if (known) {
     setCurrentCustomerName(known.name);
     return known.name;
@@ -112,8 +135,13 @@ export function getCurrentCustomerName(): string | null {
 
 function setCurrentCustomerName(name: string | null) {
   if (typeof window === "undefined") return;
-  if (name) window.localStorage.setItem(`${CUSTOMER_AUTH_KEY}-name`, name);
-  else window.localStorage.removeItem(`${CUSTOMER_AUTH_KEY}-name`);
+  if (name) {
+    setCookie(`${CUSTOMER_AUTH_KEY}-name`, name, 7);
+    window.localStorage.setItem(`${CUSTOMER_AUTH_KEY}-name`, name);
+  } else {
+    removeCookie(`${CUSTOMER_AUTH_KEY}-name`);
+    window.localStorage.removeItem(`${CUSTOMER_AUTH_KEY}-name`);
+  }
 }
 
 export function registerCustomer(customer: Customer): { ok: true } | { ok: false; error: string } {
@@ -151,38 +179,73 @@ export function logoutCustomer() {
   setCurrentCustomerName(null);
   setAuthToken(null);
   setCurrentUser(null);
+  setAuthPermissions([]);
 }
 
 export interface CurrentUser {
-  id: number;
+  id: number | string;
   name: string;
   email: string;
   roleName: string | null;
   mobileNumber?: string | null;
   address?: string | null;
+  firstName?: string;
+  lastName?: string;
+  type?: string | null;
+  status?: string | null;
+  roles?: string[];
+  completionPct?: number;
+  emailVerified?: boolean;
+  phoneVerified?: boolean;
+  businessProfile?: {
+    legalName?: string;
+    tradeName?: string;
+    taxId?: string;
+    legalType?: string;
+    reviewStatus?: string;
+    billingEmail?: string;
+    fiscalAddress?: string;
+  } | null;
+  onboardingStates?: Array<{
+    stepCode: string;
+    status: string;
+  }> | null;
 }
 
 export function getAuthToken(): string | null {
   if (typeof window === "undefined") return null;
-  return window.localStorage.getItem(AUTH_TOKEN_KEY);
+  return getCookie(AUTH_TOKEN_KEY) ?? window.localStorage.getItem(AUTH_TOKEN_KEY);
 }
 
 export function setAuthToken(token: string | null) {
   if (typeof window === "undefined") return;
-  if (token) window.localStorage.setItem(AUTH_TOKEN_KEY, token);
-  else window.localStorage.removeItem(AUTH_TOKEN_KEY);
+  if (token) {
+    setCookie(AUTH_TOKEN_KEY, token, 7);
+    window.localStorage.setItem(AUTH_TOKEN_KEY, token);
+  } else {
+    removeCookie(AUTH_TOKEN_KEY);
+    window.localStorage.removeItem(AUTH_TOKEN_KEY);
+  }
 }
 
 export function setCurrentUser(user: CurrentUser | null) {
   if (typeof window === "undefined") return;
-  if (user) window.localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
-  else window.localStorage.removeItem(AUTH_USER_KEY);
+  if (user) {
+    const raw = JSON.stringify(user);
+    setCookie(AUTH_USER_KEY, raw, 7);
+    window.localStorage.setItem(AUTH_USER_KEY, raw);
+    setCurrentCustomerEmail(user.email);
+    setCurrentCustomerName(user.name);
+  } else {
+    removeCookie(AUTH_USER_KEY);
+    window.localStorage.removeItem(AUTH_USER_KEY);
+  }
 }
 
 export function getCurrentUser(): CurrentUser | null {
   if (typeof window === "undefined") return null;
 
-  const raw = window.localStorage.getItem(AUTH_USER_KEY);
+  const raw = getCookie(AUTH_USER_KEY) ?? window.localStorage.getItem(AUTH_USER_KEY);
   if (!raw) return null;
 
   try {
@@ -192,15 +255,66 @@ export function getCurrentUser(): CurrentUser | null {
   }
 }
 
-export function setSession(user: CurrentUser, token: string) {
+export function setAuthPermissions(permissions: string[]) {
+  if (typeof window === "undefined") return;
+  if (permissions && permissions.length > 0) {
+    const raw = JSON.stringify(permissions);
+    setCookie(AUTH_PERMISSIONS_KEY, raw, 7);
+    window.localStorage.setItem(AUTH_PERMISSIONS_KEY, raw);
+  } else {
+    removeCookie(AUTH_PERMISSIONS_KEY);
+    window.localStorage.removeItem(AUTH_PERMISSIONS_KEY);
+  }
+}
+
+export function getAuthPermissions(): string[] {
+  if (typeof window === "undefined") return [];
+  const raw = getCookie(AUTH_PERMISSIONS_KEY) ?? window.localStorage.getItem(AUTH_PERMISSIONS_KEY);
+  if (!raw) return [];
+
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+export function setSession(user: CurrentUser, token: string, permissions: string[] = []) {
   setCustomerAuthenticated(true);
   setCurrentUser(user);
   setAuthToken(token);
-  setCurrentCustomerEmail(user.email);
-  setCurrentCustomerName(user.name);
+  setAuthPermissions(permissions);
 }
 
 export function isAdminUser(): boolean {
   const user = getCurrentUser();
-  return user?.roleName === "admin";
+  if (!user) return false;
+  const role = (user.type ?? user.roleName ?? "").toLowerCase();
+  const userRoles = (user.roles ?? []).map((r) => r.toLowerCase());
+  return (
+    role === "admin" ||
+    role === "superadmin" ||
+    role === "support" ||
+    role === "staff" ||
+    userRoles.includes("admin") ||
+    userRoles.includes("superadmin")
+  );
+}
+
+export function hasRole(requiredRole: string): boolean {
+  const user = getCurrentUser();
+  if (!user?.roleName) return false;
+  return user.roleName.toLowerCase() === requiredRole.toLowerCase();
+}
+
+export function hasPermission(permission: string): boolean {
+  const user = getCurrentUser();
+  if (!user) return false;
+
+  const role = user.roleName?.toLowerCase();
+  if (role === "superadmin") return true;
+
+  const permissions = getAuthPermissions();
+  return permissions.includes(permission) || permissions.includes("*");
 }

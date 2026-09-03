@@ -20,20 +20,16 @@ import {
   Truck,
   User,
 } from "lucide-react";
-import { Button } from "@/presentation/atoms/button";
-import { StorefrontTemplate } from "@/presentation/templates/StorefrontTemplate";
-import { TrustBadgeItem } from "@/presentation/molecules/TrustBadgeItem";
-import { PaymentIconsRow } from "@/presentation/molecules/PaymentIconsRow";
-import { useCart } from "@/presentation/hooks/useCart";
-import { useCreateOrder } from "@/presentation/hooks/useOrders";
+import { Button } from "@/components/ui/button";
+import { StorefrontTemplate } from "@/components/layout/StorefrontTemplate";
+import { TrustBadgeItem } from "@/components/feedback/TrustBadgeItem";
+import { PaymentIconsRow } from "@/components/common/PaymentIconsRow";
+import { useCart } from "@/hooks/useCart";
+import { useCreateOrder } from "@/hooks/useOrders";
+import { useAuth } from "@/hooks/useAuth";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { formatPrice } from "@/shared/lib/format";
-import {
-  getCurrentCustomerEmail,
-  getCurrentCustomerName,
-  getCurrentUser,
-  isCustomerAuthenticated,
-} from "@/shared/lib/marketplaceStorage";
-import { ApiError } from "@/infrastructure/http/client";
+import { ApiError } from "@/config/axios";
 
 const TRUST_ITEMS = [
   { icon: Truck, text: "Envío gratis en compras superiores a $50" },
@@ -43,10 +39,9 @@ const TRUST_ITEMS = [
 
 export default function CheckoutPage() {
   const router = useRouter();
+  const { user } = useAuth();
   const { items, total, clearCart } = useCart();
   const { createOrder, isCreating, error } = useCreateOrder();
-  const [authChecked, setAuthChecked] = useState(false);
-  const [authenticated, setAuthenticated] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
   const [customerEmail, setCustomerEmail] = useState<string | null>(null);
@@ -58,27 +53,18 @@ export default function CheckoutPage() {
   const [shippingPhone, setShippingPhone] = useState("");
   const [notes, setNotes] = useState("");
 
-  // Estado de geolocalización
   const [isLocating, setIsLocating] = useState(false);
   const [locationError, setLocationError] = useState("");
   const [locationCoords, setLocationCoords] = useState<{ lat: number; lng: number } | null>(null);
 
   useEffect(() => {
-    if (!isCustomerAuthenticated()) {
-      router.push("/cuenta/ingresar?redirect=/checkout");
-      return;
-    }
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setAuthenticated(true);
-    setCustomerEmail(getCurrentCustomerEmail());
-    setCustomerName(getCurrentCustomerName());
-
-    const current = getCurrentUser();
-    setShippingAddress(current?.address ?? "");
+    if (!user) return;
+    setCustomerEmail(user.email ?? "");
+    setCustomerName(user.name ?? "");
+    setShippingAddress(user.address ?? "");
     setShippingCity("");
-    setShippingPhone(current?.mobileNumber ?? "");
-    setAuthChecked(true);
-  }, [router]);
+    setShippingPhone(user.mobileNumber ?? "");
+  }, [user]);
 
   const handleGetCurrentLocation = () => {
     if (typeof window === "undefined" || !navigator.geolocation) {
@@ -95,7 +81,6 @@ export default function CheckoutPage() {
         setLocationCoords({ lat: latitude, lng: longitude });
 
         try {
-          // Consultamos reverse geocoding en OpenStreetMap Nominatim
           const response = await fetch(
             `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1`,
             {
@@ -182,41 +167,33 @@ export default function CheckoutPage() {
     }
   };
 
-  if (!authChecked) {
-    return (
-      <StorefrontTemplate>
-        <div className="max-w-3xl mx-auto px-4 py-24 text-center text-muted-foreground">Verificando sesión…</div>
-      </StorefrontTemplate>
-    );
-  }
-
-  if (!authenticated) return null;
-
   if (orderPlaced) {
     return (
-      <StorefrontTemplate>
-        <div className="max-w-lg mx-auto px-4 py-24 text-center">
-          <div className="w-20 h-20 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-5">
-            <CheckCircle2 className="w-11 h-11 text-green-500" />
+      <ProtectedRoute redirectTo="/account/login?redirect=/checkout">
+        <StorefrontTemplate>
+          <div className="max-w-lg mx-auto px-4 py-24 text-center">
+            <div className="w-20 h-20 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-5">
+              <CheckCircle2 className="w-11 h-11 text-green-500" />
+            </div>
+            <h1 className="text-2xl md:text-3xl font-black text-foreground mb-2">¡Pedido confirmado!</h1>
+            <p className="text-muted-foreground mb-2">
+              Gracias por tu compra. Tu número de pedido es{" "}
+              <span className="font-semibold text-foreground">{orderNumber}</span>.
+            </p>
+            <p className="text-muted-foreground mb-8">
+              Te enviamos la confirmación a <span className="font-semibold text-foreground">{customerEmail ?? "tu correo"}</span>. Podés seguir su estado en tu panel de pedidos.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Button asChild className="h-11 px-8">
+                <Link href="/account/dashboard">Ver mis pedidos</Link>
+              </Button>
+              <Button asChild variant="outline" className="h-11 px-8">
+                <Link href="/">Volver a la tienda</Link>
+              </Button>
+            </div>
           </div>
-          <h1 className="text-2xl md:text-3xl font-black text-foreground mb-2">¡Pedido confirmado!</h1>
-          <p className="text-muted-foreground mb-2">
-            Gracias por tu compra. Tu número de pedido es{" "}
-            <span className="font-semibold text-foreground">{orderNumber}</span>.
-          </p>
-          <p className="text-muted-foreground mb-8">
-            Te enviamos la confirmación a <span className="font-semibold text-foreground">{customerEmail ?? "tu correo"}</span>. Podés seguir su estado en tu panel de pedidos.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Button asChild className="h-11 px-8">
-              <Link href="/cuenta/dashboard">Ver mis pedidos</Link>
-            </Button>
-            <Button asChild variant="outline" className="h-11 px-8">
-              <Link href="/">Volver a la tienda</Link>
-            </Button>
-          </div>
-        </div>
-      </StorefrontTemplate>
+        </StorefrontTemplate>
+      </ProtectedRoute>
     );
   }
 
@@ -238,7 +215,8 @@ export default function CheckoutPage() {
   }
 
   return (
-    <StorefrontTemplate>
+    <ProtectedRoute redirectTo="/account/login?redirect=/checkout">
+      <StorefrontTemplate>
       <div className="bg-card border-b border-border">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-2 text-xs text-muted-foreground">
           <Link href="/" className="flex items-center gap-1 hover:text-primary transition-colors">
@@ -449,6 +427,7 @@ export default function CheckoutPage() {
           </div>
         </div>
       </form>
-    </StorefrontTemplate>
+      </StorefrontTemplate>
+    </ProtectedRoute>
   );
 }

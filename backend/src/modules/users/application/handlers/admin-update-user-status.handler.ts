@@ -34,24 +34,23 @@ export class AdminUpdateUserStatusHandler {
 
     const previousStatus = user.status;
 
-    // Apply state change on domain entity
     switch (normalizedStatus) {
-      case UserStatus.ACTIVA:
+      case UserStatus.ACTIVE:
         user.activate();
         break;
-      case UserStatus.SUSPENDIDA:
+      case UserStatus.SUSPENDED:
         user.suspend();
         break;
-      case UserStatus.RESTRINGIDA:
+      case UserStatus.RESTRICTED:
         user.restrict();
         break;
-      case UserStatus.EN_REVISION:
+      case UserStatus.IN_REVIEW:
         user.sendToReview();
         break;
-      case UserStatus.RECHAZADA:
+      case UserStatus.REJECTED:
         user.reject();
         break;
-      case UserStatus.ELIMINADA_LOGICAMENTE:
+      case UserStatus.LOGICALLY_DELETED:
         user.softDelete();
         break;
       default:
@@ -61,17 +60,15 @@ export class AdminUpdateUserStatusHandler {
 
     const updated = await this.userRepository.update(user);
 
-    // If account was suspended, restricted, rejected or soft-deleted, invalidate all active sessions
     if (
-      normalizedStatus === UserStatus.SUSPENDIDA ||
-      normalizedStatus === UserStatus.RECHAZADA ||
-      normalizedStatus === UserStatus.ELIMINADA_LOGICAMENTE
+      normalizedStatus === UserStatus.SUSPENDED ||
+      normalizedStatus === UserStatus.REJECTED ||
+      normalizedStatus === UserStatus.LOGICALLY_DELETED
     ) {
       await this.authRepository.revokeAllUserSessions(userId);
       await this.cacheService.delPattern(`session:${userId}:*`);
     }
 
-    // Log security audit event
     await this.authRepository.logSecurityEvent(
       userId,
       'ADMIN_STATUS_CHANGED',

@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { UserRepositoryPort } from '../../domain/ports/user-repository.port';
 import { AuthRepositoryPort } from '../../domain/ports/auth-repository.port';
-import { CryptoUtils, BadRequestException, NotFoundException } from '../../../../shared';
+import { CryptoUtils, BadRequestException, NotFoundException, OnboardingStep } from '../../../../shared';
 
 @Injectable()
 export class VerifyEmailHandler {
@@ -29,18 +29,14 @@ export class VerifyEmailHandler {
       throw new BadRequestException('El token de verificación de correo es inválido o ha expirado.');
     }
 
-    // 1. Consume token
     await this.authRepository.consumeVerificationToken(validToken.id);
 
-    // 2. Mark email verified and update user
     user.verifyEmail();
     user.calculateCompletionPct();
     await this.userRepository.update(user);
 
-    // 3. Update onboarding step
-    await this.userRepository.saveOnboardingStep(user.id, 'email_verificado', 'completed');
+    await this.userRepository.saveOnboardingStep(user.id, OnboardingStep.EMAIL_VERIFIED, 'completed');
 
-    // 4. Log event
     await this.authRepository.logSecurityEvent(
       user.id,
       'EMAIL_VERIFIED',

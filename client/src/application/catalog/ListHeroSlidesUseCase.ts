@@ -1,5 +1,5 @@
-import type { HeroSlideRepository } from "@/domain/repositories/HeroSlideRepository";
-import type { HeroSlide } from "@/domain/entities/HeroSlide";
+import type { HeroSlideRepository } from "@/services";
+import type { HeroSlide } from "@/types";
 
 export class ListHeroSlidesUseCase {
   constructor(private readonly heroSlideRepository: HeroSlideRepository) {}

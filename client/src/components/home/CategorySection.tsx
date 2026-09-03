@@ -1,0 +1,40 @@
+"use client";
+
+import { Tag } from "lucide-react";
+import { useCategories } from "@/hooks/useCatalog";
+import { SectionEyebrow } from "@/components/common/SectionEyebrow";
+import { CategoryPill } from "@/components/home/CategoryPill";
+
+export function CategorySection({
+  activeCategory,
+  onCategoryChange,
+}: {
+  activeCategory: string;
+  onCategoryChange: (category: string) => void;
+}) {
+  const { data: categories } = useCategories();
+
+  return (
+    <section className="max-w-7xl mx-auto px-4 py-10">
+      <div className="flex items-end justify-between mb-6">
+        <div>
+          <SectionEyebrow icon={Tag}>Explorar por</SectionEyebrow>
+          <h2 className="text-2xl font-black text-foreground">Categorías Populares</h2>
+        </div>
+        <a href="#" className="text-sm font-semibold text-primary flex items-center gap-1 hover:gap-2 transition-all">
+          Todas las Categorías
+        </a>
+      </div>
+      <div className="grid grid-cols-4 md:grid-cols-8 gap-3">
+        {categories?.map((category) => (
+          <CategoryPill
+            key={category.name}
+            category={category}
+            active={activeCategory === category.name}
+            onClick={() => onCategoryChange(category.name === activeCategory ? "Todos" : category.name)}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}

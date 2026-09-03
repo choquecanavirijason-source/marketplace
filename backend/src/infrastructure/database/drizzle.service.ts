@@ -16,7 +16,7 @@ export class DrizzleService implements OnModuleInit, OnModuleDestroy {
       max: databaseConfig.maxConnections,
       idle_timeout: databaseConfig.idleTimeoutMillis / 1000,
       connect_timeout: databaseConfig.connectionTimeoutMillis / 1000,
-      onnotice: () => {}, // Suppress notices in production
+      onnotice: () => {},
     });
 
     this.db = drizzle(this.client, { schema });

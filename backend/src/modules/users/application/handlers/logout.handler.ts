@@ -22,7 +22,6 @@ export class LogoutHandler {
         await this.cacheService.del(`session:${command.userId}:${session.id}`);
       }
     } else {
-      // Revoke all sessions for this user
       await this.authRepository.revokeAllUserSessions(command.userId);
       await this.cacheService.delPattern(`session:${command.userId}:*`);
     }

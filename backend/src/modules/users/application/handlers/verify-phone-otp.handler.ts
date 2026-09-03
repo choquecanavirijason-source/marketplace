@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { UserRepositoryPort } from '../../domain/ports/user-repository.port';
 import { AuthRepositoryPort } from '../../domain/ports/auth-repository.port';
-import { CryptoUtils, BadRequestException, NotFoundException } from '../../../../shared';
+import { CryptoUtils, BadRequestException, NotFoundException, OnboardingStep } from '../../../../shared';
 
 @Injectable()
 export class VerifyPhoneOtpHandler {
@@ -33,18 +33,14 @@ export class VerifyPhoneOtpHandler {
       throw new BadRequestException('El código de verificación OTP es inválido o ha expirado.');
     }
 
-    // 1. Consume token
     await this.authRepository.consumeVerificationToken(validToken.id);
 
-    // 2. Mark phone verified
     targetUser.verifyPhone();
     targetUser.calculateCompletionPct();
     await this.userRepository.update(targetUser);
 
-    // 3. Update onboarding step
-    await this.userRepository.saveOnboardingStep(targetUser.id, 'telefono_verificado', 'completed');
+    await this.userRepository.saveOnboardingStep(targetUser.id, OnboardingStep.PHONE_VERIFIED, 'completed');
 
-    // 4. Log event
     await this.authRepository.logSecurityEvent(
       targetUser.id,
       'PHONE_OTP_VERIFIED',

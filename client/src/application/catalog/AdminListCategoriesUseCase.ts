@@ -1,6 +1,6 @@
-import type { AdminListCategoriesParams, CategoryRepository } from "@/domain/repositories/CategoryRepository";
-import type { Paginated } from "@/domain/entities/Order";
-import type { Category } from "@/domain/entities/Category";
+import type { AdminListCategoriesParams, CategoryRepository } from "@/services";
+import type { Paginated } from "@/types";
+import type { Category } from "@/types";
 
 export class AdminListCategoriesUseCase {
   constructor(private readonly categoryRepository: CategoryRepository) {}

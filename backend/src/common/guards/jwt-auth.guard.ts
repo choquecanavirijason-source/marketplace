@@ -40,7 +40,10 @@ export class JwtAuthGuard implements CanActivate {
       request.user = {
         id: payload.sub,
         email: payload.email,
+        type: payload.type,
         role: payload.role,
+        roles: Array.isArray(payload.roles) ? payload.roles : payload.role ? [payload.role] : [],
+        permissions: payload.permissions || [],
         kycLevel: payload.kycLevel ?? 0,
       };
     } catch {

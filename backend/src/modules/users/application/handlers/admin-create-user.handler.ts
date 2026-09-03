@@ -24,7 +24,7 @@ export class AdminCreateUserHandler {
       passwordHash,
       type: (dto.role?.toLowerCase() as UserType) || UserType.BUYER,
       role: (dto.role?.toLowerCase() as UserType) || UserType.BUYER,
-      status: (dto.status?.toLowerCase() as UserStatus) || UserStatus.ACTIVA,
+      status: (dto.status?.toLowerCase() as UserStatus) || UserStatus.ACTIVE,
       profile: {
         firstName: dto.firstName,
         lastName: dto.lastName,

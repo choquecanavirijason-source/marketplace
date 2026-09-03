@@ -15,7 +15,7 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
       retryStrategy: (times) => {
         if (times > 3) {
           this.logger.warn('⚠️ No se pudo conectar a Redis tras 3 intentos. Modo fallback activo.');
-          return null; // Stop retrying to avoid spamming
+          return null;
         }
         return Math.min(times * 100, 1000);
       },

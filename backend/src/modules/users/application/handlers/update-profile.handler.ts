@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { UserRepositoryPort } from '../../domain/ports/user-repository.port';
 import { UserEntity } from '../../domain/entities/user.entity';
-import { NotFoundException } from '../../../../shared';
+import { NotFoundException, OnboardingStep } from '../../../../shared';
 
 export interface UpdateProfileInput {
   firstName?: string;
@@ -52,9 +52,8 @@ export class UpdateProfileHandler {
 
     const saved = await this.userRepository.update(user);
 
-    // If profile is substantially filled, update onboarding state
     if (saved.firstName && saved.lastName) {
-      await this.userRepository.saveOnboardingStep(userId, 'perfil_completo', 'completed');
+      await this.userRepository.saveOnboardingStep(userId, OnboardingStep.PROFILE_COMPLETED, 'completed');
     }
 
     this.logger.log(`Perfil actualizado para usuario: ${userId}`);

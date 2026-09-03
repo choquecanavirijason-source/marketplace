@@ -38,19 +38,27 @@ export class OtpLoginHandler {
     }
 
     if (
-      user.status === UserStatus.SUSPENDIDA ||
-      user.status === UserStatus.RECHAZADA ||
-      user.status === UserStatus.ELIMINADA_LOGICAMENTE
+      user.status === UserStatus.SUSPENDED ||
+      user.status === UserStatus.REJECTED ||
+      user.status === UserStatus.LOGICALLY_DELETED
     ) {
       throw new UnauthorizedException('La cuenta de usuario se encuentra inactiva o suspendida.');
     }
 
     const tokenHash = CryptoUtils.sha256(params.code.trim());
-    const validToken = await this.authRepository.findValidVerificationToken(
+    let validToken = await this.authRepository.findValidVerificationToken(
       user.id,
-      'phone_otp',
+      params.email ? 'email_otp' : 'phone_otp',
       tokenHash,
     );
+
+    if (!validToken && params.email) {
+      validToken = await this.authRepository.findValidVerificationToken(
+        user.id,
+        'phone_otp',
+        tokenHash,
+      );
+    }
 
     if (!validToken) {
       await this.authRepository.logSecurityEvent(
@@ -64,10 +72,8 @@ export class OtpLoginHandler {
       throw new BadRequestException('El código OTP es inválido o ha expirado.');
     }
 
-    // 1. Consume token
     await this.authRepository.consumeVerificationToken(validToken.id);
 
-    // 2. Generate tokens
     const accessToken = await this.tokenGenerator.generateAccessToken({
       sub: user.id,
       email: user.email,
@@ -80,7 +86,6 @@ export class OtpLoginHandler {
 
     const refreshData = this.tokenGenerator.generateRefreshToken();
 
-    // 3. Persist session
     const session = new SessionEntity({
       id: crypto.randomUUID(),
       userId: user.id,
@@ -97,7 +102,6 @@ export class OtpLoginHandler {
     await this.authRepository.createSession(session);
     await this.cacheService.set(`session:${user.id}:${session.id}`, true, 7 * 24 * 3600);
 
-    // 4. Log event
     await this.authRepository.logSecurityEvent(
       user.id,
       'LOGIN_OTP_SUCCESS',

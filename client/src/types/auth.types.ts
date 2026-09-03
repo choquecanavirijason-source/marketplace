@@ -1,0 +1,147 @@
+export type {
+  CurrentUser,
+  Customer,
+} from "@/shared/lib/marketplaceStorage";
+
+export interface AuthUser {
+  id: number | string;
+  name: string;
+  email: string;
+  mobileNumber?: string | null;
+  address?: string | null;
+  roleName: string | null;
+  firstName?: string;
+  lastName?: string;
+  type?: string | null;
+  status?: string | null;
+  roles?: string[];
+  completionPct?: number;
+  emailVerified?: boolean;
+  phoneVerified?: boolean;
+  businessProfile?: {
+    legalName?: string;
+    tradeName?: string;
+    taxId?: string;
+    legalType?: string;
+    reviewStatus?: string;
+    billingEmail?: string;
+    fiscalAddress?: string;
+  } | null;
+  onboardingStates?: Array<{
+    stepCode: string;
+    status: string;
+  }> | null;
+}
+
+export interface AuthSession {
+  accessToken: string;
+  refreshToken?: string;
+  expiresAt?: string | null;
+  user: AuthUser;
+  permissions: string[];
+}
+
+export interface LoginCredentials {
+  email: string;
+  password: string;
+}
+
+export interface OtpLoginCredentials {
+  phone?: string;
+  email?: string;
+  code: string;
+}
+
+export interface RegisterData {
+  name: string;
+  email: string;
+  password: string;
+  mobileNumber?: string;
+  address?: string;
+  type?: "buyer" | "seller_individual" | "seller_company" | "seller_empresa";
+  legalName?: string;
+  tradeName?: string;
+  taxId?: string;
+  legalType?: string;
+  fiscalAddress?: string;
+  termsAccepted?: boolean;
+}
+
+export interface UpdateProfileData {
+  name?: string;
+  firstName?: string;
+  lastName?: string;
+  mobileNumber?: string;
+  address?: string;
+  password?: string;
+  language?: string;
+  currency?: string;
+  avatarUrl?: string;
+}
+
+export interface UpdateBusinessProfileData {
+  legalName?: string;
+  tradeName?: string;
+  taxId?: string;
+  legalType?: string;
+  billingEmail?: string;
+  fiscalAddress?: string;
+}
+
+export interface UserSessionItem {
+  id: string;
+  deviceId?: string | null;
+  ip?: string | null;
+  userAgent?: string | null;
+  lastSeenAt: string;
+  expiresAt: string;
+  isCurrent?: boolean;
+}
+
+export interface UserAuditEvent {
+  id: string;
+  eventType: string;
+  severity: "info" | "warning" | "critical";
+  ip?: string | null;
+  deviceId?: string | null;
+  userAgent?: string | null;
+  detailsJson?: string | Record<string, any> | null;
+  metadata?: Record<string, any>;
+  createdAt: string;
+}
+
+export interface BusinessProfileData {
+  legalName?: string;
+  tradeName?: string;
+  taxId?: string;
+  legalType?: string;
+  billingEmail?: string;
+  fiscalAddress?: string;
+  reviewStatus?: string;
+}
+
+export interface UserAddress {
+  id: string;
+  label: string;
+  country: string;
+  province: string;
+  city: string;
+  street: string;
+  number: string;
+  zip: string;
+  isDefault: boolean;
+}
+
+export interface AuthenticatedUserProfile {
+  id: string | number;
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  phone?: string | null;
+  type: string;
+  roles: string[];
+  permissions: string[];
+  completionPct?: number;
+  businessProfile?: BusinessProfileData | null;
+  addresses?: UserAddress[];
+}

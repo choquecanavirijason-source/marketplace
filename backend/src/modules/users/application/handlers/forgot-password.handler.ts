@@ -15,7 +15,6 @@ export class ForgotPasswordHandler {
   async execute(email: string, ip?: string): Promise<{ message: string; debugToken?: string }> {
     const user = await this.userRepository.findByEmail(email);
 
-    // Timing attack prevention: don't reveal whether the user exists
     if (!user) {
       return {
         message: 'Si el correo está registrado, recibirás un enlace para restablecer tu contraseña.',
@@ -24,7 +23,7 @@ export class ForgotPasswordHandler {
 
     const rawToken = CryptoUtils.generateRandomToken(32);
     const tokenHash = CryptoUtils.sha256(rawToken);
-    const expiresAt = DateUtils.addHours(new Date(), 2); // 2 hours expiry
+    const expiresAt = DateUtils.addHours(new Date(), 2);
 
     await this.authRepository.createVerificationToken(
       user.id,
@@ -44,7 +43,6 @@ export class ForgotPasswordHandler {
 
     this.logger.log(`Token de recuperación generado para usuario: ${user.id}`);
 
-    // Return debugToken in non-production environments to facilitate automated testing / QA
     const isDev = process.env.NODE_ENV !== 'production';
     return {
       message: 'Si el correo está registrado, recibirás un enlace para restablecer tu contraseña.',

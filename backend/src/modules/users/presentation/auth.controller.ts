@@ -24,8 +24,10 @@ import { ForgotPasswordHandler } from '../application/handlers/forgot-password.h
 import { ResetPasswordHandler } from '../application/handlers/reset-password.handler';
 import { VerifyEmailHandler } from '../application/handlers/verify-email.handler';
 import { SendPhoneOtpHandler } from '../application/handlers/send-phone-otp.handler';
+import { SendEmailOtpHandler } from '../application/handlers/send-email-otp.handler';
 import { VerifyPhoneOtpHandler } from '../application/handlers/verify-phone-otp.handler';
 
+import { sendEmailOtpSchema, SendEmailOtpDto } from './dto/send-email-otp.dto';
 import { registerUserSchema, RegisterUserDto } from './dto/register-user.dto';
 import { loginSchema, LoginDto } from './dto/login.dto';
 import { otpLoginSchema, OtpLoginDto } from './dto/otp-login.dto';
@@ -64,6 +66,7 @@ export class AuthController {
     private readonly resetPasswordHandler: ResetPasswordHandler,
     private readonly verifyEmailHandler: VerifyEmailHandler,
     private readonly sendPhoneOtpHandler: SendPhoneOtpHandler,
+    private readonly sendEmailOtpHandler: SendEmailOtpHandler,
     private readonly verifyPhoneOtpHandler: VerifyPhoneOtpHandler,
   ) {}
 
@@ -202,6 +205,14 @@ export class AuthController {
   @UsePipes(new ZodValidationPipe(sendPhoneOtpSchema))
   async sendPhoneOtp(@Body() dto: SendPhoneOtpDto, @Req() req: FastifyRequest) {
     return this.sendPhoneOtpHandler.execute(dto.phone, undefined, req.ip);
+  }
+
+  @Public()
+  @Post('send-email-otp')
+  @HttpCode(HttpStatus.OK)
+  @UsePipes(new ZodValidationPipe(sendEmailOtpSchema))
+  async sendEmailOtp(@Body() dto: SendEmailOtpDto, @Req() req: FastifyRequest) {
+    return this.sendEmailOtpHandler.execute(dto.email, req.ip);
   }
 
   @Public()

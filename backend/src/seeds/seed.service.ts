@@ -13,7 +13,7 @@ import {
   securityEventsTable,
   auditLogsTable,
 } from '../infrastructure/database/schema';
-import { CryptoUtils, Permissions, ROLE_PERMISSIONS } from '../shared';
+import { CryptoUtils, Permissions, ROLE_PERMISSIONS, OnboardingStep } from '../shared';
 import { STATIC_ACCOUNTS, generateFakeUsers } from './fixtures/users.fixture';
 
 @Injectable()
@@ -28,7 +28,6 @@ export class SeedService {
     const defaultPassword = 'Password1234!';
     const passwordHash = await CryptoUtils.hashPassword(defaultPassword);
 
-    // 1. Seed Roles and Permissions
     this.logger.log('🛡️ Sembrando roles del sistema y permisos granulares...');
     const allPermissionCodes = Object.values(Permissions);
     const permissionMap = new Map<string, string>();
@@ -54,7 +53,6 @@ export class SeedService {
       }
     }
 
-    // Fetch all permissions if already existed
     const existingPerms = await this.drizzle.db.select().from(permissionsTable);
     for (const p of existingPerms) {
       permissionMap.set(p.code, p.id);
@@ -62,14 +60,15 @@ export class SeedService {
 
     const roleMap = new Map<string, string>();
     const rolesToSeed = [
-      { codename: 'buyer', name: 'Comprador' },
-      { codename: 'seller', name: 'Vendedor General' },
-      { codename: 'seller_individual', name: 'Vendedor Individual' },
-      { codename: 'seller_empresa', name: 'Vendedor Corporativo' },
-      { codename: 'admin', name: 'Administrador' },
-      { codename: 'superadmin', name: 'Super Administrador' },
-      { codename: 'support', name: 'Soporte y Operaciones' },
-      { codename: 'finance', name: 'Finanzas y Riesgo' },
+      { codename: 'buyer', name: 'Buyer' },
+      { codename: 'seller', name: 'Seller' },
+      { codename: 'seller_individual', name: 'Individual Seller' },
+      { codename: 'seller_company', name: 'Company Seller' },
+      { codename: 'seller_empresa', name: 'Company Seller' },
+      { codename: 'admin', name: 'Administrator' },
+      { codename: 'superadmin', name: 'Super Administrator' },
+      { codename: 'support', name: 'Support & Operations' },
+      { codename: 'finance', name: 'Finance & Risk' },
     ];
 
     for (const r of rolesToSeed) {
@@ -95,7 +94,6 @@ export class SeedService {
       roleMap.set(r.codename, r.id);
     }
 
-    // Link Role Permissions
     for (const [roleCode, permList] of Object.entries(ROLE_PERMISSIONS)) {
       const roleId = roleMap.get(roleCode.toLowerCase());
       if (!roleId) continue;
@@ -110,12 +108,10 @@ export class SeedService {
             permissionId: permId,
           });
         } catch {
-          // Ignore duplicate links
         }
       }
     }
 
-    // 2. Insert Static Administrative Accounts
     this.logger.log('👤 Insertando cuentas fijas (Admin, Staff, Seller, Buyer)...');
     for (const acc of STATIC_ACCOUNTS) {
       const userId = crypto.randomUUID();
@@ -138,7 +134,6 @@ export class SeedService {
 
       const activeUserId = userRows[0]?.id || userId;
 
-      // Insert User Profile
       await this.drizzle.db
         .insert(userProfilesTable)
         .values({
@@ -153,7 +148,6 @@ export class SeedService {
         })
         .onConflictDoNothing({ target: userProfilesTable.userId });
 
-      // Insert Business Profile if seller
       if (acc.legalName && acc.taxId) {
         await this.drizzle.db
           .insert(businessProfilesTable)
@@ -171,7 +165,6 @@ export class SeedService {
           .onConflictDoNothing({ target: businessProfilesTable.userId });
       }
 
-      // Assign user roles
       for (const r of acc.roles) {
         const rId = roleMap.get(r.toLowerCase());
         if (rId) {
@@ -182,13 +175,17 @@ export class SeedService {
               assignedAt: new Date(),
             });
           } catch {
-            // ignore
           }
         }
       }
 
-      // Initial Onboarding States
-      for (const step of ['registro_base', 'email_verificado', 'telefono_verificado', 'perfil_completo', 'terminos_aceptados']) {
+      for (const step of [
+        OnboardingStep.BASE_REGISTRATION,
+        OnboardingStep.EMAIL_VERIFIED,
+        OnboardingStep.PHONE_VERIFIED,
+        OnboardingStep.PROFILE_COMPLETED,
+        OnboardingStep.TERMS_ACCEPTED,
+      ]) {
         try {
           await this.drizzle.db.insert(onboardingStatesTable).values({
             userId: activeUserId,
@@ -199,12 +196,10 @@ export class SeedService {
             updatedAt: new Date(),
           });
         } catch {
-          // ignore
         }
       }
     }
 
-    // 3. Generate and Insert Fake Users
     this.logger.log(`👥 Generando ${fakeUserCount} usuarios aleatorios con Faker...`);
     const fakeUsers = generateFakeUsers(fakeUserCount, passwordHash);
 
@@ -256,7 +251,6 @@ export class SeedService {
       this.logger.log(`  ✓ Insertados ${Math.min(i + chunkSize, fakeUsers.length)} de ${fakeUsers.length} usuarios...`);
     }
 
-    // 4. Initial Audit & Security Log
     await this.drizzle.db.insert(securityEventsTable).values({
       eventType: 'SYSTEM_DATABASE_SEEDED',
       severity: 'info',

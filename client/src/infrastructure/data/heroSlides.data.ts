@@ -1,4 +1,4 @@
-import type { HeroSlide } from "@/domain/entities/HeroSlide";
+import type { HeroSlide } from "@/types";
 
 export const heroSlidesSeed: HeroSlide[] = [
   {

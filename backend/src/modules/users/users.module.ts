@@ -1,12 +1,10 @@
 import { Module, Global } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 
-// Controllers
 import { AuthController } from './presentation/auth.controller';
 import { MeController } from './presentation/me.controller';
 import { UsersController } from './presentation/users.controller';
 
-// Handlers & Queries
 import { RegisterUserHandler } from './application/handlers/register-user.handler';
 import { LoginHandler } from './application/handlers/login.handler';
 import { OtpLoginHandler } from './application/handlers/otp-login.handler';
@@ -17,6 +15,7 @@ import { ForgotPasswordHandler } from './application/handlers/forgot-password.ha
 import { ResetPasswordHandler } from './application/handlers/reset-password.handler';
 import { VerifyEmailHandler } from './application/handlers/verify-email.handler';
 import { SendPhoneOtpHandler } from './application/handlers/send-phone-otp.handler';
+import { SendEmailOtpHandler } from './application/handlers/send-email-otp.handler';
 import { VerifyPhoneOtpHandler } from './application/handlers/verify-phone-otp.handler';
 
 import { GetUserQuery } from './application/queries/get-user.query';
@@ -33,7 +32,6 @@ import { AdminUpdateUserStatusHandler } from './application/handlers/admin-updat
 import { AdminUpdateUserRolesHandler } from './application/handlers/admin-update-user-roles.handler';
 import { AdminGetUserAuditQuery } from './application/queries/admin-get-user-audit.query';
 
-// Ports & Repositories
 import { UserRepositoryPort } from './domain/ports/user-repository.port';
 import { PostgresUserRepository } from './infrastructure/repositories/postgres-user.repository';
 import { AuthRepositoryPort } from './domain/ports/auth-repository.port';
@@ -54,7 +52,6 @@ import { appConfig } from '../../config';
   ],
   controllers: [AuthController, MeController, UsersController],
   providers: [
-    // Identity & Auth
     RegisterUserHandler,
     LoginHandler,
     OtpLoginHandler,
@@ -65,9 +62,9 @@ import { appConfig } from '../../config';
     ResetPasswordHandler,
     VerifyEmailHandler,
     SendPhoneOtpHandler,
+    SendEmailOtpHandler,
     VerifyPhoneOtpHandler,
 
-    // Profile & Sessions
     GetUserQuery,
     ListUsersQuery,
     UpdateProfileHandler,
@@ -75,7 +72,6 @@ import { appConfig } from '../../config';
     ListSessionsQuery,
     RevokeSessionHandler,
 
-    // Admin
     AdminCreateUserHandler,
     AdminUpdateUserHandler,
     AdminDeleteUserHandler,
@@ -83,7 +79,6 @@ import { appConfig } from '../../config';
     AdminUpdateUserRolesHandler,
     AdminGetUserAuditQuery,
 
-    // Ports
     {
       provide: UserRepositoryPort,
       useClass: PostgresUserRepository,

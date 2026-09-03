@@ -8,5 +8,5 @@ export const storageConfig = {
     accessKeyId: env.STORAGE_ACCESS_KEY_ID,
     secretAccessKey: env.STORAGE_SECRET_ACCESS_KEY,
   },
-  forcePathStyle: true, // Crucial for MinIO and R2 compatibility
+  forcePathStyle: true,
 };

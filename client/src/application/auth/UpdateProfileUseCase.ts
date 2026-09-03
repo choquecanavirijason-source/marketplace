@@ -1,5 +1,5 @@
-import type { AuthRepository, UpdateProfileData } from "@/domain/repositories/AuthRepository";
-import type { AuthSession } from "@/domain/repositories/AuthRepository";
+import type { AuthRepository, UpdateProfileData } from "@/services";
+import type { AuthSession } from "@/services";
 
 export class UpdateProfileUseCase {
   constructor(private readonly authRepository: AuthRepository) {}

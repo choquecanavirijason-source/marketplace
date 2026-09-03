@@ -8,7 +8,6 @@ export const updateProfileSchema = z.object({
   language: z.string().max(10).optional(),
   currency: z.string().max(10).optional(),
   phone: z.string().min(6).optional(),
-  // Fallbacks de compatibilidad con frontend existente
   name: z.string().optional(),
   mobileNumber: z.string().optional(),
   mobile_number: z.string().optional(),

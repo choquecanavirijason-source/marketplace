@@ -1,7 +1,6 @@
-import type { Product } from "@/domain/entities/Product";
+import type { Product } from "@/types";
 
 export const productsSeed: Product[] = [
-  // Herramientas Eléctricas
   {
     id: 1, name: "Taladro Percutor Eléctrico 750W", price: 79.99, originalPrice: 99.99,
     rating: 4.8, reviews: 156,
@@ -53,7 +52,6 @@ export const productsSeed: Product[] = [
     warranty: "12 meses de garantía del fabricante",
   },
 
-  // Herramientas Manuales
   {
     id: 6, name: "Set de Destornilladores Profesional 6 Piezas", price: 18.99, originalPrice: 26.99,
     rating: 4.6, reviews: 112,
@@ -105,7 +103,6 @@ export const productsSeed: Product[] = [
     warranty: "12 meses de garantía del fabricante",
   },
 
-  // Pinturas
   {
     id: 11, name: "Pintura Látex Interior 20L Blanco", price: 64.99,
     rating: 4.7, reviews: 87,
@@ -157,7 +154,6 @@ export const productsSeed: Product[] = [
     warranty: "Vida útil 24 meses sin abrir",
   },
 
-  // Plomería
   {
     id: 16, name: "Caño de PVC 3/4\" x 3m", price: 7.99,
     rating: 4.6, reviews: 58,
@@ -209,7 +205,6 @@ export const productsSeed: Product[] = [
     warranty: "12 meses de garantía del fabricante",
   },
 
-  // Electricidad
   {
     id: 21, name: "Cable Unipolar 2.5mm x 100m", price: 54.99,
     rating: 4.7, reviews: 71,
@@ -261,7 +256,6 @@ export const productsSeed: Product[] = [
     warranty: "Vida útil indefinida sin abrir",
   },
 
-  // Accesorios y Repuestos
   {
     id: 26, name: "Kit de Tornillería Surtida 200 Piezas", price: 14.99,
     rating: 4.5, reviews: 64,
@@ -313,7 +307,6 @@ export const productsSeed: Product[] = [
     warranty: "Vida útil indefinida sin abrir",
   },
 
-  // Calefacción
   {
     id: 31, name: "Calefactor Eléctrico de Panel 2000W", price: 89.99, originalPrice: 119.99,
     rating: 4.8, reviews: 234,
@@ -399,7 +392,6 @@ export const productsSeed: Product[] = [
     warranty: "6 meses de garantía del fabricante",
   },
 
-  // Climatización
   {
     id: 38, name: "Ventilador de Torre con Climatizador", price: 129.99, originalPrice: 169.99,
     rating: 4.8, reviews: 178,

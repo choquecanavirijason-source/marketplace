@@ -38,9 +38,9 @@ export class LoginHandler {
     }
 
     if (
-      user.status === UserStatus.SUSPENDIDA ||
-      user.status === UserStatus.RECHAZADA ||
-      user.status === UserStatus.ELIMINADA_LOGICAMENTE
+      user.status === UserStatus.SUSPENDED ||
+      user.status === UserStatus.REJECTED ||
+      user.status === UserStatus.LOGICALLY_DELETED
     ) {
       await this.authRepository.logSecurityEvent(
         user.id,
@@ -70,7 +70,6 @@ export class LoginHandler {
       throw new UnauthorizedException('Credenciales de acceso inválidas.');
     }
 
-    // Generate tokens with full roles and permissions
     const accessToken = await this.tokenGenerator.generateAccessToken({
       sub: user.id,
       email: user.email,
@@ -83,7 +82,6 @@ export class LoginHandler {
 
     const refreshData = this.tokenGenerator.generateRefreshToken();
 
-    // Persist Session
     const session = new SessionEntity({
       id: crypto.randomUUID(),
       userId: user.id,
@@ -99,10 +97,8 @@ export class LoginHandler {
 
     await this.authRepository.createSession(session);
 
-    // Cache session in Redis for instant revocation lookup
     await this.cacheService.set(`session:${user.id}:${session.id}`, true, 7 * 24 * 3600);
 
-    // Security event log
     await this.authRepository.logSecurityEvent(
       user.id,
       'LOGIN_SUCCESS',
@@ -117,7 +113,7 @@ export class LoginHandler {
     return {
       accessToken,
       refreshToken: refreshData.token,
-      expiresIn: 900, // 15 minutes
+      expiresIn: 900,
       user: user.toJSON(),
       permissions: user.permissions,
     };
