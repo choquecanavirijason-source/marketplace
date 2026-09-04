@@ -31,6 +31,7 @@ import { ApiError } from "@/config/axios";
 import { getPublicAuthConfig, type PublicAuthSettings } from "@/services/auth-config.service";
 import { GoogleIcon, FacebookIcon, AppleIcon } from "@/components/icons/SocialIcons";
 import { HttpAuthRepository } from "@/services/auth.service";
+import { syncAuthCookies } from "@/shared/lib/marketplaceStorage";
 
 const loginSchema = z.object({
   email: z
@@ -87,7 +88,7 @@ const authHttp = new HttpAuthRepository();
 const LoginForm = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const explicitRedirect = searchParams.get("redirect") || searchParams.get("callbackUrl");
+  const rawRedirect = searchParams.get("redirect") || searchParams.get("callbackUrl");
 
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -104,6 +105,39 @@ const LoginForm = () => {
   } = useAuth();
 
   const { dict } = useTranslation();
+
+  const sanitizeRedirect = (url: string | null): string => {
+    if (!url) return "";
+    try {
+      const decoded = decodeURIComponent(url).trim();
+      if (
+        !decoded.startsWith("/") ||
+        decoded.startsWith("//") ||
+        decoded.startsWith("/account/login") ||
+        decoded.startsWith("/login") ||
+        decoded.startsWith("/account/register") ||
+        decoded.startsWith("/register")
+      ) {
+        return "";
+      }
+      return decoded;
+    } catch {
+      return "";
+    }
+  };
+
+  const safeRedirect = sanitizeRedirect(rawRedirect);
+  const targetDestination = safeRedirect || (isAdmin ? "/admin" : "/account/dashboard");
+
+  const handleNavigateToDestination = (destination: string) => {
+    syncAuthCookies();
+    try {
+      router.push(destination);
+    } catch {}
+    if (typeof window !== "undefined") {
+      window.location.href = destination;
+    }
+  };
 
   // Consulta de configuración pública de métodos de autenticación
   const { data: rawAuthConfig } = useQuery<PublicAuthSettings>({
@@ -148,16 +182,19 @@ const LoginForm = () => {
 
   const { setValue, handleSubmit } = methods;
 
-  const targetDestination = explicitRedirect || (isAdmin ? "/admin" : "/account/dashboard");
-
-  // Redirección inmediata si ya está autenticado
+  // Redirección inmediata y garantizada si ya está autenticado
   useEffect(() => {
     if (isAuthenticated && !isLoading) {
-      router.replace(targetDestination);
+      syncAuthCookies();
+      const timer = setTimeout(() => {
+        handleNavigateToDestination(targetDestination);
+      }, 350);
+      return () => clearTimeout(timer);
     }
-  }, [isAuthenticated, isLoading, router, targetDestination]);
+  }, [isAuthenticated, isLoading, targetDestination]);
 
   const redirectAfterLogin = (session: any) => {
+    syncAuthCookies();
     const role = (session.user.role || session.user.roleName || session.user.type || "").toLowerCase();
     const userRoles = (session.user.roles || []).map((r: string) => r.toLowerCase());
     const isAdminRole =
@@ -168,13 +205,8 @@ const LoginForm = () => {
       userRoles.includes("admin") ||
       userRoles.includes("superadmin");
 
-    if (explicitRedirect) {
-      router.replace(explicitRedirect);
-    } else if (isAdminRole) {
-      router.replace("/admin");
-    } else {
-      router.replace("/account/dashboard");
-    }
+    const destination = safeRedirect || (isAdminRole ? "/admin" : "/account/dashboard");
+    handleNavigateToDestination(destination);
   };
 
   const onSubmit = async (data: LoginFormValues) => {
@@ -383,12 +415,19 @@ const LoginForm = () => {
 
           <div className="space-y-3">
             <Button
-              type="button"
-              onClick={() => router.replace(targetDestination)}
-              className="w-full h-11 rounded-xl text-sm font-bold shadow-md cursor-pointer gap-2"
+              asChild
+              className="w-full h-11 rounded-xl text-sm font-bold shadow-md cursor-pointer gap-2 bg-primary text-primary-foreground hover:bg-[#cf4900]"
             >
-              <span>{isAdmin ? "Ir al Panel de Administración" : "Continuar a mi Panel"}</span>
-              <ArrowRight className="w-4 h-4" />
+              <Link
+                href={targetDestination}
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleNavigateToDestination(targetDestination);
+                }}
+              >
+                <span>{isAdmin ? "Ir al Panel de Administración" : "Continuar a mi Panel"}</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
             </Button>
             <Button
               type="button"
@@ -738,7 +777,7 @@ const LoginForm = () => {
         <div className="mt-6 text-center text-xs text-muted-foreground pt-4 border-t border-border/80">
           {dict.auth.noAccount}{" "}
           <Link
-            href={`/account/register${explicitRedirect ? `?redirect=${encodeURIComponent(explicitRedirect)}` : ""}`}
+            href={`/account/register${safeRedirect ? `?redirect=${encodeURIComponent(safeRedirect)}` : ""}`}
             className="font-bold text-primary hover:underline inline-flex items-center gap-1"
           >
             {dict.auth.signUpHere}

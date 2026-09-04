@@ -2,6 +2,7 @@
 
 import { useEffect, type ReactNode } from "react";
 import { useAuthStore } from "@/infrastructure/state/authStore";
+import { syncAuthCookies } from "@/shared/lib/marketplaceStorage";
 import type { CurrentUser } from "@/types";
 import type {
   LoginCredentials,
@@ -40,6 +41,7 @@ export interface AuthContextValue {
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
+    syncAuthCookies();
     useAuthStore.getState().init();
   }, []);
 

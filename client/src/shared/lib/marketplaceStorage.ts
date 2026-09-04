@@ -219,14 +219,48 @@ export interface CurrentUser {
   }> | null;
 }
 
+export function syncAuthCookies(): void {
+  if (typeof window === "undefined") return;
+  const token = window.localStorage.getItem(AUTH_TOKEN_KEY);
+  if (token && !getCookie(AUTH_TOKEN_KEY)) {
+    setCookie(AUTH_TOKEN_KEY, token, 7);
+  }
+  const user = window.localStorage.getItem(AUTH_USER_KEY);
+  if (user && !getCookie(AUTH_USER_KEY)) {
+    setCookie(AUTH_USER_KEY, user, 7);
+  }
+  const permissions = window.localStorage.getItem(AUTH_PERMISSIONS_KEY);
+  if (permissions && !getCookie(AUTH_PERMISSIONS_KEY)) {
+    setCookie(AUTH_PERMISSIONS_KEY, permissions, 7);
+  }
+  const refreshToken = window.localStorage.getItem(AUTH_REFRESH_TOKEN_KEY);
+  if (refreshToken && !getCookie(AUTH_REFRESH_TOKEN_KEY)) {
+    setCookie(AUTH_REFRESH_TOKEN_KEY, refreshToken, 7);
+  }
+}
+
 export function getAuthToken(): string | null {
   if (typeof window === "undefined") return null;
-  return getCookie(AUTH_TOKEN_KEY) ?? window.localStorage.getItem(AUTH_TOKEN_KEY);
+  const cookieVal = getCookie(AUTH_TOKEN_KEY);
+  if (cookieVal) return cookieVal;
+  const localVal = window.localStorage.getItem(AUTH_TOKEN_KEY);
+  if (localVal) {
+    setCookie(AUTH_TOKEN_KEY, localVal, 7);
+    return localVal;
+  }
+  return null;
 }
 
 export const getRefreshToken = (): string | null => {
   if (typeof window === "undefined") return null;
-  return getCookie(AUTH_REFRESH_TOKEN_KEY) ?? window.localStorage.getItem(AUTH_REFRESH_TOKEN_KEY);
+  const cookieVal = getCookie(AUTH_REFRESH_TOKEN_KEY);
+  if (cookieVal) return cookieVal;
+  const localVal = window.localStorage.getItem(AUTH_REFRESH_TOKEN_KEY);
+  if (localVal) {
+    setCookie(AUTH_REFRESH_TOKEN_KEY, localVal, 7);
+    return localVal;
+  }
+  return null;
 };
 
 export const setRefreshToken = (token: string | null): void => {
@@ -268,14 +302,25 @@ export function setCurrentUser(user: CurrentUser | null) {
 export function getCurrentUser(): CurrentUser | null {
   if (typeof window === "undefined") return null;
 
-  const raw = getCookie(AUTH_USER_KEY) ?? window.localStorage.getItem(AUTH_USER_KEY);
-  if (!raw) return null;
-
-  try {
-    return JSON.parse(raw) as CurrentUser;
-  } catch {
-    return null;
+  const cookieVal = getCookie(AUTH_USER_KEY);
+  if (cookieVal) {
+    try {
+      return JSON.parse(cookieVal) as CurrentUser;
+    } catch {}
   }
+
+  const localVal = window.localStorage.getItem(AUTH_USER_KEY);
+  if (localVal) {
+    try {
+      const parsed = JSON.parse(localVal) as CurrentUser;
+      setCookie(AUTH_USER_KEY, localVal, 7);
+      return parsed;
+    } catch {
+      return null;
+    }
+  }
+
+  return null;
 }
 
 export function setAuthPermissions(permissions: string[]) {
@@ -292,12 +337,24 @@ export function setAuthPermissions(permissions: string[]) {
 
 export function getAuthPermissions(): string[] {
   if (typeof window === "undefined") return [];
-  const raw = getCookie(AUTH_PERMISSIONS_KEY) ?? window.localStorage.getItem(AUTH_PERMISSIONS_KEY);
+  const cookieVal = getCookie(AUTH_PERMISSIONS_KEY);
+  if (cookieVal) {
+    try {
+      const parsed = JSON.parse(cookieVal);
+      if (Array.isArray(parsed)) return parsed;
+    } catch {}
+  }
+
+  const raw = window.localStorage.getItem(AUTH_PERMISSIONS_KEY);
   if (!raw) return [];
 
   try {
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    if (Array.isArray(parsed)) {
+      setCookie(AUTH_PERMISSIONS_KEY, raw, 7);
+      return parsed;
+    }
+    return [];
   } catch {
     return [];
   }

@@ -29,18 +29,25 @@ export const proxy = (request: NextRequest) => {
   let isAdmin = false;
   if (userCookie) {
     try {
-      const user = JSON.parse(decodeURIComponent(userCookie));
-      const role = (user?.role || user?.roleName || user?.type || "").toLowerCase();
-      const userRoles = Array.isArray(user?.roles)
-        ? user.roles.map((r: any) => String(r).toLowerCase())
-        : [];
-      isAdmin =
-        role === "admin" ||
-        role === "superadmin" ||
-        role === "support" ||
-        role === "staff" ||
-        userRoles.includes("admin") ||
-        userRoles.includes("superadmin");
+      let user: any = null;
+      try {
+        user = JSON.parse(userCookie);
+      } catch {
+        user = JSON.parse(decodeURIComponent(userCookie));
+      }
+      if (user) {
+        const role = (user?.role || user?.roleName || user?.type || "").toLowerCase();
+        const userRoles = Array.isArray(user?.roles)
+          ? user.roles.map((r: any) => String(r).toLowerCase())
+          : [];
+        isAdmin =
+          role === "admin" ||
+          role === "superadmin" ||
+          role === "support" ||
+          role === "staff" ||
+          userRoles.includes("admin") ||
+          userRoles.includes("superadmin");
+      }
     } catch {
       isAdmin = false;
     }

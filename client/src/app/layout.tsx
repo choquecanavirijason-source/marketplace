@@ -37,6 +37,14 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                     event.preventDefault();
                   }
                 }, true);
+                try {
+                  var savedTheme = localStorage.getItem('ferromax-theme');
+                  if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    document.documentElement.classList.add('dark');
+                  } else {
+                    document.documentElement.classList.remove('dark');
+                  }
+                } catch(e) {}
               })();
             `,
           }}
