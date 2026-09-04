@@ -37,13 +37,13 @@ import type { Order, OrderStatus } from "@/types";
 import type { UserSessionItem } from "@/services";
 import { container } from "@/infrastructure/container";
 import { ApiError } from "@/config/axios";
+import { PhoneCountryInput } from "@/components/ui/phone-country-input";
 import {
   Building2,
   Laptop,
   Smartphone as SmartphoneIcon,
   LogOut,
-  TrendingUp,
-  Globe,
+  LayoutDashboard,
 } from "lucide-react";
 
 type TabType = "pedidos" | "perfil" | "comercial" | "sesiones";
@@ -51,7 +51,7 @@ type TabType = "pedidos" | "perfil" | "comercial" | "sesiones";
 export default function CustomerDashboardPage() {
   const router = useRouter();
   const { orders, isLoading: ordersLoading } = useMyOrders();
-  const { updateProfile, isUpdatingProfile, user, logoutAll, refreshUser } = useAuth();
+  const { updateProfile, isUpdatingProfile, user, logoutAll, refreshUser, isAdmin } = useAuth();
 
   const [activeTab, setActiveTab] = useState<TabType>("pedidos");
   const [isVerifyModalOpen, setIsVerifyModalOpen] = useState(false);
@@ -62,6 +62,8 @@ export default function CustomerDashboardPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [mobileNumber, setMobileNumber] = useState("");
+  const [country, setCountry] = useState("Bolivia");
+  const [phoneCountry, setPhoneCountry] = useState("BO");
   const [address, setAddress] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -90,7 +92,13 @@ export default function CustomerDashboardPage() {
 
     setName(user.name ?? "");
     setEmail(user.email ?? "");
-    setMobileNumber(user.mobileNumber ?? "");
+    setMobileNumber(user.mobileNumber ?? user.phone ?? "");
+    if (user.country || (user as any).profile?.country) {
+      setCountry(user.country || (user as any).profile?.country);
+    }
+    if (user.phoneCountry || (user as any).profile?.phoneCountry) {
+      setPhoneCountry(user.phoneCountry || (user as any).profile?.phoneCountry);
+    }
     setAddress(user.address ?? "");
 
     const bp = user.businessProfile;
@@ -270,6 +278,9 @@ export default function CustomerDashboardPage() {
       await updateProfile({
         name: name.trim() || undefined,
         mobileNumber: mobileNumber.trim() || undefined,
+        phone: mobileNumber.trim() || undefined,
+        country: country.trim() || undefined,
+        phoneCountry: phoneCountry.trim() || undefined,
         address: address.trim() || undefined,
         password: password || undefined,
       });
@@ -315,14 +326,24 @@ export default function CustomerDashboardPage() {
                   </h1>
                   <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-bold text-primary flex-shrink-0">
                     <ShieldCheck className="w-3.5 h-3.5" />{" "}
-                    {user?.type === "seller_empresa"
+                    {isAdmin || user?.type === "admin" || user?.type === "superadmin"
+                      ? "Administrador"
+                      : user?.type === "seller_company"
                       ? "Vendedor Empresa"
                       : user?.type === "seller_individual"
                       ? "Vendedor Individual"
-                      : user?.type === "admin" || user?.type === "superadmin"
-                      ? "Administrador"
                       : "Comprador"}
                   </span>
+                  {isAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => router.push("/admin")}
+                      className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-0.5 text-xs font-bold text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm"
+                    >
+                      <LayoutDashboard className="w-3.5 h-3.5" />
+                      Ir al Panel Administrador
+                    </button>
+                  )}
                   <span className="inline-flex items-center rounded-full bg-emerald-100 text-emerald-800 px-2 py-0.5 text-[11px] font-extrabold uppercase tracking-wider">
                     {user?.status ?? "activa"}
                   </span>
@@ -346,11 +367,11 @@ export default function CustomerDashboardPage() {
                     <div className="w-24 h-2 bg-secondary rounded-full overflow-hidden flex-1 sm:flex-initial">
                       <div
                         className="h-full bg-primary transition-all duration-500 rounded-full"
-                        style={{ width: `${user?.completionPct ?? 40}%` }}
+                        style={{ width: `${user?.completionPct ?? 20}%` }}
                       />
                     </div>
                     <span className="text-xs font-black text-primary">
-                      {user?.completionPct ?? 40}%
+                      {user?.completionPct ?? 20}%
                     </span>
                   </div>
 
@@ -663,17 +684,16 @@ export default function CustomerDashboardPage() {
                     <label htmlFor="profile-phone" className="text-xs font-bold text-foreground uppercase tracking-wider">
                       Teléfono de Contacto
                     </label>
-                    <div className="relative">
-                      <Phone className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                      <input
-                        id="profile-phone"
-                        type="tel"
-                        value={mobileNumber}
-                        onChange={(e) => setMobileNumber(e.target.value)}
-                        className="w-full rounded-xl border border-border bg-background pl-10 pr-4 py-2.5 text-sm outline-none transition focus:border-primary"
-                        placeholder="7XXXXXXX"
-                      />
-                    </div>
+                    <PhoneCountryInput
+                      id="profile-phone"
+                      value={mobileNumber}
+                      countryCode={phoneCountry}
+                      onChange={(fullPhone, code, cName) => {
+                        setMobileNumber(fullPhone);
+                        setPhoneCountry(code);
+                        setCountry(cName);
+                      }}
+                    />
                   </div>
                 </div>
 

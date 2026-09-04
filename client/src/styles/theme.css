@@ -179,3 +179,59 @@
     line-height: 1.5;
   }
 }
+
+/* Custom sleek minimalist scrollbars */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(160, 160, 160, 0.25);
+  border-radius: 9999px;
+  transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(160, 160, 160, 0.45);
+}
+
+/* Sidebar scrollbar customization */
+[data-sidebar="content"] {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(160, 160, 160, 0.25) transparent;
+}
+
+[data-sidebar="content"]::-webkit-scrollbar {
+  width: 4px;
+}
+
+[data-sidebar="content"]::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+[data-sidebar="content"]::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+[data-sidebar="content"]::-webkit-scrollbar-thumb {
+  background: rgba(160, 160, 160, 0.25);
+  border-radius: 9999px;
+}
+
+[data-sidebar="content"]::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+}
+

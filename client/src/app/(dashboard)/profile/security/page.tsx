@@ -2,6 +2,8 @@
 
 import ProfileSecurityPage from "@/app/account/profile/security/page";
 
-export default function DashboardProfileSecurityPage() {
+const DashboardProfileSecurityPage = () => {
   return <ProfileSecurityPage />;
-}
+};
+
+export default DashboardProfileSecurityPage;

@@ -1,6 +1,5 @@
 export const OnboardingStep = {
   BASE_REGISTRATION: 'base_registration',
-  REGISTRO_BASE: 'base_registration',
   PROFILE_COMPLETED: 'profile_completed',
   TERMS_ACCEPTED: 'terms_accepted',
   EMAIL_VERIFIED: 'email_verified',

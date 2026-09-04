@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-export const middleware = (request: NextRequest) => {
+export const proxy = (request: NextRequest) => {
   const token = request.cookies.get("ferromax-token")?.value;
   const userCookie = request.cookies.get("ferromax-user")?.value;
   const { pathname } = request.nextUrl;
@@ -22,26 +22,38 @@ export const middleware = (request: NextRequest) => {
 
   if (!token && (isProtectedRoute || isAdminRoute)) {
     const loginUrl = new URL("/account/login", request.url);
-    loginUrl.searchParams.set("callbackUrl", pathname);
+    loginUrl.searchParams.set("redirect", pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  if (token && isAuthRoute) {
-    return NextResponse.redirect(new URL("/account/dashboard", request.url));
-  }
-
-  if (isAdminRoute && userCookie) {
+  let isAdmin = false;
+  if (userCookie) {
     try {
       const user = JSON.parse(decodeURIComponent(userCookie));
-      const role = (user?.role || "").toLowerCase();
-      const isAdmin = role === "admin" || role === "superadmin";
-
-      if (!isAdmin) {
-        return NextResponse.redirect(new URL("/account/dashboard", request.url));
-      }
+      const role = (user?.role || user?.roleName || user?.type || "").toLowerCase();
+      const userRoles = Array.isArray(user?.roles)
+        ? user.roles.map((r: any) => String(r).toLowerCase())
+        : [];
+      isAdmin =
+        role === "admin" ||
+        role === "superadmin" ||
+        role === "support" ||
+        role === "staff" ||
+        userRoles.includes("admin") ||
+        userRoles.includes("superadmin");
     } catch {
-      return NextResponse.redirect(new URL("/account/login", request.url));
+      isAdmin = false;
     }
+  }
+
+  if (token && isAuthRoute) {
+    return NextResponse.redirect(
+      new URL(isAdmin ? "/admin" : "/account/dashboard", request.url)
+    );
+  }
+
+  if (isAdminRoute && userCookie && !isAdmin) {
+    return NextResponse.redirect(new URL("/account/dashboard", request.url));
   }
 
   return NextResponse.next();
@@ -57,3 +69,5 @@ export const config = {
     "/register",
   ],
 };
+
+export default proxy;

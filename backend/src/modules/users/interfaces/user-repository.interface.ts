@@ -7,6 +7,8 @@ export interface UserListFilters {
   role?: string;
   type?: string;
   status?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
 }
 
 export abstract class UserRepositoryPort {

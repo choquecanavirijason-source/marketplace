@@ -11,7 +11,7 @@ export const registerUserSchema = z
     firstName: z.string().trim().optional(),
     lastName: z.string().trim().optional(),
     phone: z.string().min(6, 'Número de teléfono inválido.').optional(),
-    type: z.enum(['buyer', 'seller_individual', 'seller_empresa', 'seller']).optional().default('buyer'),
+    type: z.enum(['buyer', 'seller_individual', 'seller_company', 'seller']).optional().default('buyer'),
     role: z.string().optional(),
     legalName: z.string().optional(),
     tradeName: z.string().optional(),
@@ -21,6 +21,8 @@ export const registerUserSchema = z
     termsAccepted: z.boolean().optional().default(true),
     mobileNumber: z.string().optional(),
     mobile_number: z.string().optional(),
+    country: z.string().optional(),
+    phoneCountry: z.string().optional(),
     address: z.string().optional(),
   })
   .refine((data) => Boolean(data.name?.trim() || data.firstName?.trim()), {

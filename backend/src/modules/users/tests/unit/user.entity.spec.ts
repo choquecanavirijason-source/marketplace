@@ -8,7 +8,7 @@ describe('UserEntity - Dominio Módulo 1 (marketplace.md)', () => {
       id: '123e4567-e89b-12d3-a456-426614174000',
       email: 'juan.perez@example.com',
       passwordHash: 'hashed_secret_password',
-      status: UserStatus.ACTIVA,
+      status: UserStatus.ACTIVE,
       type: UserType.BUYER,
       profile: {
         firstName: 'Juan',
@@ -34,7 +34,7 @@ describe('UserEntity - Dominio Módulo 1 (marketplace.md)', () => {
       id: '123e4567-e89b-12d3-a456-426614174001',
       email: 'maria.gomez@example.com',
       passwordHash: 'hash',
-      status: UserStatus.PENDIENTE,
+      status: UserStatus.PENDING,
       type: UserType.BUYER,
       profile: {
         firstName: 'María',
@@ -53,6 +53,14 @@ describe('UserEntity - Dominio Módulo 1 (marketplace.md)', () => {
     const withPhone = user.calculateCompletionPct();
     expect(withPhone).toBeGreaterThan(withEmail);
     expect(user.emailVerified).toBe(true);
+    expect(user.phoneVerified).toBe(true);
+
+    user.unverifyEmail();
+    expect(user.emailVerified).toBe(false);
+    expect(user.calculateCompletionPct()).toBeLessThan(withPhone);
+
+    user.unverifyPhone();
+    expect(user.phoneVerified).toBe(false);
   });
 
   it('debe soportar transiciones de estado de cuenta y soft delete lógico', () => {
@@ -60,28 +68,28 @@ describe('UserEntity - Dominio Módulo 1 (marketplace.md)', () => {
       id: '123e4567-e89b-12d3-a456-426614174002',
       email: 'test@example.com',
       passwordHash: 'hash',
-      status: UserStatus.PENDIENTE,
+      status: UserStatus.PENDING,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
 
     user.activate();
-    expect(user.status).toBe(UserStatus.ACTIVA);
+    expect(user.status).toBe(UserStatus.ACTIVE);
 
     user.suspend();
-    expect(user.status).toBe(UserStatus.SUSPENDIDA);
+    expect(user.status).toBe(UserStatus.SUSPENDED);
 
     user.restrict();
-    expect(user.status).toBe(UserStatus.RESTRINGIDA);
+    expect(user.status).toBe(UserStatus.RESTRICTED);
 
     user.sendToReview();
-    expect(user.status).toBe(UserStatus.EN_REVISION);
+    expect(user.status).toBe(UserStatus.IN_REVIEW);
 
     user.reject();
-    expect(user.status).toBe(UserStatus.RECHAZADA);
+    expect(user.status).toBe(UserStatus.REJECTED);
 
     user.softDelete();
-    expect(user.status).toBe(UserStatus.ELIMINADA_LOGICAMENTE);
+    expect(user.status).toBe(UserStatus.LOGICALLY_DELETED);
     expect(user.deletedAt).toBeInstanceOf(Date);
   });
 
@@ -90,8 +98,8 @@ describe('UserEntity - Dominio Módulo 1 (marketplace.md)', () => {
       id: '123e4567-e89b-12d3-a456-426614174003',
       email: 'ventas@ferreteria.com',
       passwordHash: 'hash',
-      status: UserStatus.ACTIVA,
-      type: UserType.SELLER_EMPRESA,
+      status: UserStatus.ACTIVE,
+      type: UserType.SELLER_COMPANY,
       profile: {
         firstName: 'Carlos',
         lastName: 'Gerente',
@@ -108,6 +116,6 @@ describe('UserEntity - Dominio Módulo 1 (marketplace.md)', () => {
 
     expect(seller.businessProfile?.legalName).toBe('Ferretería Central S.R.L.');
     expect(seller.businessProfile?.taxId).toBe('30-12345678-9');
-    expect(seller.roles).toContain('seller_empresa');
+    expect(seller.roles).toContain('seller_company');
   });
 });

@@ -52,7 +52,7 @@ Este documento define las reglas de desarrollo y estándares de ingeniería para
     - **Utilidades y Helpers**: funciones de apoyo (`export const formatDate = (...) => ...`)
     - **Props de Children / Render Props**: `({ children }: Props) => ...`
     - **Funciones Asíncronas en Cliente**: peticiones o llamadas async (`const fetchData = async () => ...`)
-    - **Middleware**: middleware de Next.js (`export const middleware = (req: NextRequest) => ...`)
+    - **Proxy / Middleware**: proxy/middleware de Next.js (`export const proxy = (req: NextRequest) => ...`)
     - **Server Actions**: acciones del servidor (`export const myAction = async (...) => ...`)
     - **Metadata de Next.js**: generación dinámica de metadata (`export const generateMetadata = async (...) => ...`)
 

@@ -1,12 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, ChevronLeft, ChevronRight, Eye, EyeOff, Package, Pencil, Plus, Trash2, XCircle } from "lucide-react";
+import {
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  EyeOff,
+  Package,
+  Pencil,
+  Plus,
+  Trash2,
+  XCircle,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Can } from "@/components/auth/Can";
-import { DashboardLayout, adminNavItems } from "@/components/layout/DashboardLayout";
-import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { useAdminProducts } from "@/hooks/useAdminProducts";
 import { useCategories } from "@/hooks/useCatalog";
 import { ApiError } from "@/config/axios";
@@ -14,23 +26,89 @@ import { formatPrice } from "@/shared/lib/format";
 
 const PAGE_SIZE = 8;
 
-export default function AdminProductsPage() {
+type ProductSortField = "name" | "category" | "price" | "stock" | "isActive";
+type SortOrder = "asc" | "desc";
+
+const AdminProductsPage = () => {
   const router = useRouter();
   const [error, setError] = useState("");
 
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [searchStatus, setSearchStatus] = useState<"idle" | "cancelled" | "searching">("idle");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [activeFilter, setActiveFilter] = useState<boolean | "">("");
   const [page, setPage] = useState(1);
 
+  const [sortField, setSortField] = useState<ProductSortField | null>("name");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
+
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
+
+    // Cancelación inmediata mientras el usuario continúa escribiendo
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    if (value.trim().length > 0) {
+      setSearchStatus("cancelled");
+    } else {
+      setSearchStatus("idle");
+    }
+
+    debounceTimerRef.current = setTimeout(() => {
+      setDebouncedSearch(value.trim());
+      setPage(1);
+      setSearchStatus("searching");
+      setTimeout(() => setSearchStatus("idle"), 600);
+    }, 500);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    };
+  }, []);
+
+  const handleSort = (field: ProductSortField) => {
+    if (sortField === field) {
+      setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortOrder("asc");
+    }
+    setPage(1);
+  };
+
+  const renderSortIcon = (field: ProductSortField) => {
+    if (sortField !== field) {
+      return (
+        <ArrowUpDown className="w-3.5 h-3.5 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors" />
+      );
+    }
+    return sortOrder === "asc" ? (
+      <ArrowUp className="w-3.5 h-3.5 text-primary" />
+    ) : (
+      <ArrowDown className="w-3.5 h-3.5 text-primary" />
+    );
+  };
+
   const { data: categories } = useCategories();
   const { data, isLoading, toggleActive, isToggling, remove, isRemoving } = useAdminProducts({
-    search,
+    search: debouncedSearch,
     category: categoryFilter,
     isActive: activeFilter,
+    sortBy: sortField ?? "name",
+    sortOrder,
     page,
     limit: PAGE_SIZE,
   });
+
+  // Los productos vienen ordenados directamente por el backend/servicio antes de paginar
+  const sortedProducts = data?.items ?? [];
 
   const handleToggleActive = async (id: number, isActive: boolean) => {
     try {
@@ -52,9 +130,7 @@ export default function AdminProductsPage() {
   const totalPages = Math.max(1, data?.lastPage ?? 1);
 
   return (
-    <ProtectedRoute roles={["admin", "superadmin"]} redirectTo="/account/login?redirect=/admin/products">
-      <DashboardLayout navItems={adminNavItems} title="Panel administrador">
-      <div className="mx-auto max-w-7xl px-4 py-10">
+    <div className="mx-auto max-w-7xl px-4 py-10">
         <div className="mb-6 flex flex-col gap-4 rounded-2xl border border-border bg-card p-5 shadow-sm md:flex-row md:items-center md:justify-between">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Panel administrador</p>
@@ -89,17 +165,33 @@ export default function AdminProductsPage() {
               </div>
             </div>
 
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <input
-                type="search"
-                value={search}
-                onChange={(event) => {
-                  setSearch(event.target.value);
-                  setPage(1);
-                }}
-                className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary sm:w-56"
-                placeholder="Buscar producto…"
-              />
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              {/* Buscador con estado interactivo cancelled mientras tipea */}
+              <div className="relative w-full sm:w-64">
+                <input
+                  type="search"
+                  value={search}
+                  onChange={(event) => handleSearchChange(event.target.value)}
+                  className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary pr-24"
+                  placeholder="Buscar producto…"
+                />
+                {searchStatus === "cancelled" && (
+                  <div
+                    title="Petición previa cancelada mientras sigues escribiendo"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 text-[11px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded-md border border-amber-500/20 animate-pulse select-none"
+                  >
+                    <XCircle className="w-3 h-3 text-amber-500" />
+                    <span>cancelled</span>
+                  </div>
+                )}
+                {searchStatus === "searching" && (
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 text-[11px] font-medium text-primary bg-primary/10 px-1.5 py-0.5 rounded-md select-none">
+                    <div className="w-2.5 h-2.5 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+                    <span>buscando…</span>
+                  </div>
+                )}
+              </div>
+
               <select
                 value={categoryFilter}
                 onChange={(event) => {
@@ -109,12 +201,13 @@ export default function AdminProductsPage() {
                 className="rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
               >
                 <option value="">Todas las categorías</option>
-                {(categories ?? []).map((cat) => (
-                  <option key={cat.slug} value={cat.name}>
+                {(categories ?? []).map((cat, idx) => (
+                  <option key={cat.slug || cat.id || `cat-${idx}`} value={cat.name}>
                     {cat.name}
                   </option>
                 ))}
               </select>
+
               <select
                 value={activeFilter === "" ? "" : activeFilter ? "active" : "inactive"}
                 onChange={(event) => {
@@ -131,15 +224,79 @@ export default function AdminProductsPage() {
             </div>
           </div>
 
+          {searchStatus === "cancelled" && (
+            <div className="bg-amber-500/10 border-b border-amber-500/20 px-5 py-2 flex items-center justify-between text-xs text-amber-700 dark:text-amber-400">
+              <span className="flex items-center gap-1.5 font-medium">
+                <XCircle className="w-3.5 h-3.5 text-amber-500" />
+                Petición previa cancelada mientras sigues escribiendo. Esperando pausa para enviar...
+              </span>
+            </div>
+          )}
+
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="border-b border-border bg-muted/40 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+              <thead className="border-b border-border bg-muted/40 text-xs font-bold uppercase tracking-wider text-muted-foreground select-none">
                 <tr>
-                  <th className="px-5 py-3">Producto</th>
-                  <th className="px-5 py-3">Categoría</th>
-                  <th className="px-5 py-3">Precio</th>
-                  <th className="px-5 py-3">Stock</th>
-                  <th className="px-5 py-3">Estado</th>
+                  <th className="px-5 py-3">
+                    <button
+                      type="button"
+                      onClick={() => handleSort("name")}
+                      className={`flex items-center gap-1.5 hover:text-foreground transition-colors cursor-pointer group uppercase text-xs font-bold ${
+                        sortField === "name" ? "text-primary" : ""
+                      }`}
+                    >
+                      <span>Producto</span>
+                      {renderSortIcon("name")}
+                    </button>
+                  </th>
+                  <th className="px-5 py-3">
+                    <button
+                      type="button"
+                      onClick={() => handleSort("category")}
+                      className={`flex items-center gap-1.5 hover:text-foreground transition-colors cursor-pointer group uppercase text-xs font-bold ${
+                        sortField === "category" ? "text-primary" : ""
+                      }`}
+                    >
+                      <span>Categoría</span>
+                      {renderSortIcon("category")}
+                    </button>
+                  </th>
+                  <th className="px-5 py-3">
+                    <button
+                      type="button"
+                      onClick={() => handleSort("price")}
+                      className={`flex items-center gap-1.5 hover:text-foreground transition-colors cursor-pointer group uppercase text-xs font-bold ${
+                        sortField === "price" ? "text-primary" : ""
+                      }`}
+                    >
+                      <span>Precio</span>
+                      {renderSortIcon("price")}
+                    </button>
+                  </th>
+                  <th className="px-5 py-3">
+                    <button
+                      type="button"
+                      onClick={() => handleSort("stock")}
+                      className={`flex items-center gap-1.5 hover:text-foreground transition-colors cursor-pointer group uppercase text-xs font-bold ${
+                        sortField === "stock" ? "text-primary" : ""
+                      }`}
+                    >
+                      <span>Stock</span>
+                      {renderSortIcon("stock")}
+                    </button>
+                  </th>
+                  <th className="px-5 py-3">
+                    <button
+                      type="button"
+                      onClick={() => handleSort("isActive")}
+                      className={`flex items-center gap-1.5 hover:text-foreground transition-colors cursor-pointer group uppercase text-xs font-bold ${
+                        sortField === "isActive" ? "text-primary" : ""
+                      }`}
+                    >
+                      <span>Estado</span>
+                      {renderSortIcon("isActive")}
+                    </button>
+                  </th>
                   <th className="px-5 py-3 text-right">Acciones</th>
                 </tr>
               </thead>
@@ -147,17 +304,20 @@ export default function AdminProductsPage() {
                 {isLoading ? (
                   <tr>
                     <td colSpan={6} className="px-5 py-12 text-center text-muted-foreground">
-                      Cargando productos…
+                      <div className="flex flex-col items-center justify-center gap-2">
+                        <div className="w-6 h-6 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+                        <span className="text-xs font-medium">Cargando productos…</span>
+                      </div>
                     </td>
                   </tr>
-                ) : !data || data.items.length === 0 ? (
+                ) : !sortedProducts || sortedProducts.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="px-5 py-12 text-center text-muted-foreground">
                       No se encontraron productos con los filtros aplicados.
                     </td>
                   </tr>
                 ) : (
-                  data.items.map((product) => (
+                  sortedProducts.map((product) => (
                     <tr key={product.id} className="hover:bg-muted/30 transition-colors">
                       <td className="px-5 py-3">
                         <div className="flex items-center gap-3">
@@ -273,7 +433,7 @@ export default function AdminProductsPage() {
           )}
         </section>
       </div>
-    </DashboardLayout>
-  </ProtectedRoute>
-);
-}
+  );
+};
+
+export default AdminProductsPage;

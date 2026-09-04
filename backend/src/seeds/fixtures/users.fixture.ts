@@ -41,7 +41,7 @@ export const STATIC_ACCOUNTS: StaticAccount[] = [
     phone: '+10000000003',
     type: UserType.SELLER_COMPANY,
     status: UserStatus.ACTIVE,
-    roles: ['seller_company', 'seller_empresa', 'seller'],
+    roles: ['seller_company', 'seller'],
     legalName: 'Ferretería Industrial S.A.',
     tradeName: 'Ferromax Comercial',
     taxId: '30-71234567-8',

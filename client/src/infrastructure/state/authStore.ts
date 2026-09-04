@@ -36,6 +36,8 @@ export interface AuthState {
   init: () => Promise<void>;
   login: (credentials: LoginCredentials) => Promise<AuthSession>;
   loginOtp: (credentials: { phone?: string; email?: string; code: string }) => Promise<AuthSession>;
+  phoneLogin: (phone: string, code: string) => Promise<AuthSession>;
+  socialLogin: (data: { provider: "google" | "facebook" | "apple"; email: string; firstName?: string; lastName?: string; avatarUrl?: string; token?: string }) => Promise<AuthSession>;
   sendEmailOtp: (email: string) => Promise<{ message: string; debugOtp?: string }>;
   register: (data: RegisterData) => Promise<AuthSession>;
   updateProfile: (data: UpdateProfileData) => Promise<AuthSession>;
@@ -51,7 +53,7 @@ export interface AuthState {
 }
 
 function computeRoles(user: CurrentUser | null) {
-  const role = (user?.type ?? user?.roleName ?? "").toLowerCase() || null;
+  const role = (user?.role ?? user?.type ?? user?.roleName ?? "").toLowerCase() || null;
   const userRoles = (user?.roles ?? []).map((r) => r.toLowerCase());
   const isSuperAdmin = role === "superadmin" || userRoles.includes("superadmin");
   const isAdmin =
@@ -59,14 +61,15 @@ function computeRoles(user: CurrentUser | null) {
     role === "admin" ||
     role === "support" ||
     role === "staff" ||
-    userRoles.includes("admin");
+    userRoles.includes("admin") ||
+    userRoles.includes("superadmin");
   const isSeller =
     role === "seller" ||
     role === "seller_individual" ||
-    role === "seller_empresa" ||
+    role === "seller_company" ||
     userRoles.includes("seller") ||
     userRoles.includes("seller_individual") ||
-    userRoles.includes("seller_empresa");
+    userRoles.includes("seller_company");
 
   return {
     role,
@@ -193,6 +196,60 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     try {
       if (!container.auth.loginOtp) throw new Error("loginOtp no implementado");
       const session = await container.auth.loginOtp(credentials);
+      const computed = computeRoles(session.user);
+      set({
+        user: session.user,
+        token: session.accessToken,
+        permissions: session.permissions,
+        status: "authenticated",
+        isAuthenticated: true,
+        isAdmin: computed.isAdmin,
+        isSuperAdmin: computed.isSuperAdmin,
+        isSeller: computed.isSeller,
+        role: computed.role,
+        isLoggingIn: false,
+        isInitialized: true,
+      });
+      void mergeCartWithServer();
+      return session;
+    } catch (err) {
+      set({ isLoggingIn: false });
+      throw err;
+    }
+  },
+
+  phoneLogin: async (phone: string, code: string) => {
+    set({ isLoggingIn: true });
+    try {
+      if (!container.auth.phoneLogin) throw new Error("phoneLogin no implementado");
+      const session = await container.auth.phoneLogin(phone, code);
+      const computed = computeRoles(session.user);
+      set({
+        user: session.user,
+        token: session.accessToken,
+        permissions: session.permissions,
+        status: "authenticated",
+        isAuthenticated: true,
+        isAdmin: computed.isAdmin,
+        isSuperAdmin: computed.isSuperAdmin,
+        isSeller: computed.isSeller,
+        role: computed.role,
+        isLoggingIn: false,
+        isInitialized: true,
+      });
+      void mergeCartWithServer();
+      return session;
+    } catch (err) {
+      set({ isLoggingIn: false });
+      throw err;
+    }
+  },
+
+  socialLogin: async (data) => {
+    set({ isLoggingIn: true });
+    try {
+      if (!container.auth.socialLogin) throw new Error("socialLogin no implementado");
+      const session = await container.auth.socialLogin(data);
       const computed = computeRoles(session.user);
       set({
         user: session.user,
@@ -353,9 +410,18 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   hasRole: (role: string) => {
     const { user } = get();
     if (!user) return false;
-    const currentRole = (user.type ?? user.roleName ?? "").toLowerCase();
+    const currentRole = (user.role ?? user.type ?? user.roleName ?? "").toLowerCase();
     const userRoles = (user.roles ?? []).map((r) => r.toLowerCase());
     const target = role.toLowerCase();
+    if (currentRole === "superadmin" || userRoles.includes("superadmin")) {
+      return true;
+    }
+    if (
+      (currentRole === "admin" || userRoles.includes("admin")) &&
+      (target === "admin" || target === "support" || target === "staff")
+    ) {
+      return true;
+    }
     return currentRole === target || userRoles.includes(target);
   },
 
@@ -366,9 +432,15 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   hasPermission: (permission: string) => {
     const { permissions, user } = get();
     if (!user) return false;
-    const currentRole = (user.type ?? user.roleName ?? "").toLowerCase();
+    const currentRole = (user.role ?? user.type ?? user.roleName ?? "").toLowerCase();
     const userRoles = (user.roles ?? []).map((r) => r.toLowerCase());
-    if (currentRole === "superadmin" || userRoles.includes("superadmin") || permissions.includes("*")) {
+    if (
+      currentRole === "superadmin" ||
+      currentRole === "admin" ||
+      userRoles.includes("superadmin") ||
+      userRoles.includes("admin") ||
+      permissions.includes("*")
+    ) {
       return true;
     }
     const target = normalizePermission(permission);

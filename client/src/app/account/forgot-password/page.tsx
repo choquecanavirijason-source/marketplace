@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,9 +11,10 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { KeyRound, Mail, ArrowLeft, ArrowRight, CheckCircle2, Lock } from "lucide-react";
 import { HttpAuthRepository } from "@/services/auth.service";
 
-export default function ForgotPasswordPage() {
+const ForgotPasswordContent = () => {
   const router = useRouter();
-  const authService = new HttpAuthRepository();
+  const searchParams = useSearchParams();
+  const authService = useMemo(() => new HttpAuthRepository(), []);
 
   const [step, setStep] = useState<"request" | "reset">("request");
   const [email, setEmail] = useState("");
@@ -21,6 +22,18 @@ export default function ForgotPasswordPage() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    const urlToken = searchParams.get("token");
+    const urlEmail = searchParams.get("email");
+    if (urlEmail) {
+      setEmail(urlEmail);
+    }
+    if (urlToken) {
+      setToken(urlToken);
+      setStep("reset");
+    }
+  }, [searchParams]);
 
   const handleRequestSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,7 +45,7 @@ export default function ForgotPasswordPage() {
     setIsLoading(true);
     try {
       const res = await authService.forgotPassword(email);
-      toast.success(res.message || "Enlace o código de recuperación enviado a tu correo.");
+      toast.success(res.message || "Código o enlace de recuperación enviado a tu correo.");
       setStep("reset");
     } catch (err: any) {
       toast.error(err?.message || "No se pudo procesar la solicitud de recuperación.");
@@ -82,8 +95,8 @@ export default function ForgotPasswordPage() {
           </CardTitle>
           <CardDescription className="text-sm text-muted-foreground">
             {step === "request"
-              ? "Te enviaremos las instrucciones de recuperación a tu correo"
-              : "Ingresa el código que recibiste y tu nueva contraseña"}
+              ? "Te enviaremos el código y las instrucciones a tu correo"
+              : "Ingresa el código que recibiste por correo y tu nueva contraseña"}
           </CardDescription>
         </CardHeader>
 
@@ -107,19 +120,20 @@ export default function ForgotPasswordPage() {
               </div>
 
               <Button type="submit" className="w-full font-semibold" disabled={isLoading}>
-                {isLoading ? "Enviando..." : "Enviar Instrucciones"}
+                {isLoading ? "Enviando..." : "Enviar Código de Recuperación"}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </form>
           ) : (
             <form onSubmit={handleResetSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="token">Código de Verificación / Token</Label>
+                <Label htmlFor="token">Código de Verificación (6 dígitos)</Label>
                 <Input
                   id="token"
-                  placeholder="Código recibido"
+                  placeholder="Ej: 123456"
                   value={token}
                   onChange={(e) => setToken(e.target.value)}
+                  className="font-mono text-center tracking-widest text-lg"
                   required
                 />
               </div>
@@ -160,6 +174,14 @@ export default function ForgotPasswordPage() {
                 {isLoading ? "Restableciendo..." : "Guardar Nueva Contraseña"}
                 <CheckCircle2 className="ml-2 h-4 w-4" />
               </Button>
+
+              <button
+                type="button"
+                onClick={() => setStep("request")}
+                className="w-full text-center text-xs text-muted-foreground hover:text-foreground pt-1"
+              >
+                ¿No recibiste el código? Solicitar uno nuevo
+              </button>
             </form>
           )}
         </CardContent>
@@ -175,4 +197,14 @@ export default function ForgotPasswordPage() {
       </Card>
     </div>
   );
-}
+};
+
+const ForgotPasswordPage = () => {
+  return (
+    <Suspense fallback={<div className="min-h-[80vh] flex items-center justify-center">Cargando...</div>}>
+      <ForgotPasswordContent />
+    </Suspense>
+  );
+};
+
+export default ForgotPasswordPage;

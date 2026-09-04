@@ -9,6 +9,7 @@ export const adminUpdateUserSchema = z.object({
   status: z.nativeEnum(UserStatus).optional(),
   kycLevel: z.nativeEnum(KycLevel).optional(),
   emailVerified: z.boolean().optional(),
+  phoneVerified: z.boolean().optional(),
   password: z.string().min(6).optional(),
 });
 

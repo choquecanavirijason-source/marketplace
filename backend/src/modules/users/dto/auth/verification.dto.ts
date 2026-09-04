@@ -6,8 +6,8 @@ export const forgotPasswordSchema = z.object({
 export type ForgotPasswordDto = z.infer<typeof forgotPasswordSchema>;
 
 export const resetPasswordSchema = z.object({
-  email: z.string().email('Formato de correo electrónico inválido.').toLowerCase().trim(),
-  token: z.string().min(1, 'El token es requerido.'),
+  email: z.string().email('Formato de correo electrónico inválido.').toLowerCase().trim().optional(),
+  token: z.string().min(1, 'El código o token de recuperación es requerido.'),
   password: z.string().min(8, 'La nueva contraseña debe tener al menos 8 caracteres.'),
 });
 export type ResetPasswordDto = z.infer<typeof resetPasswordSchema>;

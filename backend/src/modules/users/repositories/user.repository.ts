@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { eq, sql, and, or, ilike, desc, isNull, inArray } from 'drizzle-orm';
+import { eq, sql, and, or, ilike, desc, asc, isNull, inArray } from 'drizzle-orm';
 import { UserRepositoryPort, UserListFilters } from '../interfaces/user-repository.interface';
 import {
   UserEntity,
@@ -15,8 +15,6 @@ import {
   businessProfilesTable,
   rolesTable,
   userRolesTable,
-  permissionsTable,
-  rolePermissionsTable,
   addressesTable,
   onboardingStatesTable,
 } from '../../../infrastructure/database/schema';
@@ -70,6 +68,8 @@ export class UserRepository implements UserRepositoryPort {
           birthDate: profileRows[0].birthDate ? new Date(profileRows[0].birthDate) : null,
           language: profileRows[0].language,
           currency: profileRows[0].currency,
+          country: profileRows[0].country,
+          phoneCountry: profileRows[0].phoneCountry,
           completionPct: profileRows[0].completionPct,
         }
       : {
@@ -223,6 +223,8 @@ export class UserRepository implements UserRepositoryPort {
       birthDate: json.birthDate ? String(json.birthDate).substring(0, 10) : null,
       language: json.language || 'es',
       currency: json.currency || 'USD',
+      country: json.country || null,
+      phoneCountry: json.phoneCountry || null,
       completionPct: json.completionPct || 20,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -280,6 +282,8 @@ export class UserRepository implements UserRepositoryPort {
           birthDate: json.birthDate ? String(json.birthDate).substring(0, 10) : null,
           language: json.language || 'es',
           currency: json.currency || 'USD',
+          country: json.country || null,
+          phoneCountry: json.phoneCountry || null,
           completionPct: json.completionPct,
           updatedAt: new Date(),
         })
@@ -292,6 +296,8 @@ export class UserRepository implements UserRepositoryPort {
             birthDate: json.birthDate ? String(json.birthDate).substring(0, 10) : null,
             language: json.language || 'es',
             currency: json.currency || 'USD',
+            country: json.country || null,
+            phoneCountry: json.phoneCountry || null,
             completionPct: json.completionPct,
             updatedAt: new Date(),
           },
@@ -334,7 +340,7 @@ export class UserRepository implements UserRepositoryPort {
     await this.drizzle.db
       .update(usersTable)
       .set({
-        status: UserStatus.ELIMINADA_LOGICAMENTE,
+        status: UserStatus.LOGICALLY_DELETED,
         deletedAt: new Date(),
         updatedAt: new Date(),
       })
@@ -351,6 +357,8 @@ export class UserRepository implements UserRepositoryPort {
     let role: string | undefined;
     let type: string | undefined;
     let status: string | undefined;
+    let sortBy: string | undefined;
+    let sortOrder: 'asc' | 'desc' = 'desc';
 
     if (typeof filtersOrPage === 'number') {
       page = filtersOrPage;
@@ -362,6 +370,8 @@ export class UserRepository implements UserRepositoryPort {
       role = filtersOrPage.role ? String(filtersOrPage.role) : undefined;
       type = filtersOrPage.type;
       status = filtersOrPage.status ? String(filtersOrPage.status) : undefined;
+      sortBy = filtersOrPage.sortBy;
+      sortOrder = filtersOrPage.sortOrder === 'asc' ? 'asc' : 'desc';
     }
 
     const offset = (page - 1) * limit;
@@ -392,6 +402,34 @@ export class UserRepository implements UserRepositoryPort {
 
     const whereClause = and(...conditions);
 
+    const isAsc = sortOrder === 'asc';
+    let primaryOrder: any;
+
+    switch (sortBy) {
+      case 'name':
+        primaryOrder = isAsc ? asc(userProfilesTable.firstName) : desc(userProfilesTable.firstName);
+        break;
+      case 'email':
+        primaryOrder = isAsc ? asc(usersTable.email) : desc(usersTable.email);
+        break;
+      case 'phone':
+        primaryOrder = isAsc ? asc(usersTable.phone) : desc(usersTable.phone);
+        break;
+      case 'role':
+        primaryOrder = isAsc ? asc(usersTable.type) : desc(usersTable.type);
+        break;
+      case 'status':
+        primaryOrder = isAsc ? asc(usersTable.status) : desc(usersTable.status);
+        break;
+      case 'completion':
+        primaryOrder = isAsc ? asc(userProfilesTable.completionPct) : desc(userProfilesTable.completionPct);
+        break;
+      case 'createdAt':
+      default:
+        primaryOrder = isAsc ? asc(usersTable.createdAt) : desc(usersTable.createdAt);
+        break;
+    }
+
     const [countResult, rows] = await Promise.all([
       this.drizzle.db
         .select({ count: sql<number>`count(distinct ${usersTable.id})` })
@@ -403,8 +441,18 @@ export class UserRepository implements UserRepositoryPort {
         .from(usersTable)
         .leftJoin(userProfilesTable, eq(usersTable.id, userProfilesTable.userId))
         .where(whereClause)
-        .groupBy(usersTable.id)
-        .orderBy(desc(usersTable.createdAt))
+        .groupBy(
+          usersTable.id,
+          usersTable.email,
+          usersTable.phone,
+          usersTable.type,
+          usersTable.status,
+          usersTable.createdAt,
+          userProfilesTable.firstName,
+          userProfilesTable.lastName,
+          userProfilesTable.completionPct,
+        )
+        .orderBy(primaryOrder, desc(usersTable.createdAt))
         .offset(offset)
         .limit(limit),
     ]);

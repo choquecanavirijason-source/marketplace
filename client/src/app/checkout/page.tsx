@@ -2,7 +2,6 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   CheckCircle2,
   ChevronRight,
@@ -38,7 +37,6 @@ const TRUST_ITEMS = [
 ];
 
 export default function CheckoutPage() {
-  const router = useRouter();
   const { user } = useAuth();
   const { items, total, clearCart } = useCart();
   const { createOrder, isCreating, error } = useCreateOrder();

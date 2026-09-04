@@ -8,8 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle2, User, Phone, Building, FileCheck, ArrowRight, ArrowLeft } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CheckCircle2, User, Building, FileCheck, ArrowRight, ArrowLeft } from "lucide-react";
+import { PhoneCountryInput } from "@/components/ui/phone-country-input";
 
 interface OnboardingWizardProps {
   onComplete?: () => void;
@@ -23,6 +24,8 @@ export const OnboardingWizard = ({ onComplete }: OnboardingWizardProps) => {
   const [firstName, setFirstName] = useState(user?.name?.split(" ")[0] || "");
   const [lastName, setLastName] = useState(user?.name?.split(" ").slice(1).join(" ") || "");
   const [phone, setPhone] = useState(user?.phone || user?.mobileNumber || "");
+  const [country, setCountry] = useState(user?.country || "Bolivia");
+  const [phoneCountry, setPhoneCountry] = useState(user?.phoneCountry || "BO");
   const [legalName, setLegalName] = useState("");
   const [taxId, setTaxId] = useState("");
   const [tradeName, setTradeName] = useState("");
@@ -44,7 +47,12 @@ export const OnboardingWizard = ({ onComplete }: OnboardingWizardProps) => {
     try {
       await updateProfile({
         name: `${firstName.trim()} ${lastName.trim()}`.trim(),
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
         mobileNumber: phone || undefined,
+        phone: phone || undefined,
+        country: country || undefined,
+        phoneCountry: phoneCountry || undefined,
       });
       toast.success("Información personal guardada.");
       setStep(2);
@@ -163,16 +171,16 @@ export const OnboardingWizard = ({ onComplete }: OnboardingWizardProps) => {
 
             <div className="space-y-2">
               <Label htmlFor="ob-phone">Teléfono de contacto</Label>
-              <div className="relative">
-                <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="ob-phone"
-                  placeholder="+54 11 9876-5432"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
+              <PhoneCountryInput
+                id="ob-phone"
+                value={phone}
+                countryCode={phoneCountry}
+                onChange={(fullPhone, code, cName) => {
+                  setPhone(fullPhone);
+                  setPhoneCountry(code);
+                  setCountry(cName);
+                }}
+              />
             </div>
 
             <Button type="submit" className="w-full font-semibold" disabled={isLoading}>

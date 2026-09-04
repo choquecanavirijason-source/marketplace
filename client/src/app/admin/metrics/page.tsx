@@ -1,11 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, XAxis, YAxis } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
-import { DashboardLayout, adminNavItems } from "@/components/layout/DashboardLayout";
-import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { useAdminStats } from "@/hooks/useOrders";
 import { formatPrice } from "@/shared/lib/format";
 import { ORDER_STATUS_LABELS } from "@/shared/lib/orderStatus";
@@ -43,9 +39,7 @@ export default function AdminMetricsPage() {
   }));
 
   return (
-    <ProtectedRoute roles={["admin", "superadmin"]} redirectTo="/account/login?redirect=/admin/metrics">
-      <DashboardLayout navItems={adminNavItems} title="Panel administrador">
-      <div className="mx-auto max-w-7xl px-4 py-10">
+    <div className="mx-auto max-w-7xl px-4 py-10">
         <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-5">
           <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
             <div className="flex items-center gap-3">
@@ -199,7 +193,5 @@ export default function AdminMetricsPage() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
-  </ProtectedRoute>
-);
+  );
 }

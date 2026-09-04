@@ -1,13 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { CheckCircle2, ChevronLeft, ChevronRight, Pencil, Plus, Search, Tags, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TextInput } from "@/components/forms";
 import { Can } from "@/components/auth/Can";
-import { DashboardLayout, adminNavItems } from "@/components/layout/DashboardLayout";
-import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { useAdminCategories } from "@/hooks/useAdminCategories";
 import { ApiError } from "@/config/axios";
 import { cn } from "@/shared/lib/utils";
@@ -15,13 +12,11 @@ import { cn } from "@/shared/lib/utils";
 const PAGE_SIZE = 10;
 
 export default function AdminCategoriesPage() {
-  const router = useRouter();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [name, setName] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
 
   const { data, isLoading, create, isCreating, update, isUpdating, remove, isRemoving } = useAdminCategories({
     search,
@@ -67,9 +62,7 @@ export default function AdminCategoriesPage() {
   const totalPages = Math.max(1, data?.lastPage ?? 1);
 
   return (
-    <ProtectedRoute roles={["admin", "superadmin"]} redirectTo="/account/login?redirect=/admin/categories">
-      <DashboardLayout navItems={adminNavItems} title="Panel administrador">
-      <div className="mx-auto max-w-5xl px-4 py-10">
+    <div className="mx-auto max-w-5xl px-4 py-10">
         <div className="mb-6 flex flex-col gap-4 rounded-2xl border border-border bg-card p-5 shadow-sm md:flex-row md:items-center md:justify-between">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Panel administrador</p>
@@ -250,7 +243,5 @@ export default function AdminCategoriesPage() {
           </div>
         </section>
       </div>
-    </DashboardLayout>
-  </ProtectedRoute>
-);
+  );
 }

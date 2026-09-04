@@ -1,4 +1,4 @@
-import { UserRole, UserType, UserStatus, KycLevel, DomainException, getPermissionsForRole } from '../../../shared';
+import { UserRole, UserType, UserStatus, getPermissionsForRole } from '../../../shared';
 
 export interface UserProfileProps {
   id?: string;
@@ -9,6 +9,8 @@ export interface UserProfileProps {
   birthDate?: Date | string | null;
   language?: string;
   currency?: string;
+  country?: string | null;
+  phoneCountry?: string | null;
   completionPct?: number;
 }
 
@@ -79,8 +81,8 @@ export class UserEntity {
       roles:
         props.roles && props.roles.length > 0
           ? props.roles
-          : (userType === 'seller_company' || (userType as string) === 'seller_empresa'
-              ? ['seller_company', 'seller_empresa']
+          : (userType === 'seller_company'
+              ? ['seller_company', 'seller']
               : [userType]),
       permissions: props.permissions ?? getPermissionsForRole(userType),
       addresses: props.addresses ?? [],
@@ -98,6 +100,7 @@ export class UserEntity {
             completionPct: 20,
           },
     };
+    this.calculateCompletionPct();
   }
 
   get id(): string { return this.props.id; }
@@ -130,19 +133,36 @@ export class UserEntity {
   get birthDate(): Date | string | null | undefined { return this.props.profile?.birthDate; }
   get language(): string { return this.props.profile?.language ?? 'es'; }
   get currency(): string { return this.props.profile?.currency ?? 'USD'; }
-  get completionPct(): number { return this.props.profile?.completionPct ?? 0; }
+  get country(): string | null | undefined { return this.props.profile?.country; }
+  get phoneCountry(): string | null | undefined { return this.props.profile?.phoneCountry; }
+  get completionPct(): number { return this.props.profile?.completionPct ?? 20; }
   get emailVerified(): boolean { return Boolean(this.props.emailVerifiedAt); }
+  get phoneVerified(): boolean { return Boolean(this.props.phoneVerifiedAt); }
 
   verifyEmail() {
     const now = new Date();
     this.props.emailVerifiedAt = now;
     this.props.updatedAt = now;
+    this.calculateCompletionPct();
+  }
+
+  unverifyEmail() {
+    this.props.emailVerifiedAt = null;
+    this.props.updatedAt = new Date();
+    this.calculateCompletionPct();
   }
 
   verifyPhone() {
     const now = new Date();
     this.props.phoneVerifiedAt = now;
     this.props.updatedAt = now;
+    this.calculateCompletionPct();
+  }
+
+  unverifyPhone() {
+    this.props.phoneVerifiedAt = null;
+    this.props.updatedAt = new Date();
+    this.calculateCompletionPct();
   }
 
   updateProfile(profileData: Partial<UserProfileProps>) {
@@ -178,7 +198,11 @@ export class UserEntity {
   calculateCompletionPct(): number {
     let score = 20;
     if (this.props.emailVerifiedAt) score += 20;
-    if (this.props.phoneVerifiedAt) score += 20;
+    if (this.props.phoneVerifiedAt) {
+      score += 20;
+    } else if (this.props.phone && this.props.phone.trim().length >= 6) {
+      score += 10;
+    }
     if (this.props.profile?.firstName && this.props.profile?.lastName) score += 20;
     if (this.props.profile?.avatarUrl) score += 10;
     if (this.props.profile?.birthDate) score += 10;
@@ -236,6 +260,7 @@ export class UserEntity {
   changePhone(phone?: string | null) {
     this.props.phone = phone;
     this.props.updatedAt = new Date();
+    this.calculateCompletionPct();
   }
 
   changeType(type: UserType) {
@@ -263,6 +288,7 @@ export class UserEntity {
       emailVerifiedAt: this.emailVerifiedAt,
       phoneVerifiedAt: this.phoneVerifiedAt,
       emailVerified: this.emailVerified,
+      phoneVerified: this.phoneVerified,
       firstName: this.firstName,
       lastName: this.lastName,
       fullName: this.fullName,
@@ -270,6 +296,8 @@ export class UserEntity {
       birthDate: this.birthDate,
       language: this.language,
       currency: this.currency,
+      country: this.country,
+      phoneCountry: this.phoneCountry,
       completionPct: this.completionPct,
       profile: this.profile,
       businessProfile: this.businessProfile,

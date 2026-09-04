@@ -88,12 +88,12 @@ describe('AuthService - Unit Suite', () => {
       password: 'Password123!',
       firstName: 'Roberto',
       lastName: 'Gómez',
-      type: UserType.SELLER_EMPRESA,
+      type: UserType.SELLER_COMPANY,
       legalName: 'Ferretería Central S.A.',
       taxId: '30-99887766-1',
     });
 
-    expect(result.type).toBe(UserType.SELLER_EMPRESA);
+    expect(result.type).toBe(UserType.SELLER_COMPANY);
     expect(result.businessProfile?.legalName).toBe('Ferretería Central S.A.');
   });
 

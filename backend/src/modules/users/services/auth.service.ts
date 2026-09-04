@@ -18,8 +18,10 @@ import {
   EntityNotFoundException,
   NotFoundException,
   UnauthorizedException,
+  DomainException,
 } from '../../../shared';
-import { RegisterUserDto, LoginDto, OtpLoginDto } from '../dto';
+import { RegisterUserDto, LoginDto, OtpLoginDto, SocialLoginDto, PhoneOtpLoginDto } from '../dto';
+import { AuthConfigService } from './auth-config.service';
 
 @Injectable()
 export class AuthService {
@@ -32,7 +34,9 @@ export class AuthService {
     private readonly cacheService: CacheService,
     private readonly mailService: NodemailerEmailService,
     private readonly eventEmitter: EventEmitter2,
+    private readonly authConfigService?: AuthConfigService,
   ) {}
+
 
   async register(command: RegisterUserDto): Promise<UserEntity> {
     const cleanEmail = EmailValidator.validate(command.email);
@@ -56,7 +60,7 @@ export class AuthService {
     let businessProfile: any = null;
     if (
       userType === UserType.SELLER_INDIVIDUAL ||
-      userType === UserType.SELLER_EMPRESA ||
+      userType === UserType.SELLER_COMPANY ||
       userType === UserType.SELLER ||
       command.taxId
     ) {
@@ -64,7 +68,7 @@ export class AuthService {
         legalName: command.legalName || command.name || 'Empresa',
         tradeName: command.tradeName || null,
         taxId: command.taxId || 'PENDIENTE',
-        legalType: command.legalType || (userType === UserType.SELLER_EMPRESA ? 'EMPRESA' : 'INDIVIDUAL'),
+        legalType: command.legalType || (userType === UserType.SELLER_COMPANY ? 'EMPRESA' : 'INDIVIDUAL'),
         billingEmail: cleanEmail,
         fiscalAddress: command.fiscalAddress || command.address || null,
         reviewStatus: 'pending',
@@ -87,6 +91,8 @@ export class AuthService {
         lastName,
         language: 'es',
         currency: 'ARS',
+        country: (command as any).country || null,
+        phoneCountry: (command as any).phoneCountry || null,
         completionPct: 30,
       },
       businessProfile,
@@ -480,21 +486,280 @@ export class AuthService {
     const cleanEmail = EmailValidator.validate(email);
     const user = await this.userRepository.findByEmail(cleanEmail);
     if (user) {
-      const resetToken = crypto.randomBytes(32).toString('hex');
-      const tokenHash = CryptoUtils.sha256(resetToken);
+      const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+      const tokenHash = CryptoUtils.sha256(resetCode);
       await this.authRepository.createVerificationToken(
         user.id,
         'password_reset',
         tokenHash,
         DateUtils.addHours(new Date(), 1),
+        JSON.stringify({ code: resetCode, email: user.email }),
       );
+
+      const frontendUrl = process.env.CORS_ORIGIN || 'http://localhost:3000';
+      const resetUrl = `${frontendUrl}/account/forgot-password?token=${resetCode}&email=${encodeURIComponent(user.email)}`;
+
+      try {
+        await this.mailService.sendPasswordResetEmail(
+          user.email,
+          resetCode,
+          user.firstName || 'Usuario',
+          resetUrl,
+        );
+      } catch (err: any) {
+        this.logger.error(`Error enviando correo de recuperación a ${user.email}: ${err?.message}`);
+      }
+
+      this.logger.log(`[PASSWORD_RESET_DISPATCHED] Para: ${user.email} | Código generado: ${resetCode}`);
     }
+
     return {
-      message: 'Si el correo está registrado, recibirás un enlace para restablecer tu contraseña.',
+      message: 'Si el correo está registrado, recibirás un código o enlace para restablecer tu contraseña.',
     };
   }
 
-  async resetPassword(token: string, newPass: string) {
-    return { success: true, message: 'Contraseña restablecida exitosamente.' };
+  async resetPassword(token: string, newPass: string, email?: string) {
+    if (!token || !newPass) {
+      throw new DomainException('El código o token de recuperación y la nueva contraseña son requeridos.');
+    }
+
+    if (newPass.length < 8) {
+      throw new DomainException('La nueva contraseña debe tener al menos 8 caracteres.');
+    }
+
+    const cleanToken = token.trim();
+    const tokenHash = CryptoUtils.sha256(cleanToken);
+
+    const tokenRecord = await this.authRepository.findValidVerificationTokenByHash?.(tokenHash);
+    if (!tokenRecord) {
+      throw new UnauthorizedException('El código o token de recuperación es inválido o ha expirado.');
+    }
+
+    const user = await this.userRepository.findById(tokenRecord.userId);
+    if (!user) {
+      throw new EntityNotFoundException('Usuario', tokenRecord.userId);
+    }
+
+    if (email) {
+      const cleanEmail = email.trim().toLowerCase();
+      if (user.email.toLowerCase() !== cleanEmail) {
+        throw new UnauthorizedException('El código no corresponde al correo proporcionado.');
+      }
+    }
+
+    const newPasswordHash = await CryptoUtils.hashPassword(newPass);
+    user.changePassword(newPasswordHash);
+    await this.userRepository.update(user);
+
+    await this.authRepository.consumeVerificationToken(tokenRecord.id);
+
+    try {
+      await this.authRepository.revokeAllUserSessions(user.id);
+    } catch (e: any) {
+      this.logger.warn(`No se pudieron revocar todas las sesiones del usuario ${user.id}: ${e?.message}`);
+    }
+
+    await this.authRepository.logSecurityEvent(
+      user.id,
+      'PASSWORD_RESET',
+      'info',
+      undefined,
+      undefined,
+      { method: 'forgot_password_code' },
+    );
+
+    return { success: true, message: 'Contraseña restablecida exitosamente. Ya puedes iniciar sesión con tu nueva contraseña.' };
+  }
+
+  async phoneLogin(dto: PhoneOtpLoginDto, userAgent?: string, clientIp?: string) {
+    if (this.authConfigService) {
+      const config = await this.authConfigService.getSettings();
+      if (!config.phoneOtpEnabled) {
+        throw new DomainException('El inicio de sesión mediante teléfono móvil se encuentra temporalmente deshabilitado por el administrador.');
+      }
+    }
+
+    const cleanPhone = dto.phone.trim();
+    let user = await this.userRepository.findByPhone(cleanPhone);
+
+    const tokenHash = CryptoUtils.sha256(dto.code.trim());
+    let tokenRecord: any = null;
+
+    if (user) {
+      tokenRecord = await this.authRepository.findValidVerificationToken(user.id, 'phone_otp', tokenHash);
+    }
+
+    if (!tokenRecord) {
+      tokenRecord = await this.authRepository.findValidVerificationTokenByHash?.(tokenHash);
+      if (tokenRecord && !user) {
+        user = await this.userRepository.findById(tokenRecord.userId);
+      }
+    }
+
+    if (!tokenRecord) {
+      throw new UnauthorizedException('Código OTP telefónico inválido o expirado.');
+    }
+
+    await this.authRepository.consumeVerificationToken(tokenRecord.id);
+
+    // Si el usuario no existe, registrarlo automáticamente con su número
+    if (!user) {
+      const randomEmail = `user.${cleanPhone.replace(/\D/g, '')}@marketplace.local`;
+      const dummyPass = await CryptoUtils.hashPassword(crypto.randomUUID());
+      const newUser = new UserEntity({
+        id: crypto.randomUUID(),
+        email: randomEmail,
+        phone: cleanPhone,
+        passwordHash: dummyPass,
+        type: UserType.BUYER,
+        status: UserStatus.ACTIVE,
+        phoneVerifiedAt: new Date(),
+        profile: {
+          firstName: 'Usuario',
+          lastName: cleanPhone.slice(-4),
+          completionPct: 40,
+        },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      user = await this.userRepository.create(newUser);
+    } else {
+      user.verifyPhone();
+    }
+
+    user.recordLogin();
+    await this.userRepository.update(user);
+
+    const tokens = await this.tokenGenerator.generateTokens({
+      sub: user.id,
+      email: user.email,
+      type: user.type,
+      role: user.role,
+      roles: user.roles,
+      permissions: user.permissions,
+      kycLevel: user.kycLevel,
+    });
+
+    const refreshTokenHash = await this.tokenGenerator.hashRefreshToken(tokens.refreshToken);
+    const session = new SessionEntity({
+      id: crypto.randomUUID(),
+      userId: user.id,
+      refreshTokenHash,
+      clientIp: clientIp || null,
+      userAgent: userAgent || null,
+      expiresAt: DateUtils.addDays(new Date(), 7),
+      isRevoked: false,
+      createdAt: new Date(),
+    });
+
+    await this.authRepository.createSession(session);
+    await this.authRepository.logSecurityEvent(
+      user.id,
+      'PHONE_LOGIN_SUCCESS',
+      'info',
+      clientIp,
+      userAgent,
+      { phone: cleanPhone },
+    );
+
+    return {
+      user: user.toJSON(),
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      expiresIn: tokens.expiresIn,
+    };
+  }
+
+  async socialLogin(dto: SocialLoginDto, userAgent?: string, clientIp?: string) {
+    if (this.authConfigService) {
+      const config = await this.authConfigService.getSettings();
+      if (!config.socialLoginEnabled) {
+        throw new DomainException('El inicio de sesión con redes sociales está desactivado.');
+      }
+      if (dto.provider === 'google' && !config.googleAuthEnabled) {
+        throw new DomainException('El inicio de sesión con Google está desactivado por el administrador.');
+      }
+      if (dto.provider === 'facebook' && !config.facebookAuthEnabled) {
+        throw new DomainException('El inicio de sesión con Facebook está desactivado por el administrador.');
+      }
+      if (dto.provider === 'apple' && !config.appleAuthEnabled) {
+        throw new DomainException('El inicio de sesión con Apple está desactivado por el administrador.');
+      }
+    }
+
+    const cleanEmail = EmailValidator.validate(dto.email);
+    let user = await this.userRepository.findByEmail(cleanEmail);
+
+    if (!user) {
+      // Registro automático del usuario social
+      const dummyPass = await CryptoUtils.hashPassword(crypto.randomUUID());
+      const newUser = new UserEntity({
+        id: crypto.randomUUID(),
+        email: cleanEmail,
+        passwordHash: dummyPass,
+        type: UserType.BUYER,
+        status: UserStatus.ACTIVE,
+        emailVerifiedAt: new Date(),
+        profile: {
+          firstName: dto.firstName || 'Usuario',
+          lastName: dto.lastName || dto.provider.toUpperCase(),
+          avatarUrl: dto.avatarUrl || null,
+          completionPct: 50,
+        },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      user = await this.userRepository.create(newUser);
+      await this.userRepository.saveOnboardingStep(user.id, OnboardingStep.BASE_REGISTRATION, 'completed');
+      await this.userRepository.saveOnboardingStep(user.id, OnboardingStep.EMAIL_VERIFIED, 'completed');
+      this.logger.log(`Nuevo usuario registrado vía Social (${dto.provider}): ${user.id} (${cleanEmail})`);
+    } else {
+      if (user.status === UserStatus.SUSPENDED || user.status === UserStatus.LOGICALLY_DELETED) {
+        throw new UnauthorizedException('Tu cuenta ha sido bloqueada o suspendida. Contacta a soporte.');
+      }
+      user.verifyEmail();
+      user.recordLogin();
+      await this.userRepository.update(user);
+    }
+
+    const tokens = await this.tokenGenerator.generateTokens({
+      sub: user.id,
+      email: user.email,
+      type: user.type,
+      role: user.role,
+      roles: user.roles,
+      permissions: user.permissions,
+      kycLevel: user.kycLevel,
+    });
+
+    const refreshTokenHash = await this.tokenGenerator.hashRefreshToken(tokens.refreshToken);
+    const session = new SessionEntity({
+      id: crypto.randomUUID(),
+      userId: user.id,
+      refreshTokenHash,
+      clientIp: clientIp || null,
+      userAgent: userAgent || null,
+      expiresAt: DateUtils.addDays(new Date(), 7),
+      isRevoked: false,
+      createdAt: new Date(),
+    });
+
+    await this.authRepository.createSession(session);
+    await this.authRepository.logSecurityEvent(
+      user.id,
+      `SOCIAL_LOGIN_${dto.provider.toUpperCase()}`,
+      'info',
+      clientIp,
+      userAgent,
+      { provider: dto.provider },
+    );
+
+    return {
+      user: user.toJSON(),
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      expiresIn: tokens.expiresIn,
+    };
   }
 }
+

@@ -1,9 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState, useRef } from "react";
 import {
-  Users,
   UserPlus,
   Search,
   ShieldCheck,
@@ -11,24 +9,29 @@ import {
   Edit2,
   Trash2,
   CheckCircle,
-  XCircle,
+  CheckCircle2,
   AlertTriangle,
   ChevronLeft,
   ChevronRight,
   ShieldAlert,
   Clock,
+  Mail,
+  Phone,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  Ban,
+  Loader2,
+  XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
-import { DashboardLayout, adminNavItems } from "@/components/layout/DashboardLayout";
 import {
   useUsers,
   useCreateUser,
   useUpdateUser,
   useDeleteUser,
 } from "@/hooks/useUsers";
-import { useAuth } from "@/hooks/useAuth";
-import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { container } from "@/infrastructure/container";
 import { UserForm, type UserFormValues } from "./form";
 import { Button } from "@/components/ui/button";
@@ -63,14 +66,12 @@ import {
 import type {
   User,
   KycLevel,
-  CreateUserData,
   UpdateUserData,
 } from "@/types";
 
 const ROLE_LABELS: Record<string, string> = {
   superadmin: "Super Admin",
   admin: "Administrador",
-  seller_empresa: "Vendedor Empresa",
   seller_company: "Vendedor Empresa",
   seller_individual: "Vendedor Individual",
   seller: "Vendedor",
@@ -105,25 +106,46 @@ const STATUS_LABELS: Record<string, string> = {
   BANNED: "Bloqueada",
 };
 
-export default function AdminUsersPage() {
-  const router = useRouter();
+type SortField = "name" | "phone" | "role" | "status" | "completion" | "createdAt";
+type SortOrder = "asc" | "desc";
+
+const AdminUsersPage = () => {
   const queryClient = useQueryClient();
-  const { isAuthenticated, isAdmin, isLoading: authLoading } = useAuth();
 
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [searchStatus, setSearchStatus] = useState<"idle" | "cancelled" | "searching">("idle");
   const [roleFilter, setRoleFilter] = useState<string>("ALL");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
 
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedSearch(search);
+  const [sortField, setSortField] = useState<SortField | null>("name");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
+
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
+
+    // Cancelación inmediata de cualquier búsqueda previa en proceso mientras siga escribiendo
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    if (value.trim().length > 0) {
+      setSearchStatus("cancelled");
+    } else {
+      setSearchStatus("idle");
+    }
+
+    // Solo cuando deja de escribir tras 500ms se despacha la petición al servidor
+    debounceTimerRef.current = setTimeout(() => {
+      setSearchStatus("searching");
+      setDebouncedSearch(value.trim());
       setPage(1);
-    }, 400);
-    return () => clearTimeout(handler);
-  }, [search]);
+    }, 500);
+  };
 
 
   const {
@@ -137,6 +159,8 @@ export default function AdminUsersPage() {
     search: debouncedSearch,
     role: roleFilter as any,
     status: statusFilter as any,
+    sortBy: sortField ?? "createdAt",
+    sortOrder,
   });
 
   const createUserMutation = useCreateUser();
@@ -190,6 +214,8 @@ export default function AdminUsersPage() {
         role: values.role as any,
         status: values.status as any,
         kycLevel: values.kycLevel as KycLevel,
+        emailVerified: values.emailVerified,
+        phoneVerified: values.phoneVerified,
       };
 
       if (values.password && values.password.trim().length >= 8) {
@@ -205,6 +231,44 @@ export default function AdminUsersPage() {
       setEditingUser(null);
     } catch (err: any) {
       toast.error(err?.message || "Error al actualizar el usuario");
+    }
+  };
+
+  const handleQuickToggleEmailVerification = async (user: User) => {
+    const nextState = !user.emailVerified;
+    try {
+      await updateUserMutation.mutateAsync({
+        id: user.id,
+        data: { emailVerified: nextState },
+      });
+      toast.success(
+        nextState
+          ? `Correo de ${user.fullName} marcado como verificado.`
+          : `Se removió la verificación de correo de ${user.fullName}.`
+      );
+    } catch (err: any) {
+      toast.error(err?.message || "No se pudo actualizar la verificación de correo.");
+    }
+  };
+
+  const handleQuickTogglePhoneVerification = async (user: User) => {
+    if (!user.phone && !user.phoneVerified) {
+      toast.error("El usuario no tiene un número de teléfono registrado.");
+      return;
+    }
+    const nextState = !user.phoneVerified;
+    try {
+      await updateUserMutation.mutateAsync({
+        id: user.id,
+        data: { phoneVerified: nextState },
+      });
+      toast.success(
+        nextState
+          ? `Teléfono de ${user.fullName} marcado como verificado.`
+          : `Se removió la verificación de teléfono de ${user.fullName}.`
+      );
+    } catch (err: any) {
+      toast.error(err?.message || "No se pudo actualizar la verificación de teléfono.");
     }
   };
 
@@ -264,13 +328,42 @@ export default function AdminUsersPage() {
     }
   };
 
+  useEffect(() => {
+    if (!usersLoading && searchStatus === "searching") {
+      setSearchStatus("idle");
+    }
+  }, [usersLoading, searchStatus]);
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortOrder("asc");
+    }
+    setPage(1);
+  };
+
+  const renderSortIcon = (field: SortField) => {
+    if (sortField !== field) {
+      return <ArrowUpDown className="w-3.5 h-3.5 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors" />;
+    }
+    return sortOrder === "asc" ? (
+      <ArrowUp className="w-3.5 h-3.5 text-primary" />
+    ) : (
+      <ArrowDown className="w-3.5 h-3.5 text-primary" />
+    );
+  };
+
   const users = usersData?.items ?? [];
   const total = usersData?.total ?? 0;
   const totalPages = usersData?.totalPages ?? 1;
 
+  // Los usuarios ya vienen ordenados a nivel de base de datos directamente desde el backend
+  const sortedUsers = users;
+
   return (
-    <ProtectedRoute roles={["admin", "superadmin"]} redirectTo="/account/login?redirect=/admin/users">
-      <DashboardLayout navItems={adminNavItems} title="Gestión de Usuarios">
+    <>
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 space-y-6 min-w-0">
         {}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -298,14 +391,35 @@ export default function AdminUsersPage() {
           {}
           <div className="flex flex-col gap-3 border-b border-border p-4 sm:p-5 lg:flex-row lg:items-center lg:justify-between bg-card">
             <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                type="text"
-                placeholder="Buscar por nombre, email o teléfono..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-9 rounded-xl w-full"
-              />
+              <div className="relative">
+                <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Buscar por nombre, email o teléfono..."
+                  value={search}
+                  onChange={(e) => handleSearchChange(e.target.value)}
+                  className="pl-9 pr-24 rounded-xl w-full"
+                />
+                <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5 pointer-events-none">
+                  {searchStatus === "cancelled" && (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 dark:text-amber-300 bg-amber-500/15 border border-amber-500/25 px-1.5 py-0.5 rounded animate-pulse">
+                      <Ban className="w-2.5 h-2.5 text-amber-600" />
+                      cancelled
+                    </span>
+                  )}
+                  {searchStatus === "searching" && (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-primary bg-primary/10 border border-primary/20 px-1.5 py-0.5 rounded">
+                      <Loader2 className="w-2.5 h-2.5 animate-spin text-primary" />
+                      buscando
+                    </span>
+                  )}
+                </div>
+              </div>
+              {searchStatus === "cancelled" && (
+                <p className="text-[11px] text-amber-600 dark:text-amber-400 mt-1 pl-1 flex items-center gap-1">
+                  <span>Petición previa cancelada mientras sigues escribiendo...</span>
+                </p>
+              )}
             </div>
 
             <div className="flex flex-wrap items-center gap-2.5">
@@ -320,7 +434,7 @@ export default function AdminUsersPage() {
                 <option value="ALL">Todos los Roles</option>
                 <option value="superadmin">Super Admin</option>
                 <option value="admin">Administrador</option>
-                <option value="seller_empresa">Vendedor Empresa</option>
+                <option value="seller_company">Vendedor Empresa</option>
                 <option value="seller_individual">Vendedor Individual</option>
                 <option value="buyer">Comprador</option>
                 <option value="support">Soporte</option>
@@ -345,17 +459,82 @@ export default function AdminUsersPage() {
             </div>
           </div>
 
-          {}
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="border-b border-border bg-muted/40 text-xs uppercase font-semibold text-muted-foreground">
+              <thead className="border-b border-border bg-muted/40 text-xs uppercase font-semibold text-muted-foreground select-none">
                 <tr>
-                  <th className="px-4 py-3 sm:px-6 sm:py-3.5">Usuario</th>
-                  <th className="hidden sm:table-cell px-4 py-3 sm:px-6 sm:py-3.5">Contacto</th>
-                  <th className="px-4 py-3 sm:px-6 sm:py-3.5">Rol</th>
-                  <th className="px-4 py-3 sm:px-6 sm:py-3.5">Estado</th>
-                  <th className="hidden md:table-cell px-4 py-3 sm:px-6 sm:py-3.5">Completitud</th>
-                  <th className="hidden lg:table-cell px-4 py-3 sm:px-6 sm:py-3.5">Registro</th>
+                  <th className="px-4 py-3 sm:px-6 sm:py-3.5">
+                    <button
+                      type="button"
+                      onClick={() => handleSort("name")}
+                      className={`flex items-center gap-1.5 hover:text-foreground transition-colors cursor-pointer group uppercase text-xs font-semibold ${
+                        sortField === "name" ? "text-primary font-bold" : ""
+                      }`}
+                    >
+                      <span>Usuario</span>
+                      {renderSortIcon("name")}
+                    </button>
+                  </th>
+                  <th className="hidden sm:table-cell px-4 py-3 sm:px-6 sm:py-3.5">
+                    <button
+                      type="button"
+                      onClick={() => handleSort("phone")}
+                      className={`flex items-center gap-1.5 hover:text-foreground transition-colors cursor-pointer group uppercase text-xs font-semibold ${
+                        sortField === "phone" ? "text-primary font-bold" : ""
+                      }`}
+                    >
+                      <span>Contacto</span>
+                      {renderSortIcon("phone")}
+                    </button>
+                  </th>
+                  <th className="px-4 py-3 sm:px-6 sm:py-3.5">
+                    <button
+                      type="button"
+                      onClick={() => handleSort("role")}
+                      className={`flex items-center gap-1.5 hover:text-foreground transition-colors cursor-pointer group uppercase text-xs font-semibold ${
+                        sortField === "role" ? "text-primary font-bold" : ""
+                      }`}
+                    >
+                      <span>Rol</span>
+                      {renderSortIcon("role")}
+                    </button>
+                  </th>
+                  <th className="px-4 py-3 sm:px-6 sm:py-3.5">
+                    <button
+                      type="button"
+                      onClick={() => handleSort("status")}
+                      className={`flex items-center gap-1.5 hover:text-foreground transition-colors cursor-pointer group uppercase text-xs font-semibold ${
+                        sortField === "status" ? "text-primary font-bold" : ""
+                      }`}
+                    >
+                      <span>Estado</span>
+                      {renderSortIcon("status")}
+                    </button>
+                  </th>
+                  <th className="hidden md:table-cell px-4 py-3 sm:px-6 sm:py-3.5">
+                    <button
+                      type="button"
+                      onClick={() => handleSort("completion")}
+                      className={`flex items-center gap-1.5 hover:text-foreground transition-colors cursor-pointer group uppercase text-xs font-semibold ${
+                        sortField === "completion" ? "text-primary font-bold" : ""
+                      }`}
+                    >
+                      <span>Completitud</span>
+                      {renderSortIcon("completion")}
+                    </button>
+                  </th>
+                  <th className="hidden lg:table-cell px-4 py-3 sm:px-6 sm:py-3.5">
+                    <button
+                      type="button"
+                      onClick={() => handleSort("createdAt")}
+                      className={`flex items-center gap-1.5 hover:text-foreground transition-colors cursor-pointer group uppercase text-xs font-semibold ${
+                        sortField === "createdAt" ? "text-primary font-bold" : ""
+                      }`}
+                    >
+                      <span>Registro</span>
+                      {renderSortIcon("createdAt")}
+                    </button>
+                  </th>
                   <th className="px-4 py-3 sm:px-6 sm:py-3.5 text-right">Acciones</th>
                 </tr>
               </thead>
@@ -378,14 +557,14 @@ export default function AdminUsersPage() {
                       </p>
                     </td>
                   </tr>
-                ) : users.length === 0 ? (
+                ) : sortedUsers.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="px-4 py-12 sm:px-6 text-center text-muted-foreground">
                       No se encontraron usuarios con los filtros seleccionados.
                     </td>
                   </tr>
                 ) : (
-                  users.map((u) => {
+                  sortedUsers.map((u) => {
                     const nameOrEmail =
                       u.fullName || [u.firstName, u.lastName].filter(Boolean).join(" ") || u.email || "Usuario";
                     const initials =
@@ -400,18 +579,60 @@ export default function AdminUsersPage() {
                       <tr key={u.id} className="hover:bg-muted/30 transition-colors">
                         <td className="px-4 py-3.5 sm:px-6 sm:py-4">
                           <div className="flex items-center gap-2.5 sm:gap-3">
-                            <div className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 font-bold text-primary text-xs">
-                              {initials}
+                            <div className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 font-bold text-primary text-xs overflow-hidden border border-border">
+                              {u.avatarUrl ? (
+                                <img src={u.avatarUrl} alt={nameOrEmail} className="size-full object-cover" />
+                              ) : (
+                                initials
+                              )}
                             </div>
-                            <div className="min-w-0 max-w-[140px] sm:max-w-xs">
+                            <div className="min-w-0 max-w-[150px] sm:max-w-xs">
                               <p className="font-semibold text-foreground truncate">{nameOrEmail}</p>
-                              <p className="text-xs text-muted-foreground truncate">{u.email}</p>
+                              <div className="flex items-center gap-1.5 text-xs text-muted-foreground truncate">
+                                <span className="truncate">{u.email}</span>
+                                {u.emailVerified ? (
+                                  <span
+                                    title="Correo electrónico verificado"
+                                    className="inline-flex items-center gap-0.5 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200 shrink-0"
+                                  >
+                                    <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600" />
+                                    Verificado
+                                  </span>
+                                ) : (
+                                  <span
+                                    title="Correo electrónico no verificado"
+                                    className="inline-flex items-center gap-0.5 text-[10px] font-medium text-amber-700 bg-amber-50 px-1.5 py-0.2 rounded border border-amber-200 shrink-0"
+                                  >
+                                    Sin verificar
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </td>
 
                         <td className="hidden sm:table-cell px-4 py-3.5 sm:px-6 sm:py-4 text-xs text-muted-foreground">
-                          {u.phone || "—"}
+                          <div className="flex flex-col gap-0.5">
+                            <span>{u.phone || "—"}</span>
+                            {u.phone && (
+                              u.phoneVerified ? (
+                                <span
+                                  title="Número telefónico verificado"
+                                  className="inline-flex items-center gap-0.5 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200 w-fit"
+                                >
+                                  <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600" />
+                                  Verificado
+                                </span>
+                              ) : (
+                                <span
+                                  title="Número telefónico sin verificar"
+                                  className="inline-flex items-center gap-0.5 text-[10px] font-medium text-amber-700 bg-amber-50 px-1.5 py-0.2 rounded border border-amber-200 w-fit"
+                                >
+                                  Sin verificar
+                                </span>
+                              )
+                            )}
+                          </div>
                         </td>
 
                         <td className="px-4 py-3.5 sm:px-6 sm:py-4">
@@ -457,11 +678,11 @@ export default function AdminUsersPage() {
                             <div className="w-16 h-1.5 bg-secondary rounded-full overflow-hidden">
                               <div
                                 className="h-full bg-primary rounded-full"
-                                style={{ width: `${u.completionPct ?? 40}%` }}
+                                style={{ width: `${u.completionPct ?? 20}%` }}
                               />
                             </div>
                             <span className="text-xs text-muted-foreground font-semibold">
-                              {u.completionPct ?? 40}%
+                              {u.completionPct ?? 20}%
                             </span>
                           </div>
                         </td>
@@ -490,6 +711,27 @@ export default function AdminUsersPage() {
                                 >
                                   <Edit2 className="h-3.5 w-3.5 text-muted-foreground" />
                                   <span>Editar datos</span>
+                                </DropdownMenuItem>
+
+                                <DropdownMenuItem
+                                  onClick={() => handleQuickToggleEmailVerification(u)}
+                                  className="cursor-pointer gap-2"
+                                >
+                                  <Mail className="h-3.5 w-3.5 text-emerald-600" />
+                                  <span>
+                                    {u.emailVerified ? "Desverificar Correo" : "Verificar Correo"}
+                                  </span>
+                                </DropdownMenuItem>
+
+                                <DropdownMenuItem
+                                  onClick={() => handleQuickTogglePhoneVerification(u)}
+                                  className="cursor-pointer gap-2"
+                                  disabled={!u.phone && !u.phoneVerified}
+                                >
+                                  <Phone className="h-3.5 w-3.5 text-blue-600" />
+                                  <span>
+                                    {u.phoneVerified ? "Desverificar Teléfono" : "Verificar Teléfono"}
+                                  </span>
                                 </DropdownMenuItem>
 
                                 {!isSuper && (
@@ -804,7 +1046,8 @@ export default function AdminUsersPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </DashboardLayout>
-  </ProtectedRoute>
-);
-}
+    </>
+  );
+};
+
+export default AdminUsersPage;

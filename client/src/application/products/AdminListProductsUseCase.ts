@@ -5,7 +5,7 @@ import type { Product } from "@/types";
 export class AdminListProductsUseCase {
   constructor(private readonly productRepository: ProductRepository) {}
 
-  execute(params?: AdminListProductsParams): Promise<Paginated<Product>> {
-    return this.productRepository.adminList(params);
+  execute(params?: AdminListProductsParams, signal?: AbortSignal): Promise<Paginated<Product>> {
+    return this.productRepository.adminList(params, signal);
   }
 }

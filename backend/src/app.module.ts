@@ -5,6 +5,7 @@ import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { DrizzleModule } from './infrastructure/database/drizzle.module';
 import { CacheModule } from './infrastructure/cache/cache.module';
 import { MailModule } from './infrastructure/mail/mail.module';
+import { StorageModule } from './infrastructure/storage/storage.module';
 
 import { UsersModule } from './modules/users/users.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
@@ -45,6 +46,7 @@ import { AppService } from './app.service';
     DrizzleModule,
     CacheModule,
     MailModule,
+    StorageModule,
     UsersModule,
     CatalogModule,
     SearchModule,

@@ -1,5 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
+import * as handlebars from 'handlebars';
+import * as fs from 'fs';
+import * as path from 'path';
 
 export interface SendEmailOptions {
   to: string;
@@ -8,13 +11,28 @@ export interface SendEmailOptions {
   from?: string;
 }
 
+export interface SendTemplatedEmailOptions {
+  to: string;
+  subject: string;
+  template: string;
+  context: Record<string, any>;
+  from?: string;
+}
+
 @Injectable()
 export class NodemailerEmailService {
   private readonly logger = new Logger(NodemailerEmailService.name);
   private transporter: nodemailer.Transporter | null = null;
+  private readonly compiledTemplates = new Map<string, handlebars.TemplateDelegate>();
 
   constructor() {
     this.initializeTransporter();
+    this.registerHandlebarsHelpers();
+  }
+
+  private registerHandlebarsHelpers() {
+    handlebars.registerHelper('eq', (a, b) => a === b);
+    handlebars.registerHelper('year', () => new Date().getFullYear());
   }
 
   private initializeTransporter() {
@@ -47,6 +65,43 @@ export class NodemailerEmailService {
     }
   }
 
+  private loadTemplateContent(templateName: string): string | null {
+    const candidatePaths = [
+      path.join(__dirname, 'templates', `${templateName}.hbs`),
+      path.join(process.cwd(), 'dist', 'infrastructure', 'mail', 'templates', `${templateName}.hbs`),
+      path.join(process.cwd(), 'src', 'infrastructure', 'mail', 'templates', `${templateName}.hbs`),
+    ];
+
+    for (const p of candidatePaths) {
+      if (fs.existsSync(p)) {
+        return fs.readFileSync(p, 'utf-8');
+      }
+    }
+    return null;
+  }
+
+  renderTemplate(templateName: string, context: Record<string, any>): string {
+    const cached = this.compiledTemplates.get(templateName);
+    if (cached) {
+      return cached({ year: new Date().getFullYear(), ...context });
+    }
+
+    let content = this.loadTemplateContent(templateName);
+
+    if (!content) {
+      this.logger.warn(`Plantilla Handlebars '${templateName}' no encontrada. Usando plantilla 'fallback.hbs'.`);
+      content = this.loadTemplateContent('fallback');
+    }
+
+    if (!content) {
+      throw new Error(`No se encontró la plantilla Handlebars '${templateName}' ni la plantilla de respaldo 'fallback.hbs'.`);
+    }
+
+    const compiled = handlebars.compile(content);
+    this.compiledTemplates.set(templateName, compiled);
+    return compiled({ year: new Date().getFullYear(), ...context });
+  }
+
   async sendEmail(options: SendEmailOptions): Promise<{ success: boolean; messageId?: string }> {
     const user = process.env.SMTP_USER;
     const defaultFrom = user ? `"FerroMax Marketplace" <${user}>` : '"FerroMax Marketplace" <no-reply@ferromax.com>';
@@ -73,49 +128,66 @@ export class NodemailerEmailService {
     }
   }
 
-  async sendOtpEmail(to: string, otpCode: string, name?: string): Promise<{ success: boolean; messageId?: string }> {
-    const greeting = name ? `Hola <strong>${name}</strong>,` : 'Hola,';
-    const html = `
-      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 540px; margin: 0 auto; padding: 32px 24px; background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 16px;">
-        <div style="text-align: center; margin-bottom: 24px;">
-          <h2 style="color: #ea580c; margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -0.5px;">FerroMax</h2>
-          <p style="color: #6b7280; font-size: 13px; margin: 4px 0 0 0; text-transform: uppercase; letter-spacing: 1px;">Marketplace</p>
-        </div>
-
-        <div style="border-top: 1px solid #f3f4f6; padding-top: 24px;">
-          <p style="color: #1f2937; font-size: 15px; line-height: 24px; margin: 0 0 16px 0;">
-            ${greeting}
-          </p>
-          <p style="color: #4b5563; font-size: 14px; line-height: 22px; margin: 0 0 24px 0;">
-            Has solicitado un código de verificación de un solo uso (OTP) para acceder a tu cuenta en FerroMax.
-          </p>
-
-          <div style="background-color: #fff7ed; border: 2px dashed #f97316; border-radius: 12px; padding: 20px; text-align: center; margin: 24px 0;">
-            <span style="font-size: 34px; font-weight: 800; letter-spacing: 8px; color: #ea580c; font-family: monospace;">
-              ${otpCode}
-            </span>
-          </div>
-
-          <p style="color: #6b7280; font-size: 13px; line-height: 20px; margin: 20px 0 0 0; text-align: center;">
-            Este código es válido durante <strong>10 minutos</strong>. Nunca compartas este código con nadie.
-          </p>
-        </div>
-
-        <div style="border-top: 1px solid #f3f4f6; margin-top: 32px; padding-top: 20px; text-align: center;">
-          <p style="color: #9ca3af; font-size: 12px; margin: 0;">
-            Si no solicitaste este código, puedes ignorar este correo de forma segura.
-          </p>
-          <p style="color: #d1d5db; font-size: 11px; margin: 8px 0 0 0;">
-            © ${new Date().getFullYear()} FerroMax Marketplace. Todos los derechos reservados.
-          </p>
-        </div>
-      </div>
-    `;
-
+  async sendTemplatedEmail(options: SendTemplatedEmailOptions): Promise<{ success: boolean; messageId?: string }> {
+    const html = this.renderTemplate(options.template, options.context);
     return this.sendEmail({
+      to: options.to,
+      subject: options.subject,
+      html,
+      from: options.from,
+    });
+  }
+
+  async sendOtpEmail(to: string, otpCode: string, name?: string): Promise<{ success: boolean; messageId?: string }> {
+    return this.sendTemplatedEmail({
       to,
       subject: `${otpCode} es tu código de verificación FerroMax`,
-      html,
+      template: 'otp-login',
+      context: {
+        name: name || 'Usuario',
+        otpCode,
+        expiresIn: '10 minutos',
+      },
+    });
+  }
+
+  async sendPasswordResetEmail(
+    to: string,
+    resetCode: string,
+    name?: string,
+    resetUrl?: string,
+  ): Promise<{ success: boolean; messageId?: string }> {
+    return this.sendTemplatedEmail({
+      to,
+      subject: 'Recuperación de Contraseña — FerroMax Marketplace',
+      template: 'password-reset',
+      context: {
+        name: name || 'Usuario',
+        email: to,
+        resetCode,
+        resetUrl,
+        expiresIn: '1 hora',
+      },
+    });
+  }
+
+  async sendEmailVerification(
+    to: string,
+    code: string,
+    name?: string,
+    verifyUrl?: string,
+  ): Promise<{ success: boolean; messageId?: string }> {
+    return this.sendTemplatedEmail({
+      to,
+      subject: 'Verifica tu correo electrónico — FerroMax Marketplace',
+      template: 'email-verification',
+      context: {
+        name: name || 'Usuario',
+        email: to,
+        code,
+        verifyUrl,
+        expiresIn: '24 horas',
+      },
     });
   }
 }

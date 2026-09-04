@@ -1,5 +1,11 @@
 import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from "axios";
-import { getAuthToken, logoutCustomer } from "@/shared/lib/marketplaceStorage";
+import {
+  getAuthToken,
+  getRefreshToken,
+  setAuthToken,
+  setRefreshToken,
+  logoutCustomer,
+} from "@/shared/lib/marketplaceStorage";
 import { API_BASE_URL, APP_CONFIG } from "./variables";
 
 export class ApiError extends Error {
@@ -20,6 +26,7 @@ export interface RequestOptions {
   params?: Record<string, unknown>;
   auth?: boolean;
   headers?: Record<string, string>;
+  signal?: AbortSignal;
 }
 
 export const apiClient: AxiosInstance = axios.create({
@@ -43,9 +50,27 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error),
 );
 
+let isRefreshing = false;
+let failedQueue: Array<{
+  resolve: (value?: unknown) => void;
+  reject: (reason?: unknown) => void;
+}> = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
+
 apiClient.interceptors.response.use(
   (response) => response,
-  (error: AxiosError) => {
+  async (error: AxiosError) => {
+    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
     const status = error.response?.status ?? 500;
     const data = error.response?.data as {
       detail?: string;
@@ -60,6 +85,67 @@ apiClient.interceptors.response.use(
       data?.title ??
       error.message ??
       `Error ${status} al conectar con el servidor.`;
+
+    // Si recibimos 401 y no es un retry ni el endpoint de login/refresh
+    const hasExistingTokens = Boolean(getAuthToken() || getRefreshToken());
+    if (
+      status === 401 &&
+      originalRequest &&
+      !originalRequest._retry &&
+      hasExistingTokens &&
+      !originalRequest.url?.includes("/identity/login") &&
+      !originalRequest.url?.includes("/identity/refresh") &&
+      !originalRequest.url?.includes("/identity/otp/login")
+    ) {
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then((token) => {
+            if (token && originalRequest.headers) {
+              originalRequest.headers.Authorization = `Bearer ${token}`;
+            }
+            return apiClient(originalRequest);
+          })
+          .catch((err) => Promise.reject(err));
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        const currentRefreshToken = getRefreshToken();
+        const refreshPayload = currentRefreshToken ? { refreshToken: currentRefreshToken } : {};
+        const refreshResponse = await axios.post(
+          `${API_BASE_URL}/identity/refresh`,
+          refreshPayload,
+          { withCredentials: true }
+        );
+
+        const responseData = refreshResponse.data?.data || refreshResponse.data;
+        const newAccessToken = responseData?.accessToken;
+        const newRefreshToken = responseData?.refreshToken;
+
+        if (newAccessToken) {
+          setAuthToken(newAccessToken);
+          if (newRefreshToken) {
+            setRefreshToken(newRefreshToken);
+          }
+
+          if (originalRequest.headers) {
+            originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+          }
+          processQueue(null, newAccessToken);
+          return apiClient(originalRequest);
+        }
+      } catch (refreshErr) {
+        processQueue(refreshErr, null);
+        logoutCustomer();
+        return Promise.reject(new ApiError(401, "Tu sesión ha expirado. Por favor, ingresa nuevamente."));
+      } finally {
+        isRefreshing = false;
+      }
+    }
 
     if (status === 401) {
       logoutCustomer();
@@ -91,10 +177,14 @@ export const apiRequest = async <T = unknown>(
       data: body,
       params,
       headers: requestHeaders,
+      signal: options.signal,
     });
 
     return response.data;
   } catch (error) {
+    if (axios.isCancel(error)) {
+      throw error;
+    }
     if (error instanceof ApiError) {
       throw error;
     }

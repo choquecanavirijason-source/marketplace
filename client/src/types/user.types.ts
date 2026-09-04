@@ -5,7 +5,6 @@ export type UserRole =
   | "SELLER"
   | "SELLER_INDIVIDUAL"
   | "SELLER_COMPANY"
-  | "SELLER_EMPRESA"
   | "ADMIN"
   | "SUPERADMIN"
   | "SUPPORT"
@@ -14,7 +13,6 @@ export type UserRole =
   | "seller"
   | "seller_individual"
   | "seller_company"
-  | "seller_empresa"
   | "admin"
   | "superadmin"
   | "support"
@@ -35,14 +33,7 @@ export type UserStatus =
   | "suspended"
   | "in_review"
   | "rejected"
-  | "logically_deleted"
-  | "activa"
-  | "pendiente"
-  | "restringida"
-  | "suspendida"
-  | "en_revision"
-  | "rechazada"
-  | "eliminada_logicamente";
+  | "logically_deleted";
 
 export type KycLevel = 0 | 1 | 2 | 3;
 
@@ -53,6 +44,8 @@ export interface UserProfile {
   currency?: string;
   avatarUrl?: string | null;
   birthDate?: string | null;
+  country?: string | null;
+  phoneCountry?: string | null;
   completionPct?: number;
 }
 
@@ -79,10 +72,13 @@ export interface User {
   firstName: string;
   lastName: string;
   fullName: string;
+  avatarUrl?: string | null;
   role: UserRole;
   roles?: string[];
   type?: string;
   status: UserStatus;
+  country?: string | null;
+  phoneCountry?: string | null;
   kycLevel: KycLevel;
   emailVerified: boolean;
   phoneVerified?: boolean;
@@ -100,6 +96,8 @@ export interface UserFilters {
   search?: string;
   role?: UserRole | "ALL";
   status?: UserStatus | "ALL";
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
 }
 
 export type PaginatedUsers = Paginated<User>;
@@ -123,5 +121,6 @@ export interface UpdateUserData {
   status?: UserStatus;
   kycLevel?: KycLevel;
   emailVerified?: boolean;
+  phoneVerified?: boolean;
   password?: string;
 }

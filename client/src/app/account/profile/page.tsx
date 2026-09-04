@@ -17,7 +17,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   User,
   Building2,
-  Phone,
   Mail,
   CheckCircle2,
   Shield,
@@ -28,14 +27,22 @@ import {
   MapPin,
   Save,
   Lock,
+  Camera,
 } from "lucide-react";
+import { PhoneCountryInput } from "@/components/ui/phone-country-input";
+import { ImageCropUpload } from "@/components/common/ImageCropUpload";
+import { useUploadAvatar } from "@/hooks/useUsers";
 
-export default function ProfilePage() {
+const ProfilePage = () => {
   const { user, updateProfile, updateBusinessProfile, refreshUser } = useAuth();
+  const uploadAvatarMutation = useUploadAvatar();
+  const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState("");
+  const [country, setCountry] = useState("Bolivia");
+  const [phoneCountry, setPhoneCountry] = useState("BO");
   const [address, setAddress] = useState("");
   const [birthDate, setBirthDate] = useState("");
   const [language, setLanguage] = useState("es");
@@ -58,7 +65,14 @@ export default function ProfilePage() {
       setFirstName(user.firstName || parts[0] || "");
       setLastName(user.lastName || parts.slice(1).join(" ") || "");
       setPhone(user.phone || user.mobileNumber || "");
+      if (user.country || (user as any).profile?.country) {
+        setCountry(user.country || (user as any).profile?.country);
+      }
+      if (user.phoneCountry || (user as any).profile?.phoneCountry) {
+        setPhoneCountry(user.phoneCountry || (user as any).profile?.phoneCountry);
+      }
       setAddress(user.address || "");
+      setAvatarUrl(user.avatarUrl || (user as any).profile?.avatarUrl || "");
       if (user.businessProfile) {
         setLegalName(user.businessProfile.legalName || "");
         setTradeName(user.businessProfile.tradeName || "");
@@ -80,6 +94,8 @@ export default function ProfilePage() {
         lastName: lastName.trim(),
         phone: phone.trim() || undefined,
         mobileNumber: phone.trim() || undefined,
+        country: country.trim() || undefined,
+        phoneCountry: phoneCountry.trim() || undefined,
         address: address.trim() || undefined,
         birthDate: birthDate || undefined,
         language,
@@ -125,7 +141,14 @@ export default function ProfilePage() {
     }
   };
 
-  const completionPct = user?.completionPct ?? 60;
+  const handleSaveAvatar = async (croppedDataUrl: string) => {
+    await uploadAvatarMutation.mutateAsync(croppedDataUrl);
+    if (refreshUser) {
+      await refreshUser();
+    }
+  };
+
+  const completionPct = user?.completionPct ?? 20;
 
   return (
     <ProtectedRoute>
@@ -153,8 +176,28 @@ export default function ProfilePage() {
             <CardContent className="p-6">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
                 <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-2xl bg-primary/10 text-primary font-black text-2xl flex items-center justify-center border border-primary/20 shadow-inner">
-                    {firstName?.[0]?.toUpperCase() || user?.name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || "U"}
+                  <div
+                    className="relative group/avatar cursor-pointer shrink-0"
+                    onClick={() => setIsAvatarModalOpen(true)}
+                    title="Hacé clic para cambiar tu foto de perfil"
+                  >
+                    {user?.avatarUrl ? (
+                      <img
+                        src={user.avatarUrl}
+                        alt={user?.name || "Foto de perfil"}
+                        className="w-16 h-16 rounded-2xl object-cover border-2 border-primary/30 shadow-md transition-transform group-hover/avatar:scale-[1.03]"
+                      />
+                    ) : (
+                      <div className="w-16 h-16 rounded-2xl bg-primary/10 text-primary font-black text-2xl flex items-center justify-center border border-primary/20 shadow-inner group-hover/avatar:border-primary/50 transition-colors">
+                        {firstName?.[0]?.toUpperCase() || user?.name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || "U"}
+                      </div>
+                    )}
+                    <div className="absolute inset-0 rounded-2xl bg-black/40 opacity-0 group-hover/avatar:opacity-100 transition-opacity flex items-center justify-center text-white backdrop-blur-[1px]">
+                      <Camera className="w-5 h-5" />
+                    </div>
+                    <span className="absolute -bottom-1 -right-1 bg-primary text-primary-foreground p-1 rounded-full shadow border-2 border-background">
+                      <Camera className="w-3 h-3" />
+                    </span>
                   </div>
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
@@ -272,16 +315,16 @@ export default function ProfilePage() {
                         <Label htmlFor="prof-phone" className="text-xs font-bold uppercase tracking-wider">
                           Teléfono / Celular
                         </Label>
-                        <div className="relative">
-                          <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                          <Input
-                            id="prof-phone"
-                            value={phone}
-                            onChange={(e) => setPhone(e.target.value)}
-                            placeholder="+54 11 1234-5678"
-                            className="pl-9 rounded-xl"
-                          />
-                        </div>
+                        <PhoneCountryInput
+                          id="prof-phone"
+                          value={phone}
+                          countryCode={phoneCountry}
+                          onChange={(fullPhone, code, cName) => {
+                            setPhone(fullPhone);
+                            setPhoneCountry(code);
+                            setCountry(cName);
+                          }}
+                        />
                       </div>
                     </div>
 
@@ -486,7 +529,17 @@ export default function ProfilePage() {
           }}
           email={user?.email || ""}
         />
+
+        <ImageCropUpload
+          isOpen={isAvatarModalOpen}
+          onClose={() => setIsAvatarModalOpen(false)}
+          onImageSaved={handleSaveAvatar}
+          title="Cambiar Foto de Perfil"
+          cropShape="circle"
+        />
       </DashboardLayout>
     </ProtectedRoute>
   );
-}
+};
+
+export default ProfilePage;

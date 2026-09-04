@@ -5,11 +5,12 @@ export {
   CUSTOMER_AUTH_KEY,
   CUSTOMERS_KEY,
   AUTH_TOKEN_KEY,
+  AUTH_REFRESH_TOKEN_KEY,
   AUTH_USER_KEY,
   AUTH_PERMISSIONS_KEY,
   TOKEN_NAME,
 } from "@/config";
-import { MARKETPLACE_PRODUCTS_KEY, CUSTOMER_AUTH_KEY, CUSTOMERS_KEY, AUTH_TOKEN_KEY, AUTH_USER_KEY, AUTH_PERMISSIONS_KEY } from "@/config";
+import { MARKETPLACE_PRODUCTS_KEY, CUSTOMER_AUTH_KEY, CUSTOMERS_KEY, AUTH_TOKEN_KEY, AUTH_REFRESH_TOKEN_KEY, AUTH_USER_KEY, AUTH_PERMISSIONS_KEY } from "@/config";
 
 export function readAddedProducts(): Product[] {
   if (typeof window === "undefined") return [];
@@ -178,6 +179,7 @@ export function logoutCustomer() {
   setCurrentCustomerEmail(null);
   setCurrentCustomerName(null);
   setAuthToken(null);
+  setRefreshToken(null);
   setCurrentUser(null);
   setAuthPermissions([]);
 }
@@ -196,6 +198,9 @@ export interface CurrentUser {
   type?: string | null;
   status?: string | null;
   roles?: string[];
+  country?: string | null;
+  phoneCountry?: string | null;
+  avatarUrl?: string | null;
   completionPct?: number;
   emailVerified?: boolean;
   phoneVerified?: boolean;
@@ -218,6 +223,22 @@ export function getAuthToken(): string | null {
   if (typeof window === "undefined") return null;
   return getCookie(AUTH_TOKEN_KEY) ?? window.localStorage.getItem(AUTH_TOKEN_KEY);
 }
+
+export const getRefreshToken = (): string | null => {
+  if (typeof window === "undefined") return null;
+  return getCookie(AUTH_REFRESH_TOKEN_KEY) ?? window.localStorage.getItem(AUTH_REFRESH_TOKEN_KEY);
+};
+
+export const setRefreshToken = (token: string | null): void => {
+  if (typeof window === "undefined") return;
+  if (token) {
+    setCookie(AUTH_REFRESH_TOKEN_KEY, token, 7);
+    window.localStorage.setItem(AUTH_REFRESH_TOKEN_KEY, token);
+  } else {
+    removeCookie(AUTH_REFRESH_TOKEN_KEY);
+    window.localStorage.removeItem(AUTH_REFRESH_TOKEN_KEY);
+  }
+};
 
 export function setAuthToken(token: string | null) {
   if (typeof window === "undefined") return;
@@ -282,11 +303,14 @@ export function getAuthPermissions(): string[] {
   }
 }
 
-export function setSession(user: CurrentUser, token?: string | null, permissions: string[] = []) {
+export function setSession(user: CurrentUser, token?: string | null, permissions: string[] = [], refreshToken?: string | null) {
   setCustomerAuthenticated(true);
   setCurrentUser(user);
   if (token && token.trim() !== "") {
     setAuthToken(token);
+  }
+  if (refreshToken && refreshToken.trim() !== "") {
+    setRefreshToken(refreshToken);
   }
   if (permissions && permissions.length > 0) {
     setAuthPermissions(permissions);
@@ -296,7 +320,7 @@ export function setSession(user: CurrentUser, token?: string | null, permissions
 export function isAdminUser(): boolean {
   const user = getCurrentUser();
   if (!user) return false;
-  const role = (user.type ?? user.roleName ?? "").toLowerCase();
+  const role = (user.role ?? user.type ?? user.roleName ?? "").toLowerCase();
   const userRoles = (user.roles ?? []).map((r) => r.toLowerCase());
   return (
     role === "admin" ||
@@ -310,16 +334,34 @@ export function isAdminUser(): boolean {
 
 export function hasRole(requiredRole: string): boolean {
   const user = getCurrentUser();
-  if (!user?.roleName) return false;
-  return user.roleName.toLowerCase() === requiredRole.toLowerCase();
+  if (!user) return false;
+  const role = (user.role ?? user.type ?? user.roleName ?? "").toLowerCase();
+  const userRoles = (user.roles ?? []).map((r) => r.toLowerCase());
+  const target = requiredRole.toLowerCase();
+  if (role === "superadmin" || userRoles.includes("superadmin")) return true;
+  if (
+    (role === "admin" || userRoles.includes("admin")) &&
+    (target === "admin" || target === "support" || target === "staff")
+  ) {
+    return true;
+  }
+  return role === target || userRoles.includes(target);
 }
 
 export function hasPermission(permission: string): boolean {
   const user = getCurrentUser();
   if (!user) return false;
 
-  const role = user.roleName?.toLowerCase();
-  if (role === "superadmin") return true;
+  const role = (user.role ?? user.type ?? user.roleName ?? "").toLowerCase();
+  const userRoles = (user.roles ?? []).map((r) => r.toLowerCase());
+  if (
+    role === "superadmin" ||
+    role === "admin" ||
+    userRoles.includes("superadmin") ||
+    userRoles.includes("admin")
+  ) {
+    return true;
+  }
 
   const permissions = getAuthPermissions();
   return permissions.includes(permission) || permissions.includes("*");

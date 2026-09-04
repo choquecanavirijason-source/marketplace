@@ -21,6 +21,8 @@ export interface AdminListProductsParams {
   search?: string;
   category?: string;
   isActive?: boolean | "";
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
   page?: number;
   limit?: number;
 }
@@ -45,7 +47,7 @@ export interface ProductService {
   listFlashDeals(): Promise<Product[]>;
   getById(id: number): Promise<Product | null>;
   paginate(params?: PaginateProductsParams): Promise<Paginated<Product>>;
-  adminList(params?: AdminListProductsParams): Promise<Paginated<Product>>;
+  adminList(params?: AdminListProductsParams, signal?: AbortSignal): Promise<Paginated<Product>>;
   toggleActive(id: number, isActive: boolean): Promise<Product>;
   delete(id: number): Promise<void>;
   update(id: number, data: UpsertProductData): Promise<Product>;
@@ -132,6 +134,44 @@ export class InMemoryProductService implements ProductService {
     }
     if (params?.isActive !== undefined && params.isActive !== "") {
       products = products.filter((p) => p.isActive === params.isActive);
+    }
+
+    if (params?.sortBy) {
+      const field = params.sortBy;
+      const order = params.sortOrder === "desc" ? "desc" : "asc";
+      products.sort((a, b) => {
+        let valA: any = "";
+        let valB: any = "";
+        switch (field) {
+          case "name":
+            valA = (a.name || "").toLowerCase();
+            valB = (b.name || "").toLowerCase();
+            break;
+          case "category":
+            valA = (a.category || "").toLowerCase();
+            valB = (b.category || "").toLowerCase();
+            break;
+          case "price":
+            valA = Number(a.price) || 0;
+            valB = Number(b.price) || 0;
+            break;
+          case "stock":
+            valA = Number(a.stock) || 0;
+            valB = Number(b.stock) || 0;
+            break;
+          case "isActive":
+            valA = a.isActive ? 1 : 0;
+            valB = b.isActive ? 1 : 0;
+            break;
+          default:
+            valA = (a.name || "").toLowerCase();
+            valB = (b.name || "").toLowerCase();
+            break;
+        }
+        if (valA < valB) return order === "asc" ? -1 : 1;
+        if (valA > valB) return order === "asc" ? 1 : -1;
+        return 0;
+      });
     }
 
     return paginateInMemory(products, params?.page, params?.limit);
@@ -285,7 +325,7 @@ export class HttpProductService implements ProductService {
     }
   }
 
-  async adminList(params?: AdminListProductsParams): Promise<Paginated<Product>> {
+  async adminList(params?: AdminListProductsParams, signal?: AbortSignal): Promise<Paginated<Product>> {
     const query = new URLSearchParams({
       limit: String(params?.limit ?? 10),
       page: String(params?.page ?? 1),
@@ -296,9 +336,12 @@ export class HttpProductService implements ProductService {
     if (params?.isActive !== undefined && params.isActive !== "") {
       query.set("is_active", String(params.isActive));
     }
+    if (params?.sortBy) query.set("sort_by", params.sortBy);
+    if (params?.sortOrder) query.set("sort_order", params.sortOrder);
 
     const payload = await apiRequest<PaginatedPayload<ApiProduct>>(`/admin/products?${query.toString()}`, {
       auth: true,
+      signal,
     });
 
     return paginated({ data: payload.data.map(mapProduct), meta: payload.meta });

@@ -1,8 +1,7 @@
 "use client";
 
-import React from "react";
 import Link from "next/link";
-import { ArrowLeft, Shield, Lock, Eye, Database, UserCheck, HelpCircle, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Shield, Lock, Eye, Database, UserCheck, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function PrivacyPage() {

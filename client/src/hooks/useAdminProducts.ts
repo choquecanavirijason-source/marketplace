@@ -6,8 +6,16 @@ import type { AdminListProductsParams } from "@/services";
 
 export const useAdminProducts = (params?: AdminListProductsParams) => {
   const query = useQuery({
-    queryKey: ["admin-products", params?.search ?? "", params?.category ?? "", params?.isActive ?? "", params?.page ?? 1],
-    queryFn: () => container.adminListProducts.execute(params),
+    queryKey: [
+      "admin-products",
+      params?.search ?? "",
+      params?.category ?? "",
+      params?.isActive ?? "",
+      params?.sortBy ?? "name",
+      params?.sortOrder ?? "asc",
+      params?.page ?? 1,
+    ],
+    queryFn: ({ signal }) => container.adminListProducts.execute(params, signal),
   });
 
   const queryClient = useQueryClient();

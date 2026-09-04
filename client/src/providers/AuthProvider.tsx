@@ -25,6 +25,8 @@ export interface AuthContextValue {
   isLoggingOut: boolean;
   login: (credentials: LoginCredentials) => Promise<AuthSession>;
   loginOtp?: (credentials: { phone?: string; email?: string; code: string }) => Promise<AuthSession>;
+  phoneLogin?: (phone: string, code: string) => Promise<AuthSession>;
+  socialLogin?: (data: { provider: "google" | "facebook" | "apple"; email: string; firstName?: string; lastName?: string; avatarUrl?: string; token?: string }) => Promise<AuthSession>;
   sendEmailOtp?: (email: string) => Promise<{ message: string; debugOtp?: string }>;
   register: (data: RegisterData) => Promise<AuthSession>;
   updateProfile: (data: UpdateProfileData) => Promise<AuthSession>;
@@ -42,7 +44,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   return <>{children}</>;
-}
+};
 
 export const useAuth = (): AuthContextValue => {
   const store = useAuthStore();
@@ -62,6 +64,8 @@ export const useAuth = (): AuthContextValue => {
     isLoggingOut: store.isLoggingOut,
     login: store.login,
     loginOtp: store.loginOtp,
+    phoneLogin: store.phoneLogin,
+    socialLogin: store.socialLogin,
     sendEmailOtp: store.sendEmailOtp,
     register: store.register,
     updateProfile: store.updateProfile,
@@ -72,4 +76,4 @@ export const useAuth = (): AuthContextValue => {
     hasPermission: store.hasPermission,
     hasRole: store.hasRole,
   };
-}
+};

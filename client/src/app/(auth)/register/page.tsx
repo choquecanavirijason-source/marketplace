@@ -1,6 +1,6 @@
 "use client";
 
-import React, { Suspense } from "react";
+import { Suspense } from "react";
 import { RegisterForm } from "@/components/auth/RegisterForm";
 
 export default function AuthRegisterPage() {

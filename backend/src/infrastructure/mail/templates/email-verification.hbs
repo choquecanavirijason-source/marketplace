@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verifica tu Correo — FerroMax</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f4f4f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f4f4f5; padding: 32px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" style="max-width: 560px; background-color: #ffffff; border: 1px solid #e4e4e7; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+          <!-- Header -->
+          <tr>
+            <td style="padding: 32px 32px 24px 32px; text-align: center; border-bottom: 1px solid #f4f4f5;">
+              <h1 style="margin: 0; font-size: 28px; font-weight: 800; color: #ea580c; letter-spacing: -0.5px;">FerroMax</h1>
+              <p style="margin: 4px 0 0 0; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 2px; color: #71717a;">Marketplace Industrial</p>
+            </td>
+          </tr>
+
+          <!-- Content -->
+          <tr>
+            <td style="padding: 32px;">
+              <h2 style="margin: 0 0 16px 0; font-size: 20px; font-weight: 700; color: #09090b;">¡Te damos la bienvenida a FerroMax!</h2>
+              <p style="margin: 0 0 16px 0; font-size: 15px; line-height: 24px; color: #3f3f46;">
+                Hola <strong>{{name}}</strong>,
+              </p>
+              <p style="margin: 0 0 24px 0; font-size: 15px; line-height: 24px; color: #3f3f46;">
+                Gracias por registrarte en nuestra plataforma. Para completar la activación de tu cuenta y proteger tu seguridad, por favor verifica tu correo electrónico utilizando el siguiente código:
+              </p>
+
+              <!-- OTP Code Box -->
+              <div style="background-color: #fff7ed; border: 2px dashed #f97316; border-radius: 12px; padding: 20px; text-align: center; margin: 24px 0;">
+                <span style="display: block; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #c2410c; margin-bottom: 6px;">Código de Verificación</span>
+                <span style="font-size: 36px; font-weight: 800; letter-spacing: 8px; color: #ea580c; font-family: monospace;">{{code}}</span>
+              </div>
+
+              {{#if verifyUrl}}
+              <div style="text-align: center; margin: 28px 0;">
+                <a href="{{verifyUrl}}" style="display: inline-block; background-color: #ea580c; color: #ffffff; padding: 14px 28px; font-size: 14px; font-weight: 700; text-decoration: none; border-radius: 10px;">
+                  Confirmar mi Correo Electrónico
+                </a>
+              </div>
+              {{/if}}
+
+              <p style="margin: 24px 0 0 0; font-size: 13px; line-height: 20px; color: #71717a; text-align: center;">
+                Este código expira en <strong>{{expiresIn}}</strong>. Si no creaste una cuenta en FerroMax, puedes desestimar este mensaje.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 20px 32px 32px 32px; background-color: #fafafa; border-top: 1px solid #f4f4f5; text-align: center;">
+              <p style="margin: 0; font-size: 11px; color: #d4d4d8;">
+                © {{year}} FerroMax Marketplace. Todos los derechos reservados.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

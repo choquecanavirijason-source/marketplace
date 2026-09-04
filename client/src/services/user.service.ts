@@ -9,7 +9,7 @@ import type {
 import { apiRequest } from "@/config/axios";
 
 export interface UserService {
-  getUsers(filters: UserFilters): Promise<PaginatedUsers>;
+  getUsers(filters?: UserFilters, signal?: AbortSignal): Promise<PaginatedUsers>;
   getUserById(id: string): Promise<User>;
   createUser(data: CreateUserData): Promise<User>;
   updateUser(id: string, data: UpdateUserData): Promise<User>;
@@ -17,23 +17,10 @@ export interface UserService {
   updateUserRoles(id: string, roles: string[]): Promise<any>;
   getUserAudit(id: string): Promise<{ userId: string; userEmail: string; events: UserAuditEvent[] }>;
   deleteUser(id: string): Promise<void>;
+  uploadAvatar(imageDataUrl: string): Promise<{ avatarUrl: string }>;
 }
 
 export type UserRepository = UserService;
-
-const STATUS_NORMALIZE_MAP: Record<string, string> = {
-  activa: "active",
-  pendiente: "pending",
-  restringida: "restricted",
-  suspendida: "suspended",
-  en_revision: "in_review",
-  rechazada: "rejected",
-  eliminada_logicamente: "logically_deleted",
-};
-
-const ROLE_NORMALIZE_MAP: Record<string, string> = {
-  seller_empresa: "seller_company",
-};
 
 const mapUser = (u: any): User => {
   const firstName = u.firstName || u.profile?.firstName || "";
@@ -53,21 +40,24 @@ const mapUser = (u: any): User => {
     firstName,
     lastName,
     fullName,
+    avatarUrl: u.avatarUrl || u.profile?.avatarUrl || null,
     role,
     roles: Array.isArray(u.roles) ? u.roles : [role],
     type: u.type || role,
     status,
+    country: u.country || u.profile?.country || null,
+    phoneCountry: u.phoneCountry || u.profile?.phoneCountry || null,
     kycLevel: typeof u.kycLevel === "number" ? u.kycLevel : (u.kyc_level ?? 0),
     emailVerified: Boolean(u.emailVerified ?? u.emailVerifiedAt ?? u.email_verified),
     phoneVerified: Boolean(u.phoneVerified ?? u.phoneVerifiedAt ?? u.phone_verified),
-    completionPct: typeof u.completionPct === "number" ? u.completionPct : (u.profile?.completionPct ?? 100),
+    completionPct: typeof u.completionPct === "number" ? u.completionPct : (u.profile?.completionPct ?? 20),
     createdAt: typeof u.createdAt === "string" ? u.createdAt : (u.createdAt ? new Date(u.createdAt).toISOString() : new Date().toISOString()),
     updatedAt: typeof u.updatedAt === "string" ? u.updatedAt : (u.updatedAt ? new Date(u.updatedAt).toISOString() : new Date().toISOString()),
   };
 };
 
 export class HttpUserService implements UserService {
-  async getUsers(filters: UserFilters): Promise<PaginatedUsers> {
+  async getUsers(filters: UserFilters = {}, signal?: AbortSignal): Promise<PaginatedUsers> {
     const params: Record<string, any> = {};
     if (filters.page) params.page = filters.page;
     if (filters.limit) params.limit = filters.limit;
@@ -75,15 +65,22 @@ export class HttpUserService implements UserService {
       params.search = filters.search.trim();
     }
     if (filters.role && filters.role !== "ALL") {
-      params.role = ROLE_NORMALIZE_MAP[filters.role] || filters.role;
+      params.role = filters.role;
     }
     if (filters.status && filters.status !== "ALL") {
-      params.status = STATUS_NORMALIZE_MAP[filters.status] || filters.status;
+      params.status = filters.status;
+    }
+    if (filters.sortBy) {
+      params.sortBy = filters.sortBy;
+    }
+    if (filters.sortOrder) {
+      params.sortOrder = filters.sortOrder;
     }
 
     const raw = await apiRequest<any>("/admin/users", {
       params,
       auth: true,
+      signal,
     });
 
     const payload = raw?.data?.items
@@ -164,10 +161,9 @@ export class HttpUserService implements UserService {
   }
 
   async updateUserStatus(id: string, status: string, reason: string): Promise<any> {
-    const normalizedStatus = STATUS_NORMALIZE_MAP[status.toLowerCase()] || status;
     const raw = await apiRequest<any>(`/admin/users/${id}/status`, {
       method: "PATCH",
-      body: { status: normalizedStatus, reason },
+      body: { status: status.toLowerCase(), reason },
       auth: true,
     });
     return raw?.data ?? raw;
@@ -192,6 +188,17 @@ export class HttpUserService implements UserService {
       method: "DELETE",
       auth: true,
     });
+  }
+
+  async uploadAvatar(imageDataUrl: string): Promise<{ avatarUrl: string }> {
+    const raw = await apiRequest<any>("/identity/avatar", {
+      method: "POST",
+      auth: true,
+      body: {
+        image: imageDataUrl,
+      },
+    });
+    return raw?.data ?? raw;
   }
 }
 

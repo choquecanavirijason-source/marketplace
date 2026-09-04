@@ -9,6 +9,7 @@ import {
   TextInput,
   PasswordInput,
   SelectInput,
+  SwitchInput,
 } from "@/components/forms";
 
 export const createUserSchema = z.object({
@@ -30,6 +31,8 @@ export const editUserSchema = z.object({
   role: z.string().min(1, "Selecciona un rol"),
   status: z.string().min(1, "Selecciona un estado"),
   kycLevel: z.coerce.number().min(0).max(3),
+  emailVerified: z.boolean().optional(),
+  phoneVerified: z.boolean().optional(),
   password: z.string().optional(),
 }).superRefine((data, ctx) => {
   if (data.password && data.password.trim().length > 0 && data.password.trim().length < 8) {
@@ -49,6 +52,8 @@ export type UserFormValues = {
   role: string;
   status: string;
   kycLevel: number;
+  emailVerified?: boolean;
+  phoneVerified?: boolean;
   password?: string;
 };
 
@@ -62,7 +67,7 @@ interface UserFormProps {
 const ROLE_OPTIONS = [
   { value: "buyer", label: "Comprador" },
   { value: "seller_individual", label: "Vendedor Individual" },
-  { value: "seller_empresa", label: "Vendedor Empresa" },
+  { value: "seller_company", label: "Vendedor Empresa" },
   { value: "admin", label: "Administrador" },
   { value: "superadmin", label: "Super Admin" },
   { value: "support", label: "Soporte Operativo" },
@@ -104,6 +109,8 @@ export const UserForm = ({
       role: (initialData?.role ?? "buyer").toLowerCase(),
       status: (initialData?.status ?? "active").toLowerCase(),
       kycLevel: initialData?.kycLevel ?? 0,
+      emailVerified: initialData?.emailVerified ?? false,
+      phoneVerified: initialData?.phoneVerified ?? false,
       password: "",
     },
   });
@@ -176,6 +183,26 @@ export const UserForm = ({
             required
           />
         </div>
+
+        {isEditing && (
+          <div className="space-y-3 pt-2 border-t border-border/70">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+              Verificación Administrativa de Contacto
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <SwitchInput
+                name="emailVerified"
+                label="Verificar Correo (Gmail)"
+                description="Habilita el correo como confirmado por el administrador."
+              />
+              <SwitchInput
+                name="phoneVerified"
+                label="Verificar Teléfono"
+                description="Habilita el número de celular como verificado."
+              />
+            </div>
+          </div>
+        )}
 
         <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-border">
           <Button

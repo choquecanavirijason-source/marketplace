@@ -1,4 +1,4 @@
-import { apiRequest, ApiError } from "@/config/axios";
+import { apiRequest } from "@/config/axios";
 import type {
   AuthSession,
   AuthUser,
@@ -13,6 +13,7 @@ import type {
 import {
   logoutCustomer,
   setAuthToken,
+  setRefreshToken,
   setCurrentUser,
   setSession,
   setAuthPermissions,
@@ -45,6 +46,8 @@ export interface AuthService {
   verifyEmail?(email: string, token: string): Promise<{ success: boolean; message: string }>;
   sendPhoneOtp?(phone: string): Promise<{ message: string; debugOtp?: string }>;
   verifyPhoneOtp?(phone: string, code: string): Promise<{ success: boolean; message: string }>;
+  phoneLogin?(phone: string, code: string): Promise<AuthSession>;
+  socialLogin?(data: { provider: "google" | "facebook" | "apple"; email: string; firstName?: string; lastName?: string; avatarUrl?: string; token?: string }): Promise<AuthSession>;
   logout(): Promise<void>;
 }
 
@@ -95,10 +98,13 @@ const mapUser = (u?: any): AuthUser => {
       id: "",
       name: "Usuario",
       email: "",
+      role: "buyer",
       roleName: "buyer",
       roles: ["buyer"],
     };
   }
+
+  const roleResolved = (u.role || u.role_name || u.roleName || (u.roles && u.roles[0]) || u.type || "buyer").toLowerCase();
 
   const displayName =
     u.name ||
@@ -112,13 +118,17 @@ const mapUser = (u?: any): AuthUser => {
     mobileNumber: u.mobile_number || u.mobileNumber || u.phone || null,
     phone: u.phone || u.mobileNumber || null,
     address: u.address || null,
-    roleName: u.role_name || u.roleName || u.role || (u.roles && u.roles[0]) || "buyer",
+    role: roleResolved,
+    roleName: roleResolved,
     firstName: u.firstName,
     lastName: u.lastName,
-    type: u.type,
+    avatarUrl: u.avatarUrl || u.profile?.avatarUrl || null,
+    type: u.type || roleResolved,
     status: u.status,
-    roles: u.roles || (u.role ? [u.role] : ["buyer"]),
-    completionPct: u.completionPct ?? 20,
+    roles: u.roles || (u.role ? [u.role] : [roleResolved]),
+    country: u.country || u.profile?.country || null,
+    phoneCountry: u.phoneCountry || u.profile?.phoneCountry || null,
+    completionPct: typeof u.completionPct === 'number' ? u.completionPct : (u.profile?.completionPct ?? 20),
     emailVerified: Boolean(u.emailVerified || u.emailVerifiedAt),
     phoneVerified: Boolean(u.phoneVerified || u.phoneVerifiedAt),
     businessProfile: u.businessProfile || null,
@@ -128,12 +138,14 @@ const mapUser = (u?: any): AuthUser => {
 const mapSession = (payload: any): AuthSession => {
   const rawData = payload?.data || payload || {};
   const token = rawData.accessToken || rawData.access_token || payload.accessToken || payload.access_token || "";
+  const refreshToken = rawData.refreshToken || rawData.refresh_token || payload.refreshToken || payload.refresh_token || undefined;
   const expiresAt = rawData.expiresAt || rawData.expires_at || null;
   const rawUser = rawData.user || (rawData.email || rawData.id ? rawData : payload.user);
   const permissions = rawData.permissions || payload.permissions || rawUser?.permissions || [];
 
   return {
     accessToken: token,
+    refreshToken,
     expiresAt,
     user: mapUser(rawUser),
     permissions,
@@ -148,7 +160,7 @@ export class HttpAuthService implements AuthService {
     });
 
     const session = mapSession(payload);
-    setSession(session.user, session.accessToken);
+    setSession(session.user, session.accessToken, session.permissions, session.refreshToken);
     setAuthPermissions(session.permissions);
     return session;
   }
@@ -160,7 +172,7 @@ export class HttpAuthService implements AuthService {
     });
 
     const session = mapSession(payload);
-    setSession(session.user, session.accessToken);
+    setSession(session.user, session.accessToken, session.permissions, session.refreshToken);
     setAuthPermissions(session.permissions);
     return session;
   }
@@ -209,7 +221,7 @@ export class HttpAuthService implements AuthService {
       }
     }
 
-    setSession(session.user, session.accessToken);
+    setSession(session.user, session.accessToken, session.permissions, session.refreshToken);
     setAuthPermissions(session.permissions);
     return session;
   }
@@ -248,7 +260,9 @@ export class HttpAuthService implements AuthService {
   }
 
   async getSessions(): Promise<UserSessionItem[]> {
-    return apiRequest<UserSessionItem[]>("/identity/sessions", { auth: true });
+    const res = await apiRequest<any>("/identity/sessions", { auth: true });
+    const items = res?.data || res;
+    return Array.isArray(items) ? items : [];
   }
 
   async revokeSession(sessionId: string): Promise<void> {
@@ -263,6 +277,7 @@ export class HttpAuthService implements AuthService {
       await apiRequest("/identity/logout-all", { method: "POST", auth: true });
     } finally {
       setAuthToken(null);
+      setRefreshToken(null);
       setAuthPermissions([]);
       logoutCustomer();
     }
@@ -274,6 +289,7 @@ export class HttpAuthService implements AuthService {
     } catch {
     } finally {
       setAuthToken(null);
+      setRefreshToken(null);
       setAuthPermissions([]);
       logoutCustomer();
     }
@@ -313,6 +329,29 @@ export class HttpAuthService implements AuthService {
       body: { phone, code },
     });
   }
+
+  async phoneLogin(phone: string, code: string): Promise<AuthSession> {
+    const payload = await apiRequest<ApiAuthPayload>("/identity/phone/login", {
+      method: "POST",
+      body: { phone, code },
+    });
+    const session = mapSession(payload);
+    setSession(session.user, session.accessToken, session.permissions, session.refreshToken);
+    setAuthPermissions(session.permissions);
+    return session;
+  }
+
+  async socialLogin(data: { provider: "google" | "facebook" | "apple"; email: string; firstName?: string; lastName?: string; avatarUrl?: string; token?: string }): Promise<AuthSession> {
+    const payload = await apiRequest<ApiAuthPayload>("/identity/social/login", {
+      method: "POST",
+      body: data,
+    });
+    const session = mapSession(payload);
+    setSession(session.user, session.accessToken, session.permissions, session.refreshToken);
+    setAuthPermissions(session.permissions);
+    return session;
+  }
 }
 
 export const HttpAuthRepository = HttpAuthService;
+

@@ -93,6 +93,22 @@ export class UserService {
       user.changeStatus(dto.status as UserStatus);
     }
 
+    if (dto.emailVerified !== undefined) {
+      if (dto.emailVerified) {
+        user.verifyEmail();
+      } else {
+        user.unverifyEmail();
+      }
+    }
+
+    if (dto.phoneVerified !== undefined) {
+      if (dto.phoneVerified) {
+        user.verifyPhone();
+      } else {
+        user.unverifyPhone();
+      }
+    }
+
     if (dto.password) {
       const newHash = await CryptoUtils.hashPassword(dto.password);
       user.changePassword(newHash);
@@ -146,10 +162,17 @@ export class UserService {
     user.updateProfile({
       firstName: dto.firstName,
       lastName: dto.lastName,
+      avatarUrl: dto.avatarUrl,
       birthDate: dto.birthDate,
       language: dto.language,
       currency: dto.currency,
+      country: dto.country,
+      phoneCountry: dto.phoneCountry,
     });
+    const incomingPhone = dto.phone || dto.mobileNumber || dto.mobile_number;
+    if (incomingPhone !== undefined) {
+      user.changePhone(incomingPhone ? incomingPhone.trim() : null);
+    }
     return this.userRepository.update(user);
   }
 

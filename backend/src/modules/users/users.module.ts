@@ -3,6 +3,7 @@ import { JwtModule } from '@nestjs/jwt';
 
 import { AuthController, MeController, UsersController } from './controllers';
 import { AuthService, UserService, SessionService } from './services';
+import { AuthConfigService } from './services/auth-config.service';
 import { UserRepository, SessionRepository } from './repositories';
 import { JwtAdapter } from './adapters';
 import { UserRepositoryPort } from './interfaces/user-repository.interface';
@@ -25,6 +26,7 @@ import { appConfig } from '../../config';
     AuthService,
     UserService,
     SessionService,
+    AuthConfigService,
 
     UserRepository,
     SessionRepository,
@@ -48,6 +50,7 @@ import { appConfig } from '../../config';
     AuthService,
     UserService,
     SessionService,
+    AuthConfigService,
     UserRepository,
     SessionRepository,
     JwtAdapter,
@@ -57,3 +60,4 @@ import { appConfig } from '../../config';
   ],
 })
 export class UsersModule {}
+

@@ -14,12 +14,14 @@ export const useUsers = (filters: UserFilters = {}) => {
   const search = filters.search ?? "";
   const role = filters.role ?? "ALL";
   const status = filters.status ?? "ALL";
+  const sortBy = filters.sortBy ?? "createdAt";
+  const sortOrder = filters.sortOrder ?? "desc";
 
   return useQuery({
-    queryKey: ["admin-users", page, limit, search, role, status],
-    queryFn: () => container.users.getUsers(filters),
+    queryKey: ["admin-users", page, limit, search, role, status, sortBy, sortOrder],
+    queryFn: ({ signal }) => container.users.getUsers(filters, signal),
   });
-}
+};
 
 export const useUser = (id: string) => {
   return useQuery({
@@ -62,4 +64,17 @@ export const useDeleteUser = () => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
     },
   });
-}
+};
+
+export const useUploadAvatar = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (imageDataUrl: string) => container.users.uploadAvatar(imageDataUrl),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      queryClient.invalidateQueries({ queryKey: ["auth-user"] });
+      queryClient.invalidateQueries({ queryKey: ["me"] });
+    },
+  });
+};

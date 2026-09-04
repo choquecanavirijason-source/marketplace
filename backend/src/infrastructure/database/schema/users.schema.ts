@@ -39,6 +39,8 @@ export const userProfilesTable = pgTable('user_profiles', {
   birthDate: date('birth_date'),
   language: varchar('language', { length: 10 }).default('es').notNull(),
   currency: varchar('currency', { length: 10 }).default('USD').notNull(),
+  country: varchar('country', { length: 100 }),
+  phoneCountry: varchar('phone_country', { length: 10 }),
   completionPct: integer('completion_pct').default(0).notNull(),
 
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),

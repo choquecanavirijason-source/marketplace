@@ -19,16 +19,15 @@ import {
   Building2,
   Mail,
   Lock,
-  Phone,
   CheckCircle2,
   Eye,
   EyeOff,
   Smartphone,
-  ShieldCheck,
   ArrowRight,
   RefreshCw,
   AlertCircle,
 } from "lucide-react";
+import { PhoneCountryInput } from "@/components/ui/phone-country-input";
 
 interface RegisterFormProps {
   onSuccess?: () => void;
@@ -55,6 +54,8 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [phone, setPhone] = useState("");
+  const [country, setCountry] = useState("Bolivia");
+  const [phoneCountry, setPhoneCountry] = useState("BO");
   const [legalName, setLegalName] = useState("");
   const [tradeName, setTradeName] = useState("");
   const [taxId, setTaxId] = useState("");
@@ -108,6 +109,8 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
         password,
         phone: phone.trim() || undefined,
         mobileNumber: phone.trim() || undefined,
+        country: country.trim() || undefined,
+        phoneCountry: phoneCountry.trim() || undefined,
         type: accountType,
         legalName: legalName.trim() || undefined,
         tradeName: tradeName.trim() || undefined,
@@ -418,17 +421,16 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
                 <Label htmlFor="reg-phone" className="text-xs font-bold uppercase tracking-wider">
                   Teléfono / Celular
                 </Label>
-                <div className="relative">
-                  <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="reg-phone"
-                    type="tel"
-                    placeholder="+54 11 1234-5678"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    className="pl-9 rounded-xl"
-                  />
-                </div>
+                <PhoneCountryInput
+                  id="reg-phone"
+                  value={phone}
+                  countryCode={phoneCountry}
+                  onChange={(fullPhone, code, cName) => {
+                    setPhone(fullPhone);
+                    setPhoneCountry(code);
+                    setCountry(cName);
+                  }}
+                />
               </div>
             </div>
 

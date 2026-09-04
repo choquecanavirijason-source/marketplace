@@ -30,7 +30,10 @@ export const useRequireAuth = (options: UseRequireAuthOptions = {}) => {
     if (!isInitialized) return;
 
     if (!isAuthenticated) {
-      const target = `${redirectTo}?redirect=${encodeURIComponent(pathname || "/")}`;
+      const target =
+        redirectTo.includes("redirect=") || redirectTo.includes("callbackUrl=")
+          ? redirectTo
+          : `${redirectTo}${redirectTo.includes("?") ? "&" : "?"}redirect=${encodeURIComponent(pathname || "/")}`;
       router.push(target);
       return;
     }

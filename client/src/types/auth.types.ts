@@ -10,12 +10,16 @@ export interface AuthUser {
   phone?: string | null;
   mobileNumber?: string | null;
   address?: string | null;
+  role?: string | null;
   roleName: string | null;
   firstName?: string;
   lastName?: string;
+  avatarUrl?: string | null;
   type?: string | null;
   status?: string | null;
   roles?: string[];
+  country?: string | null;
+  phoneCountry?: string | null;
   completionPct?: number;
   emailVerified?: boolean;
   phoneVerified?: boolean;
@@ -62,12 +66,14 @@ export interface RegisterData {
   phone?: string;
   mobileNumber?: string;
   address?: string;
-  type?: "buyer" | "seller_individual" | "seller_company" | "seller_empresa";
+  type?: "buyer" | "seller_individual" | "seller_company";
   legalName?: string;
   tradeName?: string;
   taxId?: string;
   legalType?: string;
   fiscalAddress?: string;
+  country?: string;
+  phoneCountry?: string;
   termsAccepted?: boolean;
 }
 
@@ -82,6 +88,8 @@ export interface UpdateProfileData {
   password?: string;
   language?: string;
   currency?: string;
+  country?: string | null;
+  phoneCountry?: string | null;
   avatarUrl?: string;
 }
 

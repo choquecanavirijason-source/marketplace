@@ -43,7 +43,15 @@ export function AccountMenu() {
         title={dict.common.myAccount}
         className="flex flex-col items-center p-2 hover:text-primary transition-colors text-foreground/70 gap-0.5"
       >
-        <User className="w-5 h-5" />
+        {user?.avatarUrl ? (
+          <img
+            src={user.avatarUrl}
+            alt={name ?? "Usuario"}
+            className="w-5 h-5 rounded-full object-cover border border-primary/30"
+          />
+        ) : (
+          <User className="w-5 h-5" />
+        )}
         <span className="text-[10px] font-medium max-w-[72px] truncate">{name ?? dict.common.myAccount}</span>
       </Link>
       <Link

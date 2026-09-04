@@ -7,6 +7,8 @@ export const queryUsersSchema = z.object({
   search: z.string().optional(),
   role: z.nativeEnum(UserRole).optional(),
   status: z.nativeEnum(UserStatus).optional(),
+  sortBy: z.enum(['name', 'email', 'phone', 'role', 'status', 'completion', 'createdAt']).optional(),
+  sortOrder: z.enum(['asc', 'desc']).default('desc').optional(),
 });
 
 export type QueryUsersDto = z.infer<typeof queryUsersSchema>;

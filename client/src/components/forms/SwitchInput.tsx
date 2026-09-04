@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import { useFormContext, Controller } from "react-hook-form";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/shared/lib/utils";

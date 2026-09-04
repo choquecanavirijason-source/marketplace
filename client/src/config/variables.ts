@@ -5,6 +5,7 @@ export const API_BASE_URL: string =
 
 export const TOKEN_NAME: string = "ferromax-token";
 export const AUTH_TOKEN_KEY: string = TOKEN_NAME;
+export const AUTH_REFRESH_TOKEN_KEY: string = "ferromax-refresh-token";
 export const AUTH_USER_KEY: string = "ferromax-user";
 export const AUTH_PERMISSIONS_KEY: string = "ferromax-permissions";
 export const CUSTOMER_AUTH_KEY: string = "ferromax-customer-auth";

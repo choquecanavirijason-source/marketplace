@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { ClipboardList, DollarSign, Package, ShoppingCart, Users } from "lucide-react";
 import {
   AlertDialog,
@@ -13,8 +12,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { DashboardLayout, adminNavItems } from "@/components/layout/DashboardLayout";
-import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { useAdminOrders, useAdminStats } from "@/hooks/useOrders";
 import { formatPrice } from "@/shared/lib/format";
 import { ORDER_STATUS_CLASSES, ORDER_STATUS_LABELS, formatOrderDate } from "@/shared/lib/orderStatus";
@@ -55,8 +52,7 @@ export default function AdminDashboardPage() {
   const { data: ordersData, isLoading: ordersLoading, updateStatus, isUpdating } = useAdminOrders(statusFilter, search);
 
   return (
-    <ProtectedRoute roles={["admin", "superadmin"]} redirectTo="/account/login?redirect=/admin">
-      <DashboardLayout navItems={adminNavItems} title="Panel administrador">
+    <>
       <div className="mx-auto max-w-7xl px-4 py-10">
         <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
           <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
@@ -212,7 +208,6 @@ export default function AdminDashboardPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      </DashboardLayout>
-    </ProtectedRoute>
+    </>
   );
 }

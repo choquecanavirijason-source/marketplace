@@ -64,7 +64,6 @@ export class SeedService {
       { codename: 'seller', name: 'Seller' },
       { codename: 'seller_individual', name: 'Individual Seller' },
       { codename: 'seller_company', name: 'Company Seller' },
-      { codename: 'seller_empresa', name: 'Company Seller' },
       { codename: 'admin', name: 'Administrator' },
       { codename: 'superadmin', name: 'Super Administrator' },
       { codename: 'support', name: 'Support & Operations' },
