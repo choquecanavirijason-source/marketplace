@@ -9,6 +9,7 @@ import type {
   UpdateBusinessProfileData,
   UserSessionItem,
   UserAuditEvent,
+  UserAddress,
 } from "@/types";
 import {
   logoutCustomer,
@@ -29,6 +30,7 @@ export type {
   UpdateBusinessProfileData,
   UserSessionItem,
   UserAuditEvent,
+  UserAddress,
 };
 
 export interface AuthService {
@@ -49,6 +51,21 @@ export interface AuthService {
   phoneLogin?(phone: string, code: string): Promise<AuthSession>;
   socialLogin?(data: { provider: "google" | "facebook" | "apple"; email: string; firstName?: string; lastName?: string; avatarUrl?: string; token?: string }): Promise<AuthSession>;
   logout(): Promise<void>;
+  listAddresses?(): Promise<UserAddress[]>;
+  createAddress?(data: AddressInput): Promise<UserAddress>;
+  updateAddress?(id: string, data: Partial<AddressInput>): Promise<UserAddress>;
+  deleteAddress?(id: string): Promise<void>;
+}
+
+export interface AddressInput {
+  label?: string;
+  country: string;
+  province: string;
+  city: string;
+  street: string;
+  number: string;
+  zip: string;
+  isDefault?: boolean;
 }
 
 export type AuthRepository = AuthService;
@@ -350,6 +367,34 @@ export class HttpAuthService implements AuthService {
     setSession(session.user, session.accessToken, session.permissions, session.refreshToken);
     setAuthPermissions(session.permissions);
     return session;
+  }
+
+  async listAddresses(): Promise<UserAddress[]> {
+    const res = await apiRequest<any>("/identity/addresses", { auth: true });
+    const items = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : (res?.data?.items ?? []);
+    return items;
+  }
+
+  async createAddress(data: AddressInput): Promise<UserAddress> {
+    const res = await apiRequest<any>("/identity/addresses", {
+      method: "POST",
+      auth: true,
+      body: data,
+    });
+    return res?.data ?? res;
+  }
+
+  async updateAddress(id: string, data: Partial<AddressInput>): Promise<UserAddress> {
+    const res = await apiRequest<any>(`/identity/addresses/${id}`, {
+      method: "PUT",
+      auth: true,
+      body: data,
+    });
+    return res?.data ?? res;
+  }
+
+  async deleteAddress(id: string): Promise<void> {
+    await apiRequest(`/identity/addresses/${id}`, { method: "DELETE", auth: true });
   }
 }
 

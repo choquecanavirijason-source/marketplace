@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { eq, sql, and, or, ilike, desc, asc, isNull, inArray } from 'drizzle-orm';
-import { UserRepositoryPort, UserListFilters } from '../interfaces/user-repository.interface';
+import { UserRepositoryPort, UserListFilters, AddressInput } from '../interfaces/user-repository.interface';
 import {
   UserEntity,
   UserProfileProps,
@@ -525,10 +525,7 @@ export class UserRepository implements UserRepositoryPort {
 
   async saveAddress(userId: string, address: AddressProps): Promise<AddressProps> {
     if (address.isDefault) {
-      await this.drizzle.db
-        .update(addressesTable)
-        .set({ isDefault: false })
-        .where(eq(addressesTable.userId, userId));
+      await this.clearDefaultAddresses(userId);
     }
 
     const rows = await this.drizzle.db
@@ -561,6 +558,88 @@ export class UserRepository implements UserRepositoryPort {
       zip: r.zip,
       isDefault: r.isDefault,
     };
+  }
+
+  private async clearDefaultAddresses(userId: string): Promise<void> {
+    await this.drizzle.db
+      .update(addressesTable)
+      .set({ isDefault: false, updatedAt: new Date() })
+      .where(eq(addressesTable.userId, userId));
+  }
+
+  private async findOwnedAddress(userId: string, addressId: string) {
+    const rows = await this.drizzle.db
+      .select()
+      .from(addressesTable)
+      .where(and(eq(addressesTable.id, addressId), eq(addressesTable.userId, userId)))
+      .limit(1);
+    return rows[0] ?? null;
+  }
+
+  async updateAddress(userId: string, addressId: string, data: AddressInput): Promise<AddressProps | null> {
+    const existing = await this.findOwnedAddress(userId, addressId);
+    if (!existing) return null;
+
+    if (data.isDefault) {
+      await this.clearDefaultAddresses(userId);
+    }
+
+    const rows = await this.drizzle.db
+      .update(addressesTable)
+      .set({
+        label: data.label !== undefined ? data.label : existing.label,
+        country: data.country !== undefined ? data.country : existing.country,
+        province: data.province !== undefined ? data.province : existing.province,
+        city: data.city !== undefined ? data.city : existing.city,
+        street: data.street !== undefined ? data.street : existing.street,
+        number: data.number !== undefined ? data.number : existing.number,
+        zip: data.zip !== undefined ? data.zip : existing.zip,
+        isDefault: data.isDefault !== undefined ? Boolean(data.isDefault) : existing.isDefault,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(addressesTable.id, addressId), eq(addressesTable.userId, userId)))
+      .returning();
+
+    const r = rows[0];
+    return {
+      id: r.id,
+      userId: r.userId,
+      label: r.label,
+      country: r.country,
+      province: r.province,
+      city: r.city,
+      street: r.street,
+      number: r.number,
+      zip: r.zip,
+      isDefault: r.isDefault,
+    };
+  }
+
+  async deleteAddress(userId: string, addressId: string): Promise<boolean> {
+    const existing = await this.findOwnedAddress(userId, addressId);
+    if (!existing) return false;
+
+    const wasDefault = existing.isDefault;
+    await this.drizzle.db
+      .delete(addressesTable)
+      .where(and(eq(addressesTable.id, addressId), eq(addressesTable.userId, userId)));
+
+    if (wasDefault) {
+      const remaining = await this.drizzle.db
+        .select()
+        .from(addressesTable)
+        .where(eq(addressesTable.userId, userId))
+        .orderBy(asc(addressesTable.createdAt))
+        .limit(1);
+      if (remaining[0]) {
+        await this.drizzle.db
+          .update(addressesTable)
+          .set({ isDefault: true, updatedAt: new Date() })
+          .where(eq(addressesTable.id, remaining[0].id));
+      }
+    }
+
+    return true;
   }
 }
 

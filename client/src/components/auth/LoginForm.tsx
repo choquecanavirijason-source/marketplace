@@ -49,88 +49,98 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, redirectUrl }) 
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto shadow-lg border-border/60 rounded-3xl overflow-hidden">
-      <CardHeader className="text-center space-y-1 pb-4">
-        <div className="mx-auto w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary mb-2 shadow-inner">
-          <ShieldCheck className="w-6 h-6" />
-        </div>
-        <CardTitle className="text-2xl font-bold tracking-tight">Iniciar Sesión</CardTitle>
-        <CardDescription className="text-sm text-muted-foreground">
-          Accede a tu cuenta de cliente, vendedor o administración
-        </CardDescription>
-      </CardHeader>
-
-      <CardContent className="space-y-4">
-        <form onSubmit={handlePasswordLogin} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="login-email" className="text-xs font-bold uppercase tracking-wider">
-              Correo Electrónico
-            </Label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                id="login-email"
-                type="email"
-                placeholder="ejemplo@correo.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="pl-9 rounded-xl"
-                required
-                autoComplete="email"
-              />
+    <div className="w-full max-w-md mx-auto">
+      {/* Gradient glow behind card */}
+      <div className="relative">
+        <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 via-orange-400/10 to-primary/20 rounded-[2rem] blur-xl opacity-60" />
+        <Card className="relative w-full shadow-xl border-border/60 rounded-3xl overflow-hidden">
+          <CardHeader className="text-center space-y-1 pb-4">
+            <div className="mx-auto w-12 h-12 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center text-primary mb-2 shadow-inner">
+              <ShieldCheck className="w-6 h-6" />
             </div>
-          </div>
+            <CardTitle className="text-2xl font-bold tracking-tight">Iniciar Sesión</CardTitle>
+            <CardDescription className="text-sm text-muted-foreground">
+              Accede a tu cuenta de cliente, vendedor o administración
+            </CardDescription>
+          </CardHeader>
 
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="login-password" className="text-xs font-bold uppercase tracking-wider">
-                Contraseña
-              </Label>
-              <Link
-                href="/account/forgot-password"
-                className="text-xs text-primary hover:underline font-semibold"
+          <CardContent className="space-y-4">
+            <form onSubmit={handlePasswordLogin} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="login-email" className="text-xs font-bold uppercase tracking-wider">
+                  Correo Electrónico
+                </Label>
+                <div className="relative group">
+                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                  <Input
+                    id="login-email"
+                    type="email"
+                    placeholder="ejemplo@correo.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="pl-9 rounded-xl focus:ring-4 focus:ring-primary/10 transition-all"
+                    required
+                    autoComplete="email"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="login-password" className="text-xs font-bold uppercase tracking-wider">
+                    Contraseña
+                  </Label>
+                  <Link
+                    href="/account/forgot-password"
+                    className="text-xs text-primary hover:underline font-semibold"
+                  >
+                    ¿Olvidaste tu clave?
+                  </Link>
+                </div>
+                <div className="relative group">
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                  <Input
+                    id="login-password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="pl-9 pr-10 rounded-xl focus:ring-4 focus:ring-primary/10 transition-all"
+                    required
+                    autoComplete="current-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute right-3 top-3 text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label={showPassword ? "Ocultar contraseña" : "Ver contraseña"}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full h-11 rounded-xl font-bold uppercase tracking-wider text-xs shadow-md mt-2 bg-gradient-to-r from-primary to-orange-600 hover:from-orange-700 hover:to-primary transition-all active:scale-[0.98]"
+                disabled={isLoading}
               >
-                ¿Olvidaste tu clave?
+                {isLoading ? "Ingresando..." : "Ingresar a la Plataforma"}
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </form>
+          </CardContent>
+
+          <CardFooter className="flex flex-col space-y-3 pt-4 text-center text-xs border-t border-border/60 bg-muted/20">
+            <div className="text-muted-foreground">
+              ¿No tienes una cuenta?{" "}
+              <Link href="/account/register" className="font-bold text-primary hover:underline">
+                Regístrate aquí
               </Link>
             </div>
-            <div className="relative">
-              <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                id="login-password"
-                type={showPassword ? "text" : "password"}
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="pl-9 pr-10 rounded-xl"
-                required
-                autoComplete="current-password"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword((prev) => !prev)}
-                className="absolute right-3 top-3 text-muted-foreground hover:text-foreground transition-colors"
-                aria-label={showPassword ? "Ocultar contraseña" : "Ver contraseña"}
-              >
-                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
-          </div>
-
-          <Button type="submit" className="w-full h-11 rounded-xl font-bold uppercase tracking-wider text-xs shadow-md mt-2" disabled={isLoading}>
-            {isLoading ? "Ingresando..." : "Ingresar a la Plataforma"}
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
-        </form>
-      </CardContent>
-
-      <CardFooter className="flex flex-col space-y-3 pt-4 text-center text-xs border-t border-border/60 bg-muted/20">
-        <div className="text-muted-foreground">
-          ¿No tienes una cuenta?{" "}
-          <Link href="/account/register" className="font-bold text-primary hover:underline">
-            Regístrate aquí
-          </Link>
-        </div>
-      </CardFooter>
-    </Card>
+          </CardFooter>
+        </Card>
+      </div>
+    </div>
   );
 };

@@ -16,13 +16,24 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
+  Loader2,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Can } from "@/components/auth/Can";
+import { ProductForm } from "@/components/product/ProductForm";
 import { useAdminProducts } from "@/hooks/useAdminProducts";
 import { useCategories } from "@/hooks/useCatalog";
 import { ApiError } from "@/config/axios";
 import { formatPrice } from "@/shared/lib/format";
+import type { Product } from "@/types";
 
 const PAGE_SIZE = 8;
 
@@ -32,6 +43,10 @@ type SortOrder = "asc" | "desc";
 const AdminProductsPage = () => {
   const router = useRouter();
   const [error, setError] = useState("");
+
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [togglingId, setTogglingId] = useState<number | null>(null);
 
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -111,10 +126,21 @@ const AdminProductsPage = () => {
   const sortedProducts = data?.items ?? [];
 
   const handleToggleActive = async (id: number, isActive: boolean) => {
+    setTogglingId(id);
     try {
       await toggleActive({ id, isActive: !isActive });
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo actualizar el producto.");
+      toast.success(
+        isActive
+          ? "Producto pausado/desactivado correctamente."
+          : "Producto activado/publicado correctamente."
+      );
+      setError("");
+    } catch (err: any) {
+      const msg = err instanceof ApiError ? err.message : (err?.message || "No se pudo actualizar el producto.");
+      toast.error(msg);
+      setError(msg);
+    } finally {
+      setTogglingId(null);
     }
   };
 
@@ -130,7 +156,8 @@ const AdminProductsPage = () => {
   const totalPages = Math.max(1, data?.lastPage ?? 1);
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-10">
+    <>
+      <div className="mx-auto max-w-7xl px-4 py-10">
         <div className="mb-6 flex flex-col gap-4 rounded-2xl border border-border bg-card p-5 shadow-sm md:flex-row md:items-center md:justify-between">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Panel administrador</p>
@@ -140,7 +167,7 @@ const AdminProductsPage = () => {
 
           <div className="flex gap-3">
             <Can permission="producto.crear">
-              <Button onClick={() => router.push("/admin/products/create")}>
+              <Button onClick={() => setIsCreateOpen(true)}>
                 <Plus className="w-4 h-4" /> Nuevo producto
               </Button>
             </Can>
@@ -371,15 +398,21 @@ const AdminProductsPage = () => {
                             <button
                               type="button"
                               onClick={() => handleToggleActive(product.id, product.isActive ?? true)}
-                              disabled={isToggling}
-                              title={product.isActive ? "Desactivar" : "Activar"}
-                              className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+                              disabled={togglingId === product.id || isToggling}
+                              title={product.isActive ? "Desactivar producto" : "Activar producto"}
+                              className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50 cursor-pointer"
                             >
-                              {product.isActive ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                              {togglingId === product.id ? (
+                                <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                              ) : product.isActive ? (
+                                <EyeOff className="w-4 h-4" />
+                              ) : (
+                                <Eye className="w-4 h-4" />
+                              )}
                             </button>
                             <button
                               type="button"
-                              onClick={() => router.push(`/admin/products/${product.id}/edit`)}
+                              onClick={() => setEditingProduct(product)}
                               title="Editar"
                               className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-muted transition-colors"
                             >
@@ -433,6 +466,43 @@ const AdminProductsPage = () => {
           )}
         </section>
       </div>
+
+      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+        <DialogContent className="w-[95vw] sm:max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl">
+          <DialogHeader>
+            <DialogTitle>Nuevo producto</DialogTitle>
+            <DialogDescription>
+              Completá los datos para publicar un producto en el marketplace.
+            </DialogDescription>
+          </DialogHeader>
+          <ProductForm
+            isModal
+            onSuccess={() => setIsCreateOpen(false)}
+            onCancel={() => setIsCreateOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(editingProduct)} onOpenChange={(open) => !open && setEditingProduct(null)}>
+        <DialogContent className="w-[95vw] sm:max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl">
+          <DialogHeader>
+            <DialogTitle>Editar producto</DialogTitle>
+            <DialogDescription>
+              Modificá los datos del producto #{editingProduct?.id} y guardá los cambios.
+            </DialogDescription>
+          </DialogHeader>
+          {editingProduct && (
+            <ProductForm
+              key={editingProduct.id}
+              product={editingProduct}
+              isModal
+              onSuccess={() => setEditingProduct(null)}
+              onCancel={() => setEditingProduct(null)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 

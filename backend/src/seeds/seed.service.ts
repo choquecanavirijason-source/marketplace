@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as crypto from 'crypto';
+import { eq } from 'drizzle-orm';
 import { DrizzleService } from '../infrastructure/database/drizzle.service';
 import {
   usersTable,
@@ -15,6 +16,16 @@ import {
 } from '../infrastructure/database/schema';
 import { CryptoUtils, Permissions, ROLE_PERMISSIONS, OnboardingStep } from '../shared';
 import { STATIC_ACCOUNTS, generateFakeUsers } from './fixtures/users.fixture';
+import {
+  CATALOG_CATEGORIES,
+  CATALOG_PRODUCTS,
+  productImage,
+} from './fixtures/catalog.fixture';
+import {
+  categoriesTable,
+  productsTable,
+  productImagesTable,
+} from '../infrastructure/database/schema';
 
 @Injectable()
 export class SeedService {
@@ -131,7 +142,16 @@ export class SeedService {
         .onConflictDoNothing({ target: usersTable.email })
         .returning();
 
-      const activeUserId = userRows[0]?.id || userId;
+      let activeUserId = userRows[0]?.id;
+      if (!activeUserId) {
+        const existingUser = await this.drizzle.db
+          .select({ id: usersTable.id })
+          .from(usersTable)
+          .where(eq(usersTable.email, acc.email))
+          .limit(1);
+        activeUserId = existingUser[0]?.id;
+      }
+      if (!activeUserId) continue;
 
       await this.drizzle.db
         .insert(userProfilesTable)
@@ -266,6 +286,8 @@ export class SeedService {
       createdAt: new Date(),
     });
 
+    await this.seedCatalog();
+
     this.logger.log('🎉 Seed completado exitosamente.');
     this.logger.log('==============================================');
     this.logger.log('🔑 Credenciales por defecto para todas las cuentas:');
@@ -275,5 +297,114 @@ export class SeedService {
     this.logger.log('   Seller: seller@marketplace.com');
     this.logger.log('   Buyer: buyer@marketplace.com');
     this.logger.log('==============================================');
+  }
+
+  async seedCatalog() {
+    this.logger.log('📦 Sembrando catálogo de categorías y productos...');
+
+    const categoryIdBySlug = new Map<string, number>();
+    const existingCategories = await this.drizzle.db
+      .select({ id: categoriesTable.id, slug: categoriesTable.slug })
+      .from(categoriesTable);
+    for (const c of existingCategories) categoryIdBySlug.set(c.slug, c.id);
+
+    for (const cat of CATALOG_CATEGORIES) {
+      const existingId = categoryIdBySlug.get(cat.slug);
+      const now = new Date();
+      if (existingId) {
+        await this.drizzle.db
+          .update(categoriesTable)
+          .set({ name: cat.name, description: cat.description, sortOrder: cat.sortOrder, isActive: true, updatedAt: now })
+          .where(eq(categoriesTable.id, existingId));
+      } else {
+        const [inserted] = await this.drizzle.db
+          .insert(categoriesTable)
+          .values({
+            name: cat.name,
+            slug: cat.slug,
+            description: cat.description,
+            sortOrder: cat.sortOrder,
+            isActive: true,
+            createdAt: now,
+            updatedAt: now,
+          })
+          .returning({ id: categoriesTable.id });
+        if (inserted) categoryIdBySlug.set(cat.slug, inserted.id);
+      }
+    }
+
+    let productsSeeded = 0;
+    for (const prod of CATALOG_PRODUCTS) {
+      const categoryId = categoryIdBySlug.get(prod.categorySlug);
+      if (!categoryId) continue;
+
+      const existing = await this.drizzle.db
+        .select({ id: productsTable.id })
+        .from(productsTable)
+        .where(eq(productsTable.sku, prod.sku))
+        .limit(1);
+
+      const url = productImage(prod);
+      const now = new Date();
+      let productId: number;
+
+      if (existing[0]) {
+        productId = existing[0].id;
+        await this.drizzle.db
+          .update(productsTable)
+          .set({
+            name: prod.name,
+            categoryId,
+            description: prod.description,
+            price: prod.price,
+            originalPrice: prod.originalPrice ?? null,
+            tag: prod.tag ?? null,
+            stock: prod.stock,
+            rating: prod.rating ?? 0,
+            status: 'published',
+            weight: prod.weight ?? null,
+            warranty: prod.warranty ?? null,
+            updatedAt: now,
+          })
+          .where(eq(productsTable.id, productId));
+      } else {
+        const [inserted] = await this.drizzle.db
+          .insert(productsTable)
+          .values({
+            categoryId,
+            name: prod.name,
+            slug: `${prod.sku.toLowerCase()}-${prod.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 180)}`,
+            description: prod.description,
+            price: prod.price,
+            originalPrice: prod.originalPrice ?? null,
+            tag: prod.tag ?? null,
+            sku: prod.sku,
+            stock: prod.stock,
+            rating: prod.rating ?? 0,
+            status: 'published',
+            weight: prod.weight ?? null,
+            warranty: prod.warranty ?? null,
+            createdAt: now,
+            updatedAt: now,
+          })
+          .returning({ id: productsTable.id });
+        if (!inserted) continue;
+        productId = inserted.id;
+      }
+
+      await this.drizzle.db.delete(productImagesTable).where(eq(productImagesTable.productId, productId));
+      await this.drizzle.db.insert(productImagesTable).values({
+        productId,
+        url,
+        altText: prod.name,
+        position: 0,
+        isPrimary: true,
+        createdAt: now,
+      });
+
+      productsSeeded += 1;
+    }
+
+    this.logger.log(`📦 Catálogo sembrado: ${CATALOG_CATEGORIES.length} categorías y ${productsSeeded} productos.`);
   }
 }

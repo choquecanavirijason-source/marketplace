@@ -1,4 +1,4 @@
-import { UserEntity } from '../entities/user.entity';
+import { UserEntity, AddressProps } from '../entities/user.entity';
 
 export interface UserListFilters {
   page?: number;
@@ -11,6 +11,10 @@ export interface UserListFilters {
   sortOrder?: 'asc' | 'desc';
 }
 
+export type AddressInput = Partial<
+  Pick<AddressProps, 'label' | 'country' | 'province' | 'city' | 'street' | 'number' | 'zip' | 'isDefault'>
+>;
+
 export abstract class UserRepositoryPort {
   abstract findById(id: string): Promise<UserEntity | null>;
   abstract findByEmail(email: string): Promise<UserEntity | null>;
@@ -21,4 +25,7 @@ export abstract class UserRepositoryPort {
   abstract list(filters: UserListFilters): Promise<{ items: UserEntity[]; total: number }>;
   abstract assignRoles(userId: string, roleCodenames: string[]): Promise<void>;
   abstract saveOnboardingStep(userId: string, stepCode: string, status: string): Promise<void>;
+  abstract saveAddress(userId: string, address: AddressProps): Promise<AddressProps>;
+  abstract updateAddress(userId: string, addressId: string, data: AddressInput): Promise<AddressProps | null>;
+  abstract deleteAddress(userId: string, addressId: string): Promise<boolean>;
 }

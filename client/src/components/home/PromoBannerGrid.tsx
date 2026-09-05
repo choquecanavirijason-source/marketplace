@@ -20,24 +20,24 @@ const BANNERS = [
 
 export function PromoBannerGrid() {
   return (
-    <section className="max-w-7xl mx-auto px-4 py-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <section className="max-w-7xl mx-auto px-4 py-4 md:py-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
         {BANNERS.map(({ title, sub, cta, bg, image }) => (
           <div
             key={title}
-            className={`relative overflow-hidden rounded-3xl bg-gradient-to-br ${bg} min-h-[180px] flex items-center p-6 cursor-pointer group`}
+            className={`relative overflow-hidden rounded-2xl md:rounded-3xl bg-gradient-to-br ${bg} min-h-[140px] sm:min-h-[160px] md:min-h-[180px] flex items-center p-5 sm:p-6 cursor-pointer group hover-lift`}
           >
             <div className="relative z-10">
-              <p className="text-white/80 text-xs font-bold uppercase tracking-widest mb-1">{sub}</p>
-              <h3 className="text-white font-black text-lg leading-tight mb-3">{title}</h3>
-              <button className="bg-white/20 backdrop-blur text-white text-xs font-bold px-4 py-2 rounded-full hover:bg-white hover:text-foreground transition-all flex items-center gap-1.5">
+              <p className="text-white/80 text-[10px] sm:text-xs font-bold uppercase tracking-widest mb-1">{sub}</p>
+              <h3 className="text-white font-black text-base sm:text-lg leading-tight mb-2 sm:mb-3">{title}</h3>
+              <button className="bg-white/20 backdrop-blur-sm text-white text-xs font-bold px-3 sm:px-4 py-1.5 sm:py-2 rounded-full hover:bg-white hover:text-foreground transition-all flex items-center gap-1.5 active:scale-95">
                 {cta} <ArrowRight className="w-3 h-3" />
               </button>
             </div>
             <img
               src={image}
               alt={title}
-              className="absolute right-0 top-0 w-1/2 h-full object-cover opacity-30 group-hover:opacity-40 group-hover:scale-105 transition-all duration-500"
+              className="absolute right-0 top-0 w-1/2 h-full object-cover opacity-30 group-hover:opacity-40 group-hover:scale-110 transition-all duration-700"
             />
           </div>
         ))}

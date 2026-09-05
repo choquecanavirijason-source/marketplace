@@ -267,21 +267,25 @@ const mapProduct = (p: ApiProduct): Product => ({
   warranty: p.warranty ?? undefined,
 });
 
-interface PaginatedPayload<T> {
-  data: T[];
-  meta?: {
-    total?: number;
-    current_page?: number;
-    last_page?: number;
-  };
-}
+const extractPage = (payload: any): { items: any[]; total: number; page: number; lastPage: number } => {
+  const data = payload?.data ?? payload ?? {};
+  if (Array.isArray(data)) {
+    return { items: data, total: data.length, page: 1, lastPage: Math.max(1, data.length) };
+  }
+  const items = Array.isArray(data?.items) ? data.items : [];
+  const total = Number(data?.total ?? items.length);
+  const page = Number(data?.page ?? data?.current_page ?? 1);
+  const limit = Number(data?.limit ?? items.length) || 1;
+  const totalPages = Number(data?.totalPages ?? data?.total_pages ?? data?.last_page ?? Math.max(1, Math.ceil(total / limit)));
+  return { items, total, page, lastPage: Math.max(1, totalPages) };
+};
 
 const fetchProducts = async (search = ""): Promise<Product[]> => {
   const query = new URLSearchParams({ limit: "200" });
   if (search) query.set("search", search);
 
-  const payload = await apiRequest<PaginatedPayload<ApiProduct>>(`/products?${query.toString()}`);
-  return payload.data.map(mapProduct);
+  const payload = await apiRequest<any>(`/products?${query.toString()}`);
+  return extractPage(payload).items.map(mapProduct);
 };
 
 const FLASH_DEAL_TAGS = ["Oferta", "Nuevo"];
@@ -312,8 +316,12 @@ export class HttpProductService implements ProductService {
     if (params?.search) query.set("search", params.search);
     if (params?.tag) query.set("tag", params.tag);
 
-    const payload = await apiRequest<PaginatedPayload<ApiProduct>>(`/products?${query.toString()}`);
-    return paginated({ data: payload.data.map(mapProduct), meta: payload.meta });
+    const payload = await apiRequest<any>(`/products?${query.toString()}`);
+    const { items, total, page, lastPage } = extractPage(payload);
+    return paginated({
+      data: items.map(mapProduct),
+      meta: { total, current_page: page, last_page: lastPage },
+    });
   }
 
   async getById(id: number): Promise<Product | null> {
@@ -339,21 +347,26 @@ export class HttpProductService implements ProductService {
     if (params?.sortBy) query.set("sort_by", params.sortBy);
     if (params?.sortOrder) query.set("sort_order", params.sortOrder);
 
-    const payload = await apiRequest<PaginatedPayload<ApiProduct>>(`/admin/products?${query.toString()}`, {
+    const payload = await apiRequest<any>(`/admin/products?${query.toString()}`, {
       auth: true,
       signal,
     });
 
-    return paginated({ data: payload.data.map(mapProduct), meta: payload.meta });
+    const { items, total, page, lastPage } = extractPage(payload);
+    return paginated({
+      data: items.map(mapProduct),
+      meta: { total, current_page: page, last_page: lastPage },
+    });
   }
 
   async toggleActive(id: number, isActive: boolean): Promise<Product> {
-    const payload = await apiRequest<{ data: ApiProduct }>(`/admin/products/${id}/status`, {
+    const payload = await apiRequest<any>(`/admin/products/${id}/status`, {
       method: "PATCH",
       auth: true,
       body: { is_active: isActive },
     });
-    return mapProduct(payload.data);
+    const item = payload?.data ?? payload;
+    return mapProduct(item);
   }
 
   async delete(id: number): Promise<void> {

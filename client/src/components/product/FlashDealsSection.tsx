@@ -21,33 +21,33 @@ export function FlashDealsSection() {
   const router = useRouter();
 
   return (
-    <section className="max-w-7xl mx-auto px-4 py-10">
-      <div className="bg-card rounded-3xl border border-border p-6 md:p-8">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8">
+    <section className="max-w-7xl mx-auto px-4 py-8 md:py-10">
+      <div className="bg-card rounded-2xl md:rounded-3xl border border-border p-4 sm:p-6 md:p-8">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 md:gap-4 mb-6 md:mb-8">
           <div>
             <SectionEyebrow icon={Clock} tone="accent">Tiempo limitado</SectionEyebrow>
-            <h2 className="text-2xl font-black text-foreground">Ofertas Flash</h2>
-            <p className="text-sm text-muted-foreground mt-1">Termina en:</p>
+            <h2 className="text-xl sm:text-2xl font-black text-foreground">Ofertas Flash</h2>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">Termina en:</p>
           </div>
           <CountdownTimer targetSecs={FLASH_DEAL_DURATION_SECS} />
         </div>
         {isLoading ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
             {Array.from({ length: 4 }).map((_, index) => (
-              <div key={index} className="animate-pulse rounded-2xl border border-border bg-card overflow-hidden">
-                <div className="h-44 bg-secondary" />
-                <div className="p-4 space-y-2">
-                  <div className="h-3 w-1/3 rounded bg-secondary" />
-                  <div className="h-4 w-3/4 rounded bg-secondary" />
-                  <div className="h-3 w-1/2 rounded bg-secondary" />
-                  <div className="mt-3 h-9 w-full rounded-xl bg-secondary" />
+              <div key={index} className="rounded-2xl border border-border bg-card overflow-hidden">
+                <div className="aspect-[4/3] skeleton-shimmer" />
+                <div className="p-3 sm:p-4 space-y-2">
+                  <div className="h-3 w-1/3 rounded skeleton-shimmer" />
+                  <div className="h-4 w-3/4 rounded skeleton-shimmer" />
+                  <div className="h-3 w-1/2 rounded skeleton-shimmer" />
+                  <div className="mt-3 h-9 w-full rounded-xl skeleton-shimmer" />
                 </div>
               </div>
             ))}
           </div>
         ) : deals.length > 0 ? (
           <>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 stagger-children">
               {deals.map((product) => (
                 <ProductCard
                   key={product.id}
@@ -64,7 +64,7 @@ export function FlashDealsSection() {
             />
           </>
         ) : (
-          <p className="text-sm text-muted-foreground text-center py-10">
+          <p className="text-sm text-muted-foreground text-center py-8 sm:py-10">
             Todavía no hay ofertas disponibles.
           </p>
         )}

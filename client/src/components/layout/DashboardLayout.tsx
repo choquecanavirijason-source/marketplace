@@ -7,6 +7,7 @@ import {
   Heart,
   LayoutDashboard,
   LogOut,
+  MapPin,
   Package,
   Tags,
   TrendingUp,
@@ -26,6 +27,12 @@ import {
   PanelLeftOpen,
   Menu,
   X,
+  ShoppingBag,
+  Truck,
+  Contact,
+  MessageSquare,
+  Radio,
+  Bot,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -69,6 +76,50 @@ export type DashboardNavItem = {
 export const adminNavItems: DashboardNavItem[] = [
   { href: "/admin", label: "Panel General", icon: LayoutDashboard },
   {
+    href: "/admin/orders",
+    label: "Pedidos y Ventas",
+    icon: ShoppingBag,
+    permission: "pedido.ver",
+    roles: ["admin", "superadmin", "seller", "support"],
+  },
+  {
+    href: "/admin/logistics",
+    label: "Logística y Envíos",
+    icon: Truck,
+    permission: "logistica.ver",
+    roles: ["admin", "superadmin", "seller", "support"],
+  },
+  {
+    href: "/admin/crm",
+    label: "CRM & Prospectos",
+    icon: Contact,
+    permission: "crm.ver",
+    roles: ["admin", "superadmin", "seller"],
+  },
+  {
+    href: "/admin/inbox",
+    label: "Bandeja Omnicanal",
+    icon: MessageSquare,
+    permission: "inbox.ver",
+    roles: ["admin", "superadmin", "support"],
+  },
+  {
+    href: "/admin/live-shopping",
+    label: "Live Shopping",
+    icon: Radio,
+    permission: "live.ver",
+    roles: ["admin", "superadmin", "seller"],
+    badge: "En Vivo",
+  },
+  {
+    href: "/admin/ai-copilot",
+    label: "IA & Recomendaciones",
+    icon: Bot,
+    permission: "ai.ver",
+    roles: ["admin", "superadmin"],
+    badge: "IA",
+  },
+  {
     href: "/admin/products",
     label: "Productos",
     icon: Package,
@@ -108,6 +159,7 @@ export const adminNavItems: DashboardNavItem[] = [
 export const customerNavItems: DashboardNavItem[] = [
   { href: "/account/dashboard", label: "Mi Cuenta", icon: LayoutDashboard },
   { href: "/account/profile", label: "Mi Perfil", icon: User },
+  { href: "/account/addresses", label: "Mis Direcciones", icon: MapPin },
   { href: "/account/profile/security", label: "Seguridad & Sesiones", icon: ShieldCheck },
   { href: "/favorites", label: "Mis Favoritos", icon: Heart },
 ];
@@ -327,20 +379,20 @@ export const DashboardLayout = ({
   );
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex w-full relative">
+    <div className="min-h-screen bg-background text-foreground flex w-full relative animate-fade-in-up">
       {/* ========================================================================= */}
       {/* 1. SIDEBAR DE ESCRITORIO (>= md) - NUNCA RENDERIZA EN MOBILE              */}
       {/* ========================================================================= */}
       <aside
         className={cn(
-          "hidden md:flex fixed top-0 bottom-0 left-0 z-40 select-none transition-all duration-300 ease-in-out border-r border-border/80 bg-background",
+          "hidden md:flex fixed top-0 bottom-0 left-0 z-40 select-none transition-all duration-300 ease-in-out border-r border-border/60 bg-background/95 backdrop-blur-xl",
           isRailCollapsed ? "w-[72px]" : "w-[312px]"
         )}
       >
         {/* ----------------------------------------------------------------------- */}
         {/* RAIL 1: BARRA PERMANENTE DE ÍCONOS (72px)                               */}
         {/* ----------------------------------------------------------------------- */}
-        <div className="w-[72px] shrink-0 h-full flex flex-col items-center justify-between py-5 border-r border-border/70 bg-card z-10">
+        <div className="w-[72px] shrink-0 h-full flex flex-col items-center justify-between py-5 border-r border-border/50 bg-card/90 backdrop-blur-sm z-10">
           {/* Top: Logotipo y Módulos Principales */}
           <div className="flex flex-col items-center gap-5 w-full">
             {/* Logotipo FerroMax */}
@@ -748,7 +800,7 @@ export const DashboardLayout = ({
       <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
         <SheetContent
           side="left"
-          className="w-[85vw] max-w-[320px] p-0 border-r border-border/80 bg-card flex flex-col h-full overflow-hidden [&>button]:hidden"
+          className="w-[85vw] max-w-[320px] p-0 border-r border-border/60 bg-card/95 backdrop-blur-xl flex flex-col h-full overflow-hidden [&>button]:hidden shadow-2xl"
         >
           <SheetHeader className="sr-only">
             <SheetTitle>Menú de navegación</SheetTitle>
@@ -959,7 +1011,7 @@ export const DashboardLayout = ({
         )}
       >
         {/* Top Navbar */}
-        <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border/80 bg-background/95 backdrop-blur px-3 sm:px-6">
+        <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border/60 bg-background/80 backdrop-blur-xl px-3 sm:px-6">
           {/* Lado Izquierdo: Disparadores de menú y Breadcrumbs */}
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             {/* Disparador Mobile: Menú Hamburguesa */}
@@ -1146,12 +1198,12 @@ export const DashboardLayout = ({
         </header>
 
         {/* Contenedor del contenido de la página */}
-        <main className="flex-1 w-full min-w-0 p-4 sm:p-6 lg:p-8 overflow-x-hidden">
+        <main className="flex-1 w-full min-w-0 p-3 sm:p-5 md:p-6 lg:p-8 overflow-x-hidden">
           {children}
         </main>
 
         {/* Footer Tecnológico */}
-        <footer className="w-full border-t border-border/60 bg-background/80 backdrop-blur px-4 py-3 mt-auto text-xs text-muted-foreground">
+        <footer className="w-full border-t border-border/40 bg-background/60 backdrop-blur-xl px-4 py-3 mt-auto text-xs text-muted-foreground">
           <div className="max-w-7xl mx-auto flex items-center justify-center gap-6 text-[11px] font-medium">
             <div className="flex items-center gap-1.5">
               <NextjsIcon className="size-3.5 text-foreground" />

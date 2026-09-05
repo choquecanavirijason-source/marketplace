@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { EventEmitter2 } from '@nestjs/event-emitter';
+import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import * as crypto from 'crypto';
 import { UserRepositoryPort } from '../interfaces/user-repository.interface';
 import { AuthRepositoryPort } from '../interfaces/auth-repository.interface';
@@ -132,6 +132,18 @@ export class AuthService {
 
     this.logger.log(`Usuario registrado exitosamente: ${savedUser.id} (${savedUser.email})`);
     return savedUser;
+  }
+
+  @OnEvent('user.registered')
+  async handleUserRegistered(event: UserRegisteredEvent): Promise<void> {
+    try {
+      await this.sendEmailOtp(event.email);
+      this.logger.log(`Correo de verificación despachado tras registro para: ${event.email}`);
+    } catch (err: any) {
+      this.logger.error(
+        `Error enviando correo de verificación tras el registro a ${event.email}: ${err?.message}`,
+      );
+    }
   }
 
   async login(command: LoginDto, clientIp?: string, userAgent?: string) {

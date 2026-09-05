@@ -11,8 +11,8 @@ const FEATURES = [
 export function FeaturesBar() {
   return (
     <section className="bg-card border-y border-border">
-      <div className="max-w-7xl mx-auto px-4 py-4">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-0 divide-x divide-border">
+      <div className="max-w-7xl mx-auto px-4 py-3 md:py-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-0 md:divide-x md:divide-border">
           {FEATURES.map((feature) => (
             <FeatureBarItem key={feature.title} {...feature} />
           ))}

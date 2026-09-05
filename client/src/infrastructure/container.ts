@@ -1,8 +1,8 @@
-import { InMemoryProductRepository } from "@/services";
-import { InMemoryCategoryRepository } from "@/services";
+import { HttpProductRepository } from "@/services";
+import { HttpCategoryRepository } from "@/services";
 import { InMemoryReviewRepository } from "@/services";
 import { InMemoryHeroSlideRepository } from "@/services";
-import { InMemoryOrderRepository } from "@/services";
+import { HttpOrderRepository } from "@/services";
 import { InMemoryAdminRepository } from "@/services";
 import { InMemoryServerCartRepository } from "@/services";
 import { ZustandCartRepository } from "@/services";
@@ -59,14 +59,14 @@ import { AdminUpdateOrderStatusUseCase } from "@/application/orders/AdminUpdateO
 
 import { GetAdminStatsUseCase } from "@/application/admin/GetAdminStatsUseCase";
 
-const productRepository = new InMemoryProductRepository();
+const productRepository = new HttpProductRepository();
 const reviewRepository = new InMemoryReviewRepository();
-const categoryRepository = new InMemoryCategoryRepository();
+const categoryRepository = new HttpCategoryRepository();
 const heroSlideRepository = new InMemoryHeroSlideRepository();
 const cartRepository = new ZustandCartRepository();
 const cartServerRepository = new InMemoryServerCartRepository();
 const favoriteRepository = new ZustandFavoriteRepository();
-const orderRepository = new InMemoryOrderRepository();
+const orderRepository = new HttpOrderRepository();
 const adminRepository = new InMemoryAdminRepository();
 
 const authRepository = new HttpAuthRepository();

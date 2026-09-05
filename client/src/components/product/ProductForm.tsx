@@ -2,6 +2,8 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useCategories } from "@/hooks/useCatalog";
 import { apiRequest, ApiError } from "@/config/axios";
@@ -19,10 +21,14 @@ const defaultImage =
 
 interface ProductFormProps {
   product?: Product | null;
+  onSuccess?: () => void;
+  onCancel?: () => void;
+  isModal?: boolean;
 }
 
-export const ProductForm = ({ product }: ProductFormProps) => {
+export const ProductForm = ({ product, onSuccess, onCancel, isModal }: ProductFormProps) => {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { data: categories } = useCategories();
   const isEditing = Boolean(product);
 
@@ -100,20 +106,28 @@ export const ProductForm = ({ product }: ProductFormProps) => {
           body: payload,
           auth: true,
         });
-        setMessage("Producto actualizado correctamente.");
+        toast.success("Producto actualizado correctamente.");
       } else {
         await apiRequest("/products", {
           method: "POST",
           body: payload,
           auth: true,
         });
-        setMessage("Producto creado correctamente.");
+        toast.success("Producto creado correctamente.");
       }
 
-      setTimeout(() => {
-        router.push("/admin/products");
-        router.refresh();
-      }, 700);
+      queryClient.invalidateQueries({ queryKey: ["admin-products"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        setTimeout(() => {
+          router.push("/admin/products");
+          router.refresh();
+        }, 500);
+      }
     } catch (err: any) {
       if (err instanceof ApiError && err.status === 400 && err.errors) {
         const messages = Object.entries(err.errors).map(
@@ -134,7 +148,10 @@ export const ProductForm = ({ product }: ProductFormProps) => {
   }));
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl border border-border bg-card p-6 shadow-sm">
+    <form
+      onSubmit={handleSubmit}
+      className={isModal ? "space-y-4" : "space-y-4 rounded-2xl border border-border bg-card p-6 shadow-sm"}
+    >
       <div className="grid gap-4 md:grid-cols-2">
         <div className="md:col-span-2">
           <TextInput
@@ -260,12 +277,16 @@ export const ProductForm = ({ product }: ProductFormProps) => {
         </div>
       ) : null}
 
-      <div className="flex gap-3">
+      <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onCancel ? onCancel : () => router.push("/admin/products")}
+        >
+          Cancelar
+        </Button>
         <Button type="submit" disabled={submitting}>
           {submitting ? "Guardando…" : isEditing ? "Guardar cambios" : "Agregar producto al marketplace"}
-        </Button>
-        <Button type="button" variant="outline" onClick={() => router.push("/admin/products")}>
-          Cancelar
         </Button>
       </div>
     </form>

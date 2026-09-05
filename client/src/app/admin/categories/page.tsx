@@ -1,21 +1,31 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCircle2, ChevronLeft, ChevronRight, Pencil, Plus, Search, Tags, Trash2, X } from "lucide-react";
+import { CheckCircle2, ChevronLeft, ChevronRight, Pencil, Plus, Search, Tags, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { TextInput } from "@/components/forms";
 import { Can } from "@/components/auth/Can";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useAdminCategories } from "@/hooks/useAdminCategories";
 import { ApiError } from "@/config/axios";
 import { cn } from "@/shared/lib/utils";
 
 const PAGE_SIZE = 10;
 
-export default function AdminCategoriesPage() {
+const AdminCategoriesPage = () => {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [name, setName] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [error, setError] = useState("");
 
   const { data, isLoading, create, isCreating, update, isUpdating, remove, isRemoving } = useAdminCategories({
@@ -23,6 +33,13 @@ export default function AdminCategoriesPage() {
     page,
     limit: PAGE_SIZE,
   });
+
+  const handleOpenCreate = () => {
+    setEditingId(null);
+    setName("");
+    setError("");
+    setIsModalOpen(true);
+  };
 
   const handleSubmit = async () => {
     const value = name.trim();
@@ -34,11 +51,14 @@ export default function AdminCategoriesPage() {
     try {
       if (editingId !== null) {
         await update({ id: editingId, name: value });
+        toast.success("Categoría actualizada con éxito");
       } else {
         await create(value);
+        toast.success("Categoría creada con éxito");
       }
       setName("");
       setEditingId(null);
+      setIsModalOpen(false);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "No se pudo guardar la categoría.");
     }
@@ -48,12 +68,14 @@ export default function AdminCategoriesPage() {
     setEditingId(id);
     setName(currentName);
     setError("");
+    setIsModalOpen(true);
   };
 
   const handleDelete = async (id: number, categoryName: string) => {
     if (!window.confirm(`¿Eliminar la categoría "${categoryName}"? Esta acción no se puede deshacer.`)) return;
     try {
       await remove(id);
+      toast.success("Categoría eliminada con éxito");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "No se pudo eliminar la categoría.");
     }
@@ -63,54 +85,73 @@ export default function AdminCategoriesPage() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
-        <div className="mb-6 flex flex-col gap-4 rounded-2xl border border-border bg-card p-5 shadow-sm md:flex-row md:items-center md:justify-between">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Panel administrador</p>
-            <h1 className="mt-2 text-3xl font-black text-foreground">Categorías</h1>
-            <p className="text-sm text-muted-foreground">Creá, editá y eliminá las categorías del catálogo</p>
-          </div>
+      <div className="mb-6 flex flex-col gap-4 rounded-2xl border border-border bg-card p-5 shadow-sm md:flex-row md:items-center md:justify-between">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Panel administrador</p>
+          <h1 className="mt-2 text-3xl font-black text-foreground">Categorías</h1>
+          <p className="text-sm text-muted-foreground">Creá, editá y eliminá las categorías del catálogo</p>
         </div>
 
         <Can permission="categoria.crear">
-          <section className="mb-6 rounded-2xl border border-border bg-card p-5 shadow-sm">
-            <h2 className="text-sm font-bold text-foreground mb-3">
-              {editingId !== null ? "Editar categoría" : "Nueva categoría"}
-            </h2>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <TextInput
-                name="name"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") handleSubmit();
-                }}
-                placeholder="Nombre de la categoría (ej. Jardinería)"
-                className="flex-1"
-              />
-              <div className="flex gap-2">
-                <Button onClick={handleSubmit} disabled={isCreating || isUpdating}>
-                  {editingId !== null ? <CheckCircle2 className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-                  {editingId !== null ? "Guardar cambios" : "Crear categoría"}
-                </Button>
-                {editingId !== null && (
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setEditingId(null);
-                      setName("");
-                      setError("");
-                    }}
-                  >
-                    <X className="w-4 h-4" /> Cancelar
-                  </Button>
-                )}
-              </div>
-            </div>
-            {error ? (
-              <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
-            ) : null}
-          </section>
+          <Button onClick={handleOpenCreate} className="flex items-center gap-2">
+            <Plus className="w-4 h-4" />
+            <span>Nueva categoría</span>
+          </Button>
         </Can>
+      </div>
+
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="w-[95vw] sm:max-w-md rounded-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              {editingId !== null ? "Editar categoría" : "Nueva categoría"}
+            </DialogTitle>
+            <DialogDescription>
+              {editingId !== null
+                ? "Modificá el nombre de la categoría y guardá los cambios."
+                : "Ingresá el nombre para dar de alta una nueva categoría en el catálogo."}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <TextInput
+              name="name"
+              label="Nombre de la categoría"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  handleSubmit();
+                }
+              }}
+              placeholder="Ej. Herramientas Eléctricas"
+              autoFocus
+            />
+
+            {error ? (
+              <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
+            ) : null}
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setIsModalOpen(false);
+                setError("");
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button onClick={handleSubmit} disabled={isCreating || isUpdating}>
+              {editingId !== null ? <CheckCircle2 className="w-4 h-4 mr-1.5" /> : <Plus className="w-4 h-4 mr-1.5" />}
+              {editingId !== null ? "Guardar cambios" : "Crear categoría"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
         <section className="rounded-2xl border border-border bg-card shadow-sm">
           <div className="flex flex-col gap-4 border-b border-border p-5 md:flex-row md:items-center md:justify-between">
@@ -244,4 +285,6 @@ export default function AdminCategoriesPage() {
         </section>
       </div>
   );
-}
+};
+
+export default AdminCategoriesPage;

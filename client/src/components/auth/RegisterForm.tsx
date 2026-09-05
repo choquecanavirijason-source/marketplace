@@ -119,14 +119,9 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
         termsAccepted: true,
       });
 
-      try {
-        await authService.sendEmailOtp(email.trim().toLowerCase());
-        toast.info("Te enviamos un código de verificación a tu correo.");
-      } catch {
-      }
-
       setCurrentStep(2);
       toast.success("¡Cuenta creada exitosamente!");
+      toast.info("Te enviamos un código de verificación a tu correo.");
     } catch (err: any) {
       setErrorMessage(
         err?.response?.data?.detail ||

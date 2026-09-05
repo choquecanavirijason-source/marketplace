@@ -24,6 +24,10 @@ import {
   businessProfileSchema,
   UploadAvatarDto,
   uploadAvatarSchema,
+  CreateAddressDto,
+  createAddressSchema,
+  UpdateAddressDto,
+  updateAddressSchema,
 } from '../dto';
 import { CurrentUser, JwtAuthGuard, ZodValidationPipe } from '../../../common';
 import { AuthenticatedUser } from '../../../shared';
@@ -142,5 +146,42 @@ export class MeController {
     @CurrentUser() currentUser: AuthenticatedUser,
   ) {
     await this.sessionService.revokeSession(sessionId, currentUser.id);
+  }
+
+  @Get('addresses')
+  @ApiOperation({ summary: 'Listar direcciones de envío del usuario autenticado' })
+  async listAddresses(@CurrentUser() currentUser: AuthenticatedUser) {
+    return this.userService.listAddresses(currentUser.id);
+  }
+
+  @Post('addresses')
+  @ApiOperation({ summary: 'Crear una nueva dirección de envío para el usuario autenticado' })
+  async createAddress(
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Body(new ZodValidationPipe(createAddressSchema)) dto: CreateAddressDto,
+  ) {
+    const address = await this.userService.addAddress(currentUser.id, dto);
+    return address;
+  }
+
+  @Put('addresses/:id')
+  @ApiOperation({ summary: 'Actualizar una dirección de envío del usuario autenticado' })
+  async updateAddress(
+    @Param('id') addressId: string,
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Body(new ZodValidationPipe(updateAddressSchema)) dto: UpdateAddressDto,
+  ) {
+    const address = await this.userService.editAddress(currentUser.id, addressId, dto);
+    return address;
+  }
+
+  @Delete('addresses/:id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Eliminar una dirección de envío del usuario autenticado' })
+  async deleteAddress(
+    @Param('id') addressId: string,
+    @CurrentUser() currentUser: AuthenticatedUser,
+  ) {
+    await this.userService.removeAddress(currentUser.id, addressId);
   }
 }

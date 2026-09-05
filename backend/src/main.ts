@@ -4,6 +4,7 @@ import {
   NestFastifyApplication,
 } from '@nestjs/platform-fastify';
 import helmet from '@fastify/helmet';
+import fastifyCookie from '@fastify/cookie';
 import { Logger } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
@@ -24,8 +25,29 @@ async function bootstrap() {
     contentSecurityPolicy: appConfig.isProduction,
   });
 
+  await app.register(fastifyCookie);
+
+  const allowedOrigins = [
+    appConfig.corsOrigin,
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+  ].filter(Boolean);
+
   app.enableCors({
-    origin: appConfig.corsOrigin,
+    origin: (origin, callback) => {
+      if (!origin || !appConfig.isProduction || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error("Bloqueado por CORS: origen no permitido"), false);
+    },
+    methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "Accept",
+      "X-Requested-With",
+      "X-Correlation-Id",
+    ],
     credentials: true,
   });
 

@@ -10,7 +10,8 @@ import {
   DuplicateEntityException,
   EntityNotFoundException,
 } from '../../../shared';
-import { AdminCreateUserDto, AdminUpdateUserDto, ProfileDto, BusinessProfileDto } from '../dto';
+import { AdminCreateUserDto, AdminUpdateUserDto, ProfileDto, BusinessProfileDto, CreateAddressDto, UpdateAddressDto } from '../dto';
+import { AddressProps } from '../entities/user.entity';
 
 @Injectable()
 export class UserService {
@@ -187,5 +188,41 @@ export class UserService {
       fiscalAddress: dto.fiscalAddress,
     });
     return this.userRepository.update(user);
+  }
+
+  async listAddresses(userId: string): Promise<AddressProps[]> {
+    const user = await this.getUser(userId);
+    return user.addresses ?? [];
+  }
+
+  async addAddress(userId: string, dto: CreateAddressDto): Promise<AddressProps> {
+    const address: AddressProps = {
+      id: '',
+      userId,
+      label: dto.label || 'Principal',
+      country: dto.country,
+      province: dto.province,
+      city: dto.city,
+      street: dto.street,
+      number: dto.number,
+      zip: dto.zip,
+      isDefault: Boolean(dto.isDefault),
+    };
+    return this.userRepository.saveAddress(userId, address);
+  }
+
+  async editAddress(userId: string, addressId: string, dto: UpdateAddressDto): Promise<AddressProps> {
+    const updated = await this.userRepository.updateAddress(userId, addressId, dto);
+    if (!updated) {
+      throw new EntityNotFoundException('Dirección', addressId);
+    }
+    return updated;
+  }
+
+  async removeAddress(userId: string, addressId: string): Promise<void> {
+    const deleted = await this.userRepository.deleteAddress(userId, addressId);
+    if (!deleted) {
+      throw new EntityNotFoundException('Dirección', addressId);
+    }
   }
 }

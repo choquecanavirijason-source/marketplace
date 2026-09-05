@@ -23,13 +23,13 @@ export function FeatureBarItem({
   color: string;
 }) {
   return (
-    <div className="flex items-center gap-3 px-6 py-3">
-      <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center flex-shrink-0">
-        <Icon className={`w-5 h-5 ${color}`} />
+    <div className="flex items-center gap-2.5 sm:gap-3 px-3 sm:px-6 py-2 sm:py-3 group hover:bg-muted/30 rounded-xl md:rounded-none transition-colors">
+      <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-secondary flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+        <Icon className={`w-4 h-4 sm:w-5 sm:h-5 ${color}`} />
       </div>
-      <div>
-        <p className="text-sm font-bold text-foreground">{title}</p>
-        <p className="text-xs text-muted-foreground">{desc}</p>
+      <div className="min-w-0">
+        <p className="text-xs sm:text-sm font-bold text-foreground truncate">{title}</p>
+        <p className="text-[10px] sm:text-xs text-muted-foreground truncate hidden sm:block">{desc}</p>
       </div>
     </div>
   );

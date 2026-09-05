@@ -101,14 +101,18 @@ interface ApiCategory {
   products_count: number;
 }
 
-interface PaginatedPayload<T> {
-  data: T[];
-  meta?: {
-    total?: number;
-    current_page?: number;
-    last_page?: number;
-  };
-}
+const extractPage = (payload: any): { items: any[]; total: number; page: number; lastPage: number } => {
+  const data = payload?.data ?? payload ?? {};
+  if (Array.isArray(data)) {
+    return { items: data, total: data.length, page: 1, lastPage: Math.max(1, data.length) };
+  }
+  const items = Array.isArray(data?.items) ? data.items : [];
+  const total = Number(data?.total ?? items.length);
+  const page = Number(data?.page ?? data?.current_page ?? 1);
+  const limit = Number(data?.limit ?? items.length) || 1;
+  const totalPages = Number(data?.totalPages ?? data?.total_pages ?? data?.last_page ?? Math.max(1, Math.ceil(total / limit)));
+  return { items, total, page, lastPage: Math.max(1, totalPages) };
+};
 
 const DEFAULT_COLOR = "#f3f4f6";
 
@@ -147,11 +151,15 @@ export class HttpCategoryService implements CategoryService {
 
     if (params?.search) query.set("search", params.search);
 
-    const payload = await apiRequest<PaginatedPayload<ApiCategory>>(`/admin/categories?${query.toString()}`, {
+    const payload = await apiRequest<any>(`/admin/categories?${query.toString()}`, {
       auth: true,
     });
 
-    return paginated({ data: payload.data.map(mapCategory), meta: payload.meta });
+    const { items, total, page, lastPage } = extractPage(payload);
+    return paginated({
+      data: items.map(mapCategory),
+      meta: { total, current_page: page, last_page: lastPage },
+    });
   }
 
   async create(name: string): Promise<Category> {

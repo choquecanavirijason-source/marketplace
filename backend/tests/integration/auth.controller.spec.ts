@@ -63,7 +63,7 @@ describe('AuthController - Integration Suite', () => {
     expect(setCookie).toHaveBeenCalledWith(
       'refresh_token',
       'refresh.jwt',
-      expect.objectContaining({ httpOnly: true, path: '/api/v1/auth/refresh' }),
+      expect.objectContaining({ httpOnly: true, path: '/' }),
     );
   });
 
@@ -76,6 +76,6 @@ describe('AuthController - Integration Suite', () => {
 
     expect(result).toEqual({ message: 'Sesión cerrada correctamente.' });
     expect(mockAuthService.logout).toHaveBeenCalledWith(undefined, 'u-1', 'old_cookie');
-    expect(clearCookie).toHaveBeenCalledWith('refresh_token', { path: '/api/v1/auth/refresh' });
+    expect(clearCookie).toHaveBeenCalledWith('refresh_token', { path: '/' });
   });
 });

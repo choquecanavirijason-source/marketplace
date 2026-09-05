@@ -29,37 +29,48 @@ export type OrderRepository = OrderService;
 
 interface ApiOrderItem {
   id: number;
-  product_id: number;
-  name: string;
-  price: number;
-  image: string | null;
+  productId?: number;
+  product_id?: number;
+  name?: string;
+  productName?: string;
+  price?: number;
+  unitPrice?: number;
+  image?: string | null;
+  productImage?: string | null;
   quantity: number;
   subtotal: number;
 }
 
 interface ApiOrder {
   id: number;
-  order_number: string;
+  orderNumber?: string;
+  order_number?: string;
   status: OrderStatus;
   subtotal: number;
-  shipping: number;
+  shipping?: number;
+  shippingCost?: number;
   total: number;
-  shipping_address: string | null;
-  shipping_city: string | null;
-  shipping_phone: string | null;
-  notes: string | null;
+  shippingAddress?: string | null;
+  shipping_address?: string | null;
+  shippingCity?: string | null;
+  shipping_city?: string | null;
+  shippingPhone?: string | null;
+  shipping_phone?: string | null;
+  notes?: string | null;
   user?: {
-    id: number;
-    name: string;
-    email: string;
+    id: any;
+    name?: string;
+    email?: string;
   } | null;
-  items: ApiOrderItem[];
-  created_at: string;
-  updated_at: string;
+  items?: ApiOrderItem[];
+  createdAt?: string;
+  created_at?: string;
+  updatedAt?: string;
+  updated_at?: string;
 }
 
 interface ApiOrderPayload {
-  data: ApiOrder | ApiOrder[];
+  data: ApiOrder | ApiOrder[] | { items: ApiOrder[]; total: number; page: number; totalPages: number };
   meta?: {
     total?: number;
     current_page?: number;
@@ -69,28 +80,28 @@ interface ApiOrderPayload {
 
 const mapItem = (i: ApiOrderItem): OrderItem => ({
   id: i.id,
-  productId: i.product_id,
-  name: i.name,
-  price: i.price,
-  image: i.image,
+  productId: i.productId ?? i.product_id ?? 0,
+  name: i.name ?? i.productName ?? 'Producto',
+  price: i.price ?? i.unitPrice ?? 0,
+  image: i.image ?? i.productImage ?? null,
   quantity: i.quantity,
   subtotal: i.subtotal,
 });
 
 const mapOrder = (o: ApiOrder): Order => ({
   id: o.id,
-  orderNumber: o.order_number,
+  orderNumber: o.orderNumber ?? o.order_number ?? `FM-${o.id}`,
   status: o.status,
-  subtotal: o.subtotal,
-  shipping: o.shipping,
-  total: o.total,
-  shippingAddress: o.shipping_address,
-  shippingCity: o.shipping_city,
-  shippingPhone: o.shipping_phone,
-  notes: o.notes,
-  user: o.user ?? undefined,
+  subtotal: Number(o.subtotal ?? 0),
+  shipping: Number(o.shipping ?? o.shippingCost ?? 0),
+  total: Number(o.total ?? 0),
+  shippingAddress: o.shippingAddress ?? o.shipping_address ?? null,
+  shippingCity: o.shippingCity ?? o.shipping_city ?? null,
+  shippingPhone: o.shippingPhone ?? o.shipping_phone ?? null,
+  notes: o.notes ?? null,
+  user: o.user ? { id: Number(o.user.id) || 1, name: o.user.name ?? 'Cliente', email: o.user.email ?? '' } : undefined,
   items: (o.items ?? []).map(mapItem),
-  createdAt: o.created_at,
+  createdAt: o.createdAt ?? o.created_at ?? new Date().toISOString(),
 });
 
 export class HttpOrderService implements OrderService {
@@ -135,10 +146,30 @@ export class HttpOrderService implements OrderService {
       auth: true,
     });
 
-    const data = Array.isArray(payload.data) ? payload.data : [];
+    let rawList: ApiOrder[] = [];
+    let metaTotal = 0;
+    let metaPage = params?.page ?? 1;
+    let metaLastPage = 1;
+
+    if (payload.data && typeof payload.data === "object" && "items" in payload.data && Array.isArray((payload.data as any).items)) {
+      rawList = (payload.data as any).items;
+      metaTotal = (payload.data as any).total ?? rawList.length;
+      metaPage = (payload.data as any).page ?? 1;
+      metaLastPage = (payload.data as any).totalPages ?? 1;
+    } else if (Array.isArray(payload.data)) {
+      rawList = payload.data;
+      metaTotal = payload.meta?.total ?? rawList.length;
+      metaPage = payload.meta?.current_page ?? 1;
+      metaLastPage = payload.meta?.last_page ?? 1;
+    }
+
     return paginated({
-      data: data.map(mapOrder),
-      meta: payload.meta,
+      data: rawList.map(mapOrder),
+      meta: {
+        total: metaTotal,
+        current_page: metaPage,
+        last_page: metaLastPage,
+      },
     });
   }
 
