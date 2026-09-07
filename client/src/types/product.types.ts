@@ -24,12 +24,18 @@ export interface Product {
 export interface ListProductsParams {
   category?: string;
   search?: string;
+  tag?: string;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+  limit?: number;
 }
 
 export interface PaginateProductsParams {
   category?: string;
   search?: string;
   tag?: string;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
   page?: number;
   limit?: number;
 }
@@ -38,6 +44,8 @@ export interface AdminListProductsParams {
   search?: string;
   category?: string;
   isActive?: boolean | "";
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
   page?: number;
   limit?: number;
 }

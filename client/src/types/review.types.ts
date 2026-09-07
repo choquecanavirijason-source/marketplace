@@ -20,3 +20,9 @@ export interface ReviewsSummary {
   totalReviews: number;
   ratingDistribution: Record<number, number>;
 }
+
+export interface ReviewSummary {
+  average: number;
+  total: number;
+  distribution: Record<1 | 2 | 3 | 4 | 5, number>;
+}

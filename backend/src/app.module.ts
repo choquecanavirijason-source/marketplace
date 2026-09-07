@@ -1,4 +1,4 @@
-import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
+import { Module, MiddlewareConsumer, NestModule, ClassSerializerInterceptor } from '@nestjs/common';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 
@@ -78,6 +78,10 @@ import { AppService } from './app.service';
     {
       provide: APP_INTERCEPTOR,
       useClass: TimeoutInterceptor,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: ClassSerializerInterceptor,
     },
     {
       provide: APP_INTERCEPTOR,

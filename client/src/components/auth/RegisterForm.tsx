@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth, useAuthStore } from "@/hooks/useAuth";
-import { HttpAuthRepository } from "@/services/auth.service";
+import { authService } from "@/services/auth.service";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,8 +35,6 @@ interface RegisterFormProps {
 
 type Step = 1 | 2 | 3;
 type AccountType = "buyer" | "seller_individual" | "seller_company";
-
-const authService = new HttpAuthRepository();
 
 export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
   const router = useRouter();

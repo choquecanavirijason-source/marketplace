@@ -1,16 +1,27 @@
-import type { LucideIcon } from "lucide-react";
-
-export interface Category {
-  id?: number;
-  slug?: string;
+export interface ICategory {
+  id: number;
   name: string;
-  icon: LucideIcon;
-  count: number;
-  color: string;
+  slug: string;
+  products_count?: string | number;
+  count?: number;
+  parent_id?: number | null;
+  description?: string | null;
+  image_url?: string | null;
+  is_active?: boolean;
+  created_at?: string;
+  updated_at?: string;
+  icon?: any;
+  color?: string;
 }
 
-export interface AdminListCategoriesParams {
-  search?: string;
-  page?: number;
-  limit?: number;
+export interface ICategoryRequest {
+  name: string;
+  slug?: string;
+  parent_id?: number | null;
+  description?: string | null;
+  image_url?: string | null;
+  is_active?: boolean;
 }
+
+export type Category = ICategory;
+export type CategoryInput = ICategoryRequest;

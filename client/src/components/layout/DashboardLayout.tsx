@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState, useCallback, type ReactNode } from "react";
+import { useEffect, useState, useCallback, useMemo, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Heart,
   LayoutDashboard,
@@ -20,11 +21,6 @@ import {
   KeyRound,
   Settings,
   Bell,
-  Sun,
-  Moon,
-  Plus,
-  PanelLeftClose,
-  PanelLeftOpen,
   Menu,
   X,
   ShoppingBag,
@@ -33,7 +29,15 @@ import {
   MessageSquare,
   Radio,
   Bot,
+  Store,
+  Home,
+  Award,
+  CreditCard,
+  Gift,
+  Star,
+  Receipt,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
 import {
   DropdownMenu,
@@ -62,7 +66,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { usePrivileges } from "@/hooks/usePrivileges";
 import { useTranslation } from "@/hooks/useTranslation";
 import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
+import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { NextjsIcon, NestjsIcon } from "@/components/icons/TechIcons";
+import { cancelAllPendingRequests } from "@/config/axios";
 
 export type DashboardNavItem = {
   href: string;
@@ -71,97 +77,253 @@ export type DashboardNavItem = {
   permission?: string | string[];
   roles?: string[];
   badge?: string;
+  category?: string;
+  children?: DashboardNavItem[];
+  exact?: boolean;
 };
 
 export const adminNavItems: DashboardNavItem[] = [
-  { href: "/admin", label: "Panel General", icon: LayoutDashboard },
   {
-    href: "/admin/orders",
-    label: "Pedidos y Ventas",
-    icon: ShoppingBag,
-    permission: "pedido.ver",
-    roles: ["admin", "superadmin", "seller", "support"],
-  },
-  {
-    href: "/admin/logistics",
-    label: "Logística y Envíos",
-    icon: Truck,
-    permission: "logistica.ver",
-    roles: ["admin", "superadmin", "seller", "support"],
+    href: "/admin",
+    label: "Panel General",
+    icon: LayoutDashboard,
+    exact: true,
+    children: [
+      {
+        href: "/admin/orders",
+        label: "Pedidos y Ventas",
+        icon: ShoppingBag,
+        permission: "pedido.ver",
+        roles: ["admin", "superadmin", "seller", "support"],
+      },
+      {
+        href: "/admin/logistics",
+        label: "Logística y Envíos",
+        icon: Truck,
+        permission: "logistica.ver",
+        roles: ["admin", "superadmin", "seller", "support"],
+      },
+      {
+        href: "/admin/products",
+        label: "Productos",
+        icon: Package,
+        permission: "producto.ver",
+        roles: ["admin", "superadmin", "seller", "seller_individual", "seller_company"],
+      },
+      {
+        href: "/admin/categories",
+        label: "Categorías",
+        icon: Tags,
+        permission: "categoria.ver",
+        roles: ["admin", "superadmin"],
+      },
+    ]
   },
   {
     href: "/admin/crm",
-    label: "CRM & Prospectos",
+    label: "Clientes & Canales",
     icon: Contact,
-    permission: "crm.ver",
-    roles: ["admin", "superadmin", "seller"],
-  },
-  {
-    href: "/admin/inbox",
-    label: "Bandeja Omnicanal",
-    icon: MessageSquare,
-    permission: "inbox.ver",
-    roles: ["admin", "superadmin", "support"],
-  },
-  {
-    href: "/admin/live-shopping",
-    label: "Live Shopping",
-    icon: Radio,
-    permission: "live.ver",
-    roles: ["admin", "superadmin", "seller"],
-    badge: "En Vivo",
-  },
-  {
-    href: "/admin/ai-copilot",
-    label: "IA & Recomendaciones",
-    icon: Bot,
-    permission: "ai.ver",
-    roles: ["admin", "superadmin"],
-    badge: "IA",
-  },
-  {
-    href: "/admin/products",
-    label: "Productos",
-    icon: Package,
-    permission: "producto.ver",
-    roles: ["admin", "superadmin", "seller", "seller_individual", "seller_company"],
-  },
-  {
-    href: "/admin/categories",
-    label: "Categorías",
-    icon: Tags,
-    permission: "categoria.ver",
-    roles: ["admin", "superadmin"],
-  },
-  {
-    href: "/admin/users",
-    label: "Gestión de Usuarios",
-    icon: Users,
-    permission: "usuario.ver",
-    roles: ["admin", "superadmin", "support"],
+    children: [
+      {
+        href: "/admin/crm",
+        label: "CRM & Clientes",
+        icon: Contact,
+        permission: "crm.ver",
+        roles: ["admin", "superadmin", "seller"],
+      },
+      {
+        href: "/admin/inbox",
+        label: "Bandeja Omnicanal",
+        icon: MessageSquare,
+        permission: "inbox.ver",
+        roles: ["admin", "superadmin", "support"],
+      },
+      {
+        href: "/admin/live-shopping",
+        label: "Live Shopping",
+        icon: Radio,
+        permission: "live.ver",
+        roles: ["admin", "superadmin", "seller"],
+        badge: "En Vivo",
+      },
+    ]
   },
   {
     href: "/admin/metrics",
-    label: "Métricas y Reportes",
+    label: "Analítica & Control",
     icon: TrendingUp,
-    permission: "metricas.ver",
-    roles: ["admin", "superadmin", "finance", "seller"],
+    children: [
+      {
+        href: "/admin/ai-copilot",
+        label: "IA & Recomendaciones",
+        icon: Bot,
+        permission: "ai.ver",
+        roles: ["admin", "superadmin"],
+        badge: "IA",
+      },
+      {
+        href: "/admin/metrics",
+        label: "Métricas y Reportes",
+        icon: TrendingUp,
+        permission: "metricas.ver",
+        roles: ["admin", "superadmin", "finance", "seller"],
+      },
+      {
+        href: "/admin/users",
+        label: "Gestión de Usuarios",
+        icon: Users,
+        permission: "usuario.ver",
+        roles: ["admin", "superadmin", "support"],
+      },
+    ]
   },
   {
-    href: "/admin/auth-settings",
-    label: "Métodos de Acceso",
-    icon: KeyRound,
-    roles: ["admin", "superadmin"],
-    badge: "Nuevo",
+    href: "/admin/settings",
+    label: "Configuración",
+    icon: Settings,
+    children: [
+      {
+        href: "/admin/settings",
+        label: "Configuración General",
+        icon: Settings,
+        roles: ["admin", "superadmin"],
+      },
+      {
+        href: "/admin/auth-settings",
+        label: "Métodos de Acceso",
+        icon: KeyRound,
+        roles: ["admin", "superadmin"],
+        badge: "Nuevo",
+      },
+    ]
+  },
+  {
+    href: "/account/dashboard",
+    label: "Mi Perfil",
+    icon: User,
+    children: [
+      {
+        href: "/account/dashboard",
+        label: "Resumen de Cuenta",
+        icon: LayoutDashboard,
+        exact: true,
+      },
+      {
+        href: "/account/orders",
+        label: "Mis Pedidos",
+        icon: ShoppingBag,
+      },
+      {
+        href: "/account/favorites",
+        label: "Mis Favoritos",
+        icon: Heart,
+      },
+      {
+        href: "/account/addresses",
+        label: "Mis Direcciones",
+        icon: MapPin,
+      },
+      {
+        href: "/account/profile",
+        label: "Mi Perfil",
+        icon: User,
+        exact: true,
+      },
+      {
+        href: "/account/profile/security",
+        label: "Seguridad",
+        icon: ShieldCheck,
+      },
+    ]
   },
 ];
 
 export const customerNavItems: DashboardNavItem[] = [
-  { href: "/account/dashboard", label: "Mi Cuenta", icon: LayoutDashboard },
-  { href: "/account/profile", label: "Mi Perfil", icon: User },
-  { href: "/account/addresses", label: "Mis Direcciones", icon: MapPin },
-  { href: "/account/profile/security", label: "Seguridad & Sesiones", icon: ShieldCheck },
-  { href: "/favorites", label: "Mis Favoritos", icon: Heart },
+  {
+    href: "/account/dashboard",
+    label: "Mi Cuenta",
+    icon: LayoutDashboard,
+    exact: true,
+    children: [
+      {
+        href: "/account/dashboard",
+        label: "Resumen de Cuenta",
+        icon: LayoutDashboard,
+        exact: true,
+      },
+      {
+        href: "/account/orders",
+        label: "Mis Pedidos",
+        icon: ShoppingBag,
+      },
+      {
+        href: "/account/favorites",
+        label: "Mis Favoritos",
+        icon: Heart,
+      },
+      {
+        href: "/account/addresses",
+        label: "Mis Direcciones",
+        icon: MapPin,
+      },
+      {
+        href: "/account/wishlist",
+        label: "Lista de Deseos",
+        icon: Gift,
+      },
+      {
+        href: "/account/reviews",
+        label: "Mis Reseñas",
+        icon: Star,
+      },
+    ]
+  },
+  {
+    href: "/account/profile",
+    label: "Perfil & Seguridad",
+    icon: User,
+    children: [
+      {
+        href: "/account/profile",
+        label: "Mi Perfil",
+        icon: User,
+        exact: true,
+      },
+      {
+        href: "/account/profile/security",
+        label: "Seguridad",
+        icon: ShieldCheck,
+      },
+      {
+        href: "/account/profile/preferences",
+        label: "Preferencias",
+        icon: Settings,
+      },
+    ]
+  },
+  {
+    href: "/account/payments",
+    label: "Pagos & Suscripciones",
+    icon: CreditCard,
+    children: [
+      {
+        href: "/account/payments",
+        label: "Métodos de Pago",
+        icon: CreditCard,
+        exact: true,
+      },
+      {
+        href: "/account/subscriptions",
+        label: "Suscripciones",
+        icon: Award,
+      },
+      {
+        href: "/account/invoices",
+        label: "Facturas",
+        icon: Receipt,
+      },
+    ]
+  },
 ];
 
 const FerroMaxRibbonLogo = ({ className = "size-7" }: { className?: string }) => (
@@ -204,27 +366,22 @@ export const DashboardLayout = ({
   title,
   children,
 }: {
-  navItems: DashboardNavItem[];
-  title: string;
+  navItems?: DashboardNavItem[];
+  title?: string;
   children: ReactNode;
 }) => {
   const router = useRouter();
   const pathname = usePathname();
+  const queryClient = useQueryClient();
   const { user, isAdmin, logout, isLoggingOut } = useAuth();
   const { can, hasAnyRole } = usePrivileges();
   const { dict } = useTranslation();
 
-  // Estados de control de layout
   const [isMounted, setIsMounted] = useState(false);
   const [isRailCollapsed, setIsRailCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const [themeMode, setThemeMode] = useState<"light" | "dark">("light");
-
-  // Sección activa: 'admin' | 'account'
-  const isCurrentAdminSection = pathname.startsWith("/admin");
-  const [activeSection, setActiveSection] = useState<"admin" | "account">(
-    isCurrentAdminSection ? "admin" : "account"
-  );
+  const [isNavigating, setIsNavigating] = useState(false);
+  const [selectedGroupHref, setSelectedGroupHref] = useState<string>("");
 
   useEffect(() => {
     setIsMounted(true);
@@ -233,22 +390,12 @@ export const DashboardLayout = ({
       if (savedCollapse === "true") {
         setIsRailCollapsed(true);
       }
-      const savedTheme = localStorage.getItem("ferromax-theme");
-      const isDark =
-        savedTheme === "dark" ||
-        (!savedTheme && document.documentElement.classList.contains("dark"));
-      if (savedTheme === "dark") {
-        document.documentElement.classList.add("dark");
-      } else if (savedTheme === "light") {
-        document.documentElement.classList.remove("dark");
-      }
-      setThemeMode(isDark ? "dark" : "light");
     }
   }, []);
 
   useEffect(() => {
-    setActiveSection(pathname.startsWith("/admin") ? "admin" : "account");
     setIsMobileOpen(false);
+    setIsNavigating(false);
   }, [pathname]);
 
   const toggleRailCollapse = useCallback(() => {
@@ -261,43 +408,16 @@ export const DashboardLayout = ({
     });
   }, []);
 
-  const toggleThemeMode = useCallback((mode: "light" | "dark") => {
-    setThemeMode(mode);
-    if (typeof window !== "undefined") {
-      if (mode === "dark") {
-        document.documentElement.classList.add("dark");
-        localStorage.setItem("ferromax-theme", "dark");
-      } else {
-        document.documentElement.classList.remove("dark");
-        localStorage.setItem("ferromax-theme", "light");
+  const handleNavClick = useCallback(
+    (href: string) => {
+      if (href !== pathname) {
+        queryClient.cancelQueries();
+        cancelAllPendingRequests();
+        setIsNavigating(true);
       }
-    }
-  }, []);
-
-  const getNavLabel = (href: string, fallback: string) => {
-    switch (href) {
-      case "/admin":
-        return dict.nav.overview;
-      case "/admin/products":
-        return dict.nav.products;
-      case "/admin/categories":
-        return dict.nav.categories;
-      case "/admin/users":
-        return dict.nav.users;
-      case "/admin/metrics":
-        return dict.nav.metrics;
-      case "/account/dashboard":
-        return dict.nav.myAccount;
-      case "/account/profile":
-        return dict.nav.myProfile;
-      case "/account/profile/security":
-        return dict.nav.security;
-      case "/favorites":
-        return dict.nav.favorites;
-      default:
-        return fallback;
-    }
-  };
+    },
+    [pathname, queryClient]
+  );
 
   const getRoleBadgeLabel = (u: any, isAdm: boolean) => {
     if (isAdm || u?.type === "admin" || u?.type === "superadmin") {
@@ -315,7 +435,7 @@ export const DashboardLayout = ({
     return dict.common.roleBuyer;
   };
 
-  const isAuthorizedItem = (item: DashboardNavItem) => {
+  const isAuthorizedItem = useCallback((item: DashboardNavItem) => {
     if (item.roles && item.roles.length > 0 && !hasAnyRole(item.roles)) {
       return false;
     }
@@ -323,40 +443,87 @@ export const DashboardLayout = ({
       return false;
     }
     return true;
-  };
+  }, [hasAnyRole, can]);
 
-  const normalizedPath = pathname.replace(/\/$/, "");
-  const allNavItems = [...customerNavItems, ...adminNavItems];
+  const hasAdminAccess = isAdmin || adminNavItems.some(isAuthorizedItem);
 
-  const exactActive = allNavItems.find(
-    (item) => item.href.replace(/\/$/, "") === normalizedPath
-  );
+  const currentNavItems = useMemo(() => {
+    return hasAdminAccess ? adminNavItems : customerNavItems;
+  }, [hasAdminAccess]);
 
-  const prefixActive = !exactActive
-    ? allNavItems
-        .filter((item) => {
-          const h = item.href.replace(/\/$/, "");
-          if (
-            !h ||
-            h === "/" ||
-            h === "/admin" ||
-            h === "/account/dashboard" ||
-            h === "/account/profile"
-          ) {
-            return false;
+  const isPathActive = useCallback((itemHref: string, exact?: boolean) => {
+    const normalizedPath = pathname.replace(/\/$/, "");
+    const normalizedHref = itemHref.replace(/\/$/, "");
+
+    if (exact) {
+      return normalizedPath === normalizedHref;
+    }
+
+    if (normalizedHref === "/" || normalizedHref === "/admin" || normalizedHref === "/account/dashboard") {
+      return normalizedPath === normalizedHref;
+    }
+
+    return normalizedPath.startsWith(normalizedHref);
+  }, [pathname]);
+
+  const railGroups = useMemo(() => {
+    return currentNavItems
+      .filter(item => item.children && item.children.length > 0 && isAuthorizedItem(item))
+      .map(item => ({
+        id: item.href,
+        label: item.label,
+        icon: item.icon,
+        href: item.href,
+        match: (path: string) => {
+          if (item.exact) {
+            return path === item.href;
           }
-          return normalizedPath.startsWith(`${h}/`);
-        })
-        .sort((a, b) => b.href.length - a.href.length)[0]
-    : undefined;
+          if (path === item.href) return true;
+          return item.children?.some(child => {
+            if (child.exact) {
+              return path === child.href;
+            }
+            return path.startsWith(child.href);
+          }) || false;
+        }
+      }));
+  }, [currentNavItems, isAuthorizedItem]);
 
-  const activeHref = exactActive?.href ?? prefixActive?.href;
+  useEffect(() => {
+    const activeGroup = railGroups.find(g => g.match(pathname));
+    if (activeGroup) {
+      setSelectedGroupHref(activeGroup.href);
+    } else if (railGroups.length > 0 && !selectedGroupHref) {
+      setSelectedGroupHref(railGroups[0].href);
+    }
+  }, [pathname, railGroups]);
 
-  const currentNav =
-    allNavItems.find((item) => item.href === activeHref) ??
-    navItems.find((item) => item.href.replace(/\/$/, "") === normalizedPath);
+  const selectedGroup = useMemo(() => {
+    return currentNavItems.find(item => item.href === selectedGroupHref);
+  }, [currentNavItems, selectedGroupHref]);
 
-  const currentLabel = currentNav ? getNavLabel(currentNav.href, currentNav.label) : title;
+  const currentChildren = useMemo(() => {
+    return (selectedGroup?.children || []).filter(isAuthorizedItem);
+  }, [selectedGroup, isAuthorizedItem]);
+
+  const selectedGroupLabel = selectedGroup?.label || "Menú";
+
+  const getCurrentTitle = useCallback(() => {
+    const allItems = currentNavItems.flatMap(item => {
+      if (item.children) {
+        return [item, ...item.children];
+      }
+      return [item];
+    });
+
+    const found = allItems.find(item => isPathActive(item.href, item.exact));
+    if (found) {
+      return found.label;
+    }
+    return title || (pathname.startsWith("/admin") ? "Panel Administrador" : "Mi Cuenta");
+  }, [currentNavItems, pathname, title, isPathActive]);
+
+  const currentLabel = getCurrentTitle();
 
   const handleLogout = async () => {
     try {
@@ -366,48 +533,84 @@ export const DashboardLayout = ({
     }
   };
 
-  const hasAdminAccess = isAdmin || adminNavItems.some(isAuthorizedItem);
-
   const roleBadge = {
     label: getRoleBadgeLabel(user, isAdmin),
     color: getRoleBadgeColor(user, isAdmin),
   };
 
-  // Ítems a renderizar según la sección activa
-  const activeItemsToRender = (activeSection === "admin" && hasAdminAccess ? adminNavItems : customerNavItems).filter(
-    isAuthorizedItem
-  );
+  const isCurrentAdminPath = pathname.startsWith("/admin");
+  const isAccountPath = pathname.startsWith("/account");
+
+  const NavLink = ({ item, isChild = false }: { item: DashboardNavItem; isChild?: boolean }) => {
+    const Icon = item.icon;
+    const isActive = isPathActive(item.href, item.exact);
+
+    return (
+      <Link
+        href={item.href}
+        scroll={false}
+        onClick={() => handleNavClick(item.href)}
+        className={cn(
+          "group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs transition-all duration-200 select-none",
+          isActive
+            ? "bg-primary text-primary-foreground font-bold shadow-sm scale-[0.98]"
+            : "text-muted-foreground hover:text-foreground hover:bg-primary/10 hover:text-primary font-medium hover:scale-[0.98]",
+          isChild && "pl-9"
+        )}
+      >
+        <Icon
+          className={cn(
+            "size-4 shrink-0 transition-colors",
+            isActive
+              ? "text-primary-foreground"
+              : "text-muted-foreground/80 group-hover:text-primary"
+          )}
+        />
+        <span
+          className={cn(
+            "truncate flex-1",
+            isActive && "font-bold text-primary-foreground"
+          )}
+        >
+          {item.label}
+        </span>
+        {item.badge && (
+          <span
+            className={cn(
+              "ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full transition-colors",
+              isActive
+                ? "bg-white/20 text-white dark:bg-black/40 dark:text-white"
+                : "bg-primary/15 text-primary"
+            )}
+          >
+            {item.badge}
+          </span>
+        )}
+      </Link>
+    );
+  };
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex w-full relative animate-fade-in-up">
-      {/* ========================================================================= */}
-      {/* 1. SIDEBAR DE ESCRITORIO (>= md) - NUNCA RENDERIZA EN MOBILE              */}
-      {/* ========================================================================= */}
+    <div className="min-h-screen bg-background text-foreground flex w-full relative">
       <aside
         className={cn(
-          "hidden md:flex fixed top-0 bottom-0 left-0 z-40 select-none transition-all duration-300 ease-in-out border-r border-border/60 bg-background/95 backdrop-blur-xl",
+          "hidden md:flex fixed top-0 bottom-0 left-0 h-screen z-40 select-none border-r border-border/60 bg-background/95 backdrop-blur-xl overflow-hidden transition-all duration-300",
           isRailCollapsed ? "w-[72px]" : "w-[312px]"
         )}
       >
-        {/* ----------------------------------------------------------------------- */}
-        {/* RAIL 1: BARRA PERMANENTE DE ÍCONOS (72px)                               */}
-        {/* ----------------------------------------------------------------------- */}
-        <div className="w-[72px] shrink-0 h-full flex flex-col items-center justify-between py-5 border-r border-border/50 bg-card/90 backdrop-blur-sm z-10">
-          {/* Top: Logotipo y Módulos Principales */}
-          <div className="flex flex-col items-center gap-5 w-full">
-            {/* Logotipo FerroMax */}
+        <div className="w-[72px] shrink-0 h-full flex flex-col justify-between items-center py-3 px-2 border-r border-border/50 bg-card/90 backdrop-blur-sm z-10 overflow-hidden">
+          <div className="flex flex-col items-center gap-2 w-full shrink-0">
             <Link
               href="/"
               scroll={false}
               title="FerroMax 360 — Inicio"
-              className="group p-1 rounded-2xl transition-transform hover:scale-105 active:scale-95"
+              className="group p-1 rounded-2xl transition-colors hover:bg-muted/70 mb-0.5"
             >
-              <div className="size-11 rounded-2xl flex items-center justify-center bg-primary text-primary-foreground shadow-md shadow-primary/25 transition-all group-hover:bg-[#cf4900]">
-                <FerroMaxRibbonLogo className="size-6 text-primary-foreground" />
+              <div className="size-10 rounded-2xl flex items-center justify-center bg-primary text-primary-foreground shadow-md shadow-primary/25 transition-all duration-300 group-hover:bg-[#cf4900] group-hover:scale-110">
+                <FerroMaxRibbonLogo className="size-5.5 text-primary-foreground" />
               </div>
             </Link>
 
-            {/* Botón flotante para descolapsar Rail 2 si está colapsado */}
             {isRailCollapsed && (
               <TooltipProvider delayDuration={100}>
                 <Tooltip>
@@ -415,102 +618,79 @@ export const DashboardLayout = ({
                     <button
                       type="button"
                       onClick={toggleRailCollapse}
-                      className="size-8 rounded-full bg-primary/15 text-primary hover:bg-primary hover:text-primary-foreground flex items-center justify-center transition-all cursor-pointer shadow-xs animate-in fade-in zoom-in-75 duration-200"
+                      className="size-8 rounded-full bg-primary/15 text-primary hover:bg-primary hover:text-primary-foreground flex items-center justify-center transition-all cursor-pointer shadow-xs mb-0.5 hover:scale-110"
                     >
                       <ChevronRight className="size-4" />
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="right" className="text-xs font-semibold">
-                    Descolapsar menú lateral
+                    Expandir menú lateral
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
             )}
 
-            {/* Módulos de Trabajo (Admin vs Mi Cuenta) */}
             <TooltipProvider delayDuration={100}>
-              <div className="flex flex-col items-center gap-3 w-full">
-                {/* Módulo Administrador */}
-                {hasAdminAccess && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setActiveSection("admin");
-                          if (!pathname.startsWith("/admin")) {
-                            router.push("/admin");
-                          }
-                          if (isRailCollapsed) setIsRailCollapsed(false);
-                        }}
-                        className={cn(
-                          "size-11 rounded-full flex items-center justify-center transition-all cursor-pointer",
-                          activeSection === "admin"
-                            ? "bg-primary text-primary-foreground shadow-md shadow-primary/30 scale-105 font-bold"
-                            : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
-                        )}
-                      >
-                        <LayoutDashboard
-                          className={cn(
-                            "size-5 transition-colors",
-                            activeSection === "admin" ? "text-primary-foreground" : "text-current"
-                          )}
-                        />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="right" className="text-xs font-semibold">
-                      {dict.common.adminPanel}
-                    </TooltipContent>
-                  </Tooltip>
-                )}
+              <div className="flex flex-col items-center gap-1.5 w-full">
+                {railGroups.map((group) => {
+                  const Icon = group.icon;
+                  const isActive = group.match(pathname);
+                  const isSelected = selectedGroupHref === group.href;
 
-                {/* Módulo Mi Cuenta / Personal */}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setActiveSection("account");
-                        if (!pathname.startsWith("/account") && pathname !== "/favorites") {
-                          router.push("/account/dashboard");
-                        }
-                        if (isRailCollapsed) setIsRailCollapsed(false);
-                      }}
-                      className={cn(
-                        "size-11 rounded-full flex items-center justify-center transition-all cursor-pointer",
-                        activeSection === "account"
-                          ? "bg-primary text-primary-foreground shadow-md shadow-primary/30 scale-105 font-bold"
-                          : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
-                      )}
-                    >
-                      <User
-                        className={cn(
-                          "size-5 transition-colors",
-                          activeSection === "account" ? "text-primary-foreground" : "text-current"
-                        )}
-                      />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="right" className="text-xs font-semibold">
-                    {dict.common.myAccount}
-                  </TooltipContent>
-                </Tooltip>
+                  return (
+                    <Tooltip key={group.id}>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedGroupHref(group.href);
+                            handleNavClick(group.href);
+                            router.push(group.href);
+                            if (isRailCollapsed) setIsRailCollapsed(false);
+                          }}
+                          className={cn(
+                            "size-10 rounded-2xl flex items-center justify-center transition-all duration-200 cursor-pointer relative",
+                            isActive || isSelected
+                              ? "bg-primary text-primary-foreground font-bold shadow-sm scale-95"
+                              : "text-muted-foreground hover:text-foreground hover:bg-muted/70 hover:scale-95"
+                          )}
+                        >
+                          <Icon
+                            className={cn(
+                              "size-5 transition-colors",
+                              (isActive || isSelected) ? "text-primary-foreground" : "text-current"
+                            )}
+                          />
+                          {isSelected && !isActive && (
+                            <span className="absolute -right-0.5 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-primary rounded-full" />
+                          )}
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="right" className="text-xs font-semibold">
+                        {group.label}
+                      </TooltipContent>
+                    </Tooltip>
+                  );
+                })}
               </div>
             </TooltipProvider>
           </div>
 
-          {/* Bottom: Utilidades Rápidas y Tema */}
-          <div className="flex flex-col items-center gap-3.5 w-full">
-            <div className="w-8 h-[1px] bg-border/80" />
+          <div className="flex flex-col items-center gap-2.5 w-full mt-auto pt-2 pb-1 shrink-0">
+            <div className="w-7 h-[1px] bg-border/80 my-0.5" />
 
             <TooltipProvider delayDuration={100}>
-              {/* Configuración rápida */}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Link
-                    href={hasAdminAccess ? "/admin/auth-settings" : "/account/profile/security"}
+                    href={hasAdminAccess ? "/admin/settings" : "/account/profile/security"}
                     scroll={false}
-                    className="size-9 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/70 transition-colors"
+                    onClick={() =>
+                      handleNavClick(
+                        hasAdminAccess ? "/admin/settings" : "/account/profile/security"
+                      )
+                    }
+                    className="size-8.5 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/70 transition-all hover:scale-110"
                   >
                     <Settings className="size-4.5" />
                   </Link>
@@ -520,212 +700,183 @@ export const DashboardLayout = ({
                 </TooltipContent>
               </Tooltip>
 
-              {/* Notificaciones */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    type="button"
-                    className="relative size-9 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/70 transition-colors cursor-pointer"
-                  >
-                    <Bell className="size-4.5" />
-                    <span className="absolute top-2 right-2 size-2 rounded-full bg-primary ring-2 ring-card" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="right" className="text-xs font-medium">
-                  Notificaciones
-                </TooltipContent>
-              </Tooltip>
-
-              {/* Cápsula de Modo Día / Noche */}
-              <div className="flex flex-col items-center p-0.5 rounded-full border border-border/80 bg-muted/60">
-                <button
-                  type="button"
-                  onClick={() => toggleThemeMode("light")}
-                  title="Modo Claro"
-                  className={cn(
-                    "size-7 rounded-full flex items-center justify-center transition-all cursor-pointer",
-                    themeMode === "light"
-                      ? "bg-card text-primary shadow-xs font-bold"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  <Sun className="size-3.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => toggleThemeMode("dark")}
-                  title="Modo Oscuro"
-                  className={cn(
-                    "size-7 rounded-full flex items-center justify-center transition-all cursor-pointer",
-                    themeMode === "dark"
-                      ? "bg-primary text-primary-foreground shadow-xs font-bold"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  <Moon className="size-3.5" />
-                </button>
-              </div>
-
-              {/* Avatar de Usuario */}
               <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    type="button"
-                    className="size-9.5 rounded-full overflow-hidden ring-2 ring-primary/20 hover:ring-primary transition-all cursor-pointer shrink-0 mt-1 focus:outline-none"
-                  >
-                    {user?.avatarUrl ? (
-                      <img
-                        src={user.avatarUrl}
-                        alt={user?.name || "Avatar"}
-                        className="size-full object-cover"
-                      />
-                    ) : (
-                      <div className="size-full flex items-center justify-center font-bold text-xs uppercase bg-primary/15 text-primary">
-                        {user?.firstName?.[0] || user?.name?.[0] || "U"}
-                      </div>
-                    )}
-                  </button>
-                </DropdownMenuTrigger>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type="button"
+                        className="relative size-8.5 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/70 transition-all hover:scale-110 cursor-pointer"
+                      >
+                        <Bell className="size-4.5" />
+                        <span className="absolute top-1.5 right-1.5 size-2 rounded-full bg-primary ring-2 ring-card animate-pulse" />
+                      </button>
+                    </DropdownMenuTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" className="text-xs font-medium">
+                    Notificaciones (3)
+                  </TooltipContent>
+                </Tooltip>
 
-                <DropdownMenuContent align="end" side="right" className="w-56 p-1.5 ml-2">
-                  <DropdownMenuLabel className="p-2 font-normal">
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-center justify-between gap-1">
-                        <p className="text-xs font-bold text-foreground truncate">
-                          {user?.name ?? "Usuario"}
-                        </p>
-                        <span className={`px-1.5 py-0.5 rounded text-[10px] ${roleBadge.color}`}>
-                          {roleBadge.label}
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-muted-foreground truncate">
-                        {user?.email ?? ""}
-                      </p>
+                <DropdownMenuContent side="right" align="end" className="w-80 p-2 shadow-2xl ml-2">
+                  <div className="flex items-center justify-between px-2 py-1.5 border-b border-border/60 mb-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-foreground">Notificaciones</span>
+                      <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-primary/15 text-primary">
+                        3 nuevas
+                      </span>
                     </div>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuGroup>
-                    <DropdownMenuItem asChild>
-                      <Link href="/account/dashboard" scroll={false} className="cursor-pointer flex items-center gap-2 text-xs">
-                        <LayoutDashboard className="size-3.5 text-muted-foreground" />
-                        <span>{dict.common.myAccount}</span>
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href="/account/profile" scroll={false} className="cursor-pointer flex items-center gap-2 text-xs">
-                        <User className="size-3.5 text-muted-foreground" />
-                        <span>{dict.common.myProfile}</span>
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href="/account/profile/security" scroll={false} className="cursor-pointer flex items-center gap-2 text-xs">
-                        <ShieldCheck className="size-3.5 text-muted-foreground" />
-                        <span>{dict.common.securitySessions}</span>
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href="/favorites" scroll={false} className="cursor-pointer flex items-center gap-2 text-xs">
-                        <Heart className="size-3.5 text-muted-foreground" />
-                        <span>{dict.common.favorites}</span>
-                      </Link>
-                    </DropdownMenuItem>
-                  </DropdownMenuGroup>
+                    <button
+                      type="button"
+                      onClick={() => toast.success("Notificaciones marcadas como leídas")}
+                      className="text-[10px] text-primary hover:underline font-semibold cursor-pointer"
+                    >
+                      Marcar leídas
+                    </button>
+                  </div>
 
-                  {hasAdminAccess && (
-                    <>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuGroup>
-                        <DropdownMenuItem asChild>
-                          <Link href="/admin" scroll={false} className="cursor-pointer flex items-center gap-2 text-xs font-semibold text-primary">
-                            <Settings className="size-3.5 text-primary" />
-                            <span>{dict.common.adminPanel}</span>
-                          </Link>
-                        </DropdownMenuItem>
-                      </DropdownMenuGroup>
-                    </>
-                  )}
+                  <div className="space-y-1 py-1 max-h-64 overflow-y-auto">
+                    <div className="p-2 rounded-lg hover:bg-muted/60 transition-colors text-xs space-y-0.5">
+                      <p className="font-bold text-foreground">Nuevo pedido recibido #ORD-2026-089</p>
+                      <p className="text-[11px] text-muted-foreground">
+                        Taladro Percutor Bosch 750W (Bs 850)
+                      </p>
+                      <span className="text-[10px] text-muted-foreground/70">Hace 10 minutos</span>
+                    </div>
+                    <div className="p-2 rounded-lg hover:bg-muted/60 transition-colors text-xs space-y-0.5">
+                      <p className="font-bold text-foreground">Alerta de stock bajo</p>
+                      <p className="text-[11px] text-muted-foreground">
+                        Amoladora Angular DeWalt (Quedan 2 unidades)
+                      </p>
+                      <span className="text-[10px] text-muted-foreground/70">Hace 1 hora</span>
+                    </div>
+                    <div className="p-2 rounded-lg hover:bg-muted/60 transition-colors text-xs space-y-0.5">
+                      <p className="font-bold text-foreground">Consulta en Bandeja</p>
+                      <p className="text-[11px] text-muted-foreground">
+                        María López consultó sobre tiempo de despacho
+                      </p>
+                      <span className="text-[10px] text-muted-foreground/70">Hace 2 horas</span>
+                    </div>
+                  </div>
 
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={handleLogout}
-                    disabled={isLoggingOut}
-                    className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950/30 text-xs"
-                  >
-                    <LogOut className="size-3.5 mr-2" />
-                    <span>{isLoggingOut ? "Cerrando sesión..." : dict.common.logout}</span>
+                  <DropdownMenuItem asChild className="p-1.5 justify-center text-center">
+                    <Link
+                      href={hasAdminAccess ? "/admin/inbox" : "/account/orders"}
+                      className="text-xs font-bold text-primary text-center w-full block py-1 cursor-pointer"
+                    >
+                      {hasAdminAccess ? "Ver Bandeja Omnicanal" : "Ver Mis Pedidos"}
+                    </Link>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+
+              <ThemeToggle variant="capsule" />
             </TooltipProvider>
           </div>
         </div>
 
-        {/* ----------------------------------------------------------------------- */}
-        {/* RAIL 2: PANEL CONTEXTUAL DESCOLAPSABLE (240px)                          */}
-        {/* ----------------------------------------------------------------------- */}
         <div
           className={cn(
-            "h-full flex flex-col justify-between bg-background transition-all duration-300 ease-in-out overflow-hidden",
+            "h-full flex flex-col justify-between bg-background overflow-hidden transition-all duration-300",
             isRailCollapsed
               ? "w-0 p-0 opacity-0 pointer-events-none"
               : "w-[240px] p-4 opacity-100"
           )}
         >
           <div className="flex flex-col min-h-0 flex-1 space-y-4">
-            {/* Header del Rail 2: Switcher de Workspace + Botón de Colapso */}
-            <div className="flex items-center gap-2 w-full">
+            <div className="flex items-center gap-2 w-full shrink-0">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
                     type="button"
-                    className="flex-1 min-w-0 rounded-full px-3.5 py-2.5 border border-border/80 bg-card hover:bg-muted/50 text-foreground flex items-center justify-between text-xs font-bold transition-all cursor-pointer shadow-2xs group"
+                    className="flex-1 min-w-0 rounded-2xl px-3 py-2 border border-border/80 bg-card hover:bg-muted/60 text-foreground flex items-center justify-between text-xs font-bold transition-all cursor-pointer shadow-2xs group hover:scale-[0.98]"
                   >
-                    <span className="truncate">
-                      {activeSection === "admin" ? "FerroMax Admin" : "Mi Cuenta"}
-                    </span>
-                    <div className="size-5 rounded-full flex items-center justify-center text-xs bg-primary text-primary-foreground transition-transform group-hover:rotate-45 shadow-xs shrink-0 ml-1.5">
-                      <Plus className="size-3 stroke-[3]" />
+                    <div className="flex items-center gap-2 min-w-0 truncate">
+                      <div className="size-6 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                        {hasAdminAccess ? (
+                          <ShieldCheck className="size-3.5" />
+                        ) : (
+                          <User className="size-3.5" />
+                        )}
+                      </div>
+                      <div className="flex flex-col text-left truncate">
+                        <span className="truncate leading-tight font-extrabold text-foreground">
+                          {hasAdminAccess ? "FerroMax Admin" : "Mi Cuenta"}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground font-medium leading-none mt-0.5">
+                          {hasAdminAccess ? "Panel de Gestión" : "Perfil de Usuario"}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="size-5 rounded-full flex items-center justify-center text-xs text-muted-foreground group-hover:text-foreground transition-transform shrink-0 ml-1">
+                      <ChevronDown className="size-3.5" />
                     </div>
                   </button>
                 </DropdownMenuTrigger>
 
-                <DropdownMenuContent align="start" className="w-56 p-1.5">
-                  <DropdownMenuLabel className="text-[11px] font-bold text-muted-foreground uppercase px-2 py-1">
-                    Cambiar Espacio
+                <DropdownMenuContent align="start" className="w-64 p-1.5 shadow-xl">
+                  <DropdownMenuLabel className="text-[10px] font-black text-muted-foreground uppercase px-2 py-1 tracking-wider">
+                    Espacios Disponibles
                   </DropdownMenuLabel>
                   {hasAdminAccess && (
                     <DropdownMenuItem
                       onClick={() => {
-                        setActiveSection("admin");
+                        handleNavClick("/admin");
                         router.push("/admin");
+                        setSelectedGroupHref("/admin");
                       }}
-                      className="cursor-pointer text-xs font-medium flex items-center gap-2"
+                      className={cn(
+                        "cursor-pointer text-xs p-2.5 rounded-xl flex items-center gap-2.5 transition-all",
+                        isCurrentAdminPath && !isAccountPath
+                          ? "bg-primary/10 text-primary font-bold"
+                          : "hover:bg-muted/70 text-foreground hover:scale-[0.98]"
+                      )}
                     >
-                      <LayoutDashboard className="size-3.5 text-primary" />
-                      <span>Panel Administrador</span>
+                      <div className="size-7 rounded-lg bg-primary/15 text-primary flex items-center justify-center shrink-0">
+                        <LayoutDashboard className="size-4" />
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <span className="font-bold">FerroMax Admin</span>
+                        <span className="text-[10px] text-muted-foreground font-normal">
+                          Gestión comercial, pedidos y catálogo
+                        </span>
+                      </div>
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuItem
                     onClick={() => {
-                      setActiveSection("account");
+                      handleNavClick("/account/dashboard");
                       router.push("/account/dashboard");
+                      setSelectedGroupHref("/account/dashboard");
                     }}
-                    className="cursor-pointer text-xs font-medium flex items-center gap-2"
+                    className={cn(
+                      "cursor-pointer text-xs p-2.5 rounded-xl flex items-center gap-2.5 transition-all",
+                      isAccountPath || (!isCurrentAdminPath && !hasAdminAccess)
+                        ? "bg-primary/10 text-primary font-bold"
+                        : "hover:bg-muted/70 text-foreground hover:scale-[0.98]"
+                    )}
                   >
-                    <User className="size-3.5 text-primary" />
-                    <span>Mi Cuenta Personal</span>
+                    <div className="size-7 rounded-lg bg-primary/15 text-primary flex items-center justify-center shrink-0">
+                      <User className="size-4" />
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                      <span className="font-bold">Mi Cuenta Personal</span>
+                      <span className="text-[10px] text-muted-foreground font-normal">
+                        Mis pedidos, direcciones y favoritos
+                      </span>
+                    </div>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              {/* Botón para colapsar Rail 2 */}
               <TooltipProvider delayDuration={100}>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
                       type="button"
                       onClick={toggleRailCollapse}
-                      className="size-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/70 transition-colors cursor-pointer shrink-0"
+                      className="size-8.5 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/70 border border-border/70 transition-all cursor-pointer shrink-0 hover:scale-110"
                     >
                       <ChevronLeft className="size-4" />
                     </button>
@@ -737,66 +888,24 @@ export const DashboardLayout = ({
               </TooltipProvider>
             </div>
 
-            {/* Título de Sección */}
-            <div className="px-2 pt-1">
-              <span className="text-[10px] font-bold text-muted-foreground/80 tracking-wider uppercase">
-                {activeSection === "admin" ? "Menú de Gestión" : "Mi Espacio"}
-              </span>
-            </div>
-
-            {/* Enlaces de Navegación con Íconos y Texto con Alto Contraste en Selected */}
-            <nav className="space-y-1.5 overflow-y-auto flex-1 pr-1 scrollbar-none">
-              {activeItemsToRender.map((item) => {
-                const Icon = item.icon;
-                const label = getNavLabel(item.href, item.label);
-                const isActive = item.href === activeHref;
-
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    scroll={false}
-                    className={cn(
-                      "group w-full flex items-center gap-3 px-3.5 py-2.5 rounded-full text-xs transition-all select-none",
-                      isActive
-                        ? "bg-primary text-primary-foreground font-bold shadow-md shadow-primary/30 scale-[1.01]"
-                        : "text-muted-foreground hover:text-foreground hover:bg-primary/10 hover:text-primary font-medium"
-                    )}
-                  >
-                    <Icon
-                      className={cn(
-                        "size-4.5 shrink-0 transition-colors",
-                        isActive
-                          ? "text-primary-foreground"
-                          : "text-muted-foreground/80 group-hover:text-primary"
-                      )}
-                    />
-                    <span className={cn("truncate flex-1 font-medium", isActive && "font-bold text-primary-foreground")}>
-                      {label}
-                    </span>
-                    {item.badge && (
-                      <span
-                        className={cn(
-                          "ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full transition-colors",
-                          isActive
-                            ? "bg-white/20 text-white dark:bg-black/40 dark:text-white"
-                            : "bg-primary/15 text-primary"
-                        )}
-                      >
-                        {item.badge}
-                      </span>
-                    )}
-                  </Link>
-                );
-              })}
+            <nav className="space-y-4 overflow-y-auto flex-1 pr-1 scrollbar-none">
+              {currentChildren.length > 0 && (
+                <div className="space-y-1">
+                  <p className="px-3 text-[10px] font-bold text-muted-foreground/70 tracking-wider uppercase">
+                    {selectedGroupLabel}
+                  </p>
+                  <div className="space-y-0.5">
+                    {currentChildren.map((item) => (
+                      <NavLink key={item.href} item={item} />
+                    ))}
+                  </div>
+                </div>
+              )}
             </nav>
           </div>
         </div>
       </aside>
 
-      {/* ========================================================================= */}
-      {/* 2. MOBILE DRAWER (Sheet) - SOLO SE ACTIVA EN MÓVIL (< md)                  */}
-      {/* ========================================================================= */}
       <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
         <SheetContent
           side="left"
@@ -807,7 +916,6 @@ export const DashboardLayout = ({
             <SheetDescription>Navegación principal de FerroMax en dispositivos móviles</SheetDescription>
           </SheetHeader>
 
-          {/* Cabecera del Drawer */}
           <div className="p-4 border-b border-border/70 flex items-center justify-between bg-background/80">
             <Link
               href="/"
@@ -821,7 +929,7 @@ export const DashboardLayout = ({
               <div className="flex flex-col">
                 <span className="text-sm font-black text-foreground tracking-tight">FerroMax</span>
                 <span className="text-[10px] font-semibold text-primary uppercase tracking-widest">
-                  {activeSection === "admin" ? "Admin 360" : "Mi Espacio"}
+                  {isCurrentAdminPath ? "Admin 360" : "Mi Espacio"}
                 </span>
               </div>
             </Link>
@@ -835,109 +943,84 @@ export const DashboardLayout = ({
             </button>
           </div>
 
-          {/* Segmented Tabs para cambiar de Workspace en Mobile */}
-          {hasAdminAccess && (
-            <div className="px-4 pt-3 pb-1">
-              <div className="grid grid-cols-2 p-1 rounded-xl bg-muted/60 border border-border/70 text-xs font-semibold">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveSection("admin");
-                    if (!pathname.startsWith("/admin")) router.push("/admin");
-                  }}
-                  className={cn(
-                    "py-2 rounded-lg transition-all text-center cursor-pointer flex items-center justify-center gap-1.5",
-                    activeSection === "admin"
-                      ? "bg-primary text-primary-foreground font-bold shadow-xs"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  <LayoutDashboard
-                    className={cn(
-                      "size-3.5",
-                      activeSection === "admin" ? "text-primary-foreground" : "text-muted-foreground"
-                    )}
-                  />
-                  <span>Admin</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveSection("account");
-                    if (!pathname.startsWith("/account") && pathname !== "/favorites") router.push("/account/dashboard");
-                  }}
-                  className={cn(
-                    "py-2 rounded-lg transition-all text-center cursor-pointer flex items-center justify-center gap-1.5",
-                    activeSection === "account"
-                      ? "bg-primary text-primary-foreground font-bold shadow-xs"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  <User
-                    className={cn(
-                      "size-3.5",
-                      activeSection === "account" ? "text-primary-foreground" : "text-muted-foreground"
-                    )}
-                  />
-                  <span>Cuenta</span>
-                </button>
-              </div>
-            </div>
-          )}
+          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
+            {railGroups.map((group) => {
+              const groupItem = currentNavItems.find(item => item.href === group.href);
+              const children = (groupItem?.children || []).filter(isAuthorizedItem);
 
-          {/* Lista de Navegación Vertical Táctil */}
-          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-1.5">
-            <p className="text-[10px] font-bold text-muted-foreground/80 tracking-wider uppercase px-2 mb-2">
-              {activeSection === "admin" ? "Módulos Administrativos" : "Navegación Personal"}
-            </p>
-
-            {activeItemsToRender.map((item) => {
-              const Icon = item.icon;
-              const label = getNavLabel(item.href, item.label);
-              const isActive = item.href === activeHref;
+              if (children.length === 0) return null;
 
               return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  scroll={false}
-                  onClick={() => setIsMobileOpen(false)}
-                  className={cn(
-                    "flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm transition-all min-h-[44px]",
-                    isActive
-                      ? "bg-primary text-primary-foreground font-bold shadow-sm"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted/70 font-medium"
-                  )}
-                >
-                  <Icon
-                    className={cn(
-                      "size-5 shrink-0 transition-colors",
-                      isActive ? "text-primary-foreground" : "text-muted-foreground"
-                    )}
-                  />
-                  <span className={cn("flex-1 truncate", isActive ? "text-primary-foreground font-bold" : "")}>
-                    {label}
-                  </span>
-                  {item.badge && (
-                    <span
-                      className={cn(
-                        "text-[10px] font-bold px-2 py-0.5 rounded-full",
-                        isActive
-                          ? "bg-white/20 text-white dark:bg-black/40 dark:text-white"
-                          : "bg-primary/15 text-primary"
-                      )}
-                    >
-                      {item.badge}
-                    </span>
-                  )}
-                </Link>
+                <div key={group.id} className="space-y-1">
+                  <button
+                    onClick={() => {
+                      setSelectedGroupHref(group.href);
+                      handleNavClick(group.href);
+                      router.push(group.href);
+                      setIsMobileOpen(false);
+                    }}
+                    className="w-full text-left px-2 py-1.5 text-[10px] font-bold text-muted-foreground/70 tracking-wider uppercase hover:text-foreground transition-colors flex items-center justify-between"
+                  >
+                    <span>{group.label}</span>
+                    <ChevronRight className="size-3" />
+                  </button>
+                  <div className="space-y-1">
+                    {children.map((item) => {
+                      const Icon = item.icon;
+                      const isActive = isPathActive(item.href, item.exact);
+
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          scroll={false}
+                          onClick={() => {
+                            setIsMobileOpen(false);
+                            handleNavClick(item.href);
+                          }}
+                          className={cn(
+                            "flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm transition-all min-h-[42px]",
+                            isActive
+                              ? "bg-primary text-primary-foreground font-bold shadow-sm scale-[0.98]"
+                              : "text-muted-foreground hover:text-foreground hover:bg-muted/70 font-medium"
+                          )}
+                        >
+                          <Icon
+                            className={cn(
+                              "size-4.5 shrink-0 transition-colors",
+                              isActive ? "text-primary-foreground" : "text-muted-foreground"
+                            )}
+                          />
+                          <span
+                            className={cn(
+                              "flex-1 truncate",
+                              isActive ? "text-primary-foreground font-bold" : ""
+                            )}
+                          >
+                            {item.label}
+                          </span>
+                          {item.badge && (
+                            <span
+                              className={cn(
+                                "text-[10px] font-bold px-2 py-0.5 rounded-full",
+                                isActive
+                                  ? "bg-white/20 text-white dark:bg-black/40 dark:text-white"
+                                  : "bg-primary/15 text-primary"
+                              )}
+                            >
+                              {item.badge}
+                            </span>
+                          )}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
               );
             })}
           </div>
 
-          {/* Pie del Mobile Drawer: Perfil, Tema y Logout */}
           <div className="p-4 border-t border-border/70 bg-background/50 space-y-3 shrink-0">
-            {/* Tarjeta de Usuario */}
             <div className="flex items-center gap-3">
               <div className="size-10 rounded-full overflow-hidden ring-2 ring-primary/20 shrink-0 bg-primary/15 flex items-center justify-center text-primary font-bold text-sm uppercase">
                 {user?.avatarUrl ? (
@@ -957,42 +1040,16 @@ export const DashboardLayout = ({
               </div>
             </div>
 
-            {/* Alternador de Tema & Selector de Idioma */}
             <div className="flex items-center justify-between pt-1">
-              <div className="flex items-center gap-1 p-0.5 rounded-lg border border-border/80 bg-muted/60">
-                <button
-                  type="button"
-                  onClick={() => toggleThemeMode("light")}
-                  className={cn(
-                    "px-2 py-1 rounded-md text-xs font-semibold flex items-center gap-1 transition-all",
-                    themeMode === "light" ? "bg-card text-primary shadow-2xs font-bold" : "text-muted-foreground"
-                  )}
-                >
-                  <Sun className="size-3.5" />
-                  <span>Claro</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => toggleThemeMode("dark")}
-                  className={cn(
-                    "px-2 py-1 rounded-md text-xs font-semibold flex items-center gap-1 transition-all",
-                    themeMode === "dark" ? "bg-primary text-primary-foreground shadow-2xs font-bold" : "text-muted-foreground"
-                  )}
-                >
-                  <Moon className="size-3.5" />
-                  <span>Oscuro</span>
-                </button>
-              </div>
-
+              <ThemeToggle variant="capsule" />
               <LanguageSwitcher />
             </div>
 
-            {/* Botón de Cerrar Sesión */}
             <button
               type="button"
               onClick={handleLogout}
               disabled={isLoggingOut}
-              className="w-full rounded-xl py-2.5 px-3 text-xs font-bold flex items-center justify-center gap-2 text-red-600 bg-red-500/10 hover:bg-red-500/15 transition-colors cursor-pointer"
+              className="w-full rounded-xl py-2.5 px-3 text-xs font-bold flex items-center justify-center gap-2 text-red-600 bg-red-500/10 hover:bg-red-500/15 transition-all hover:scale-[0.98] cursor-pointer"
             >
               <LogOut className="size-3.5" />
               <span>{isLoggingOut ? "Cerrando sesión..." : dict.common.logout}</span>
@@ -1001,108 +1058,44 @@ export const DashboardLayout = ({
         </SheetContent>
       </Sheet>
 
-      {/* ========================================================================= */}
-      {/* 3. CONTENIDO PRINCIPAL Y NAVBAR TOP                                       */}
-      {/* ========================================================================= */}
       <div
         className={cn(
-          "min-w-0 flex-1 w-full min-h-screen flex flex-col bg-muted/20 transition-[padding-left] duration-300 ease-in-out",
+          "min-w-0 flex-1 w-full min-h-screen flex flex-col bg-muted/20 transition-all duration-300 ease-in-out",
           isRailCollapsed ? "md:pl-[72px]" : "md:pl-[312px]"
         )}
       >
-        {/* Top Navbar */}
         <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border/60 bg-background/80 backdrop-blur-xl px-3 sm:px-6">
-          {/* Lado Izquierdo: Disparadores de menú y Breadcrumbs */}
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-            {/* Disparador Mobile: Menú Hamburguesa */}
             <button
               type="button"
               onClick={() => setIsMobileOpen(true)}
-              className="md:hidden size-9 rounded-lg border border-border/80 flex items-center justify-center text-foreground hover:bg-muted/80 transition-colors cursor-pointer shrink-0"
+              className="md:hidden size-9 rounded-lg border border-border/80 flex items-center justify-center text-foreground hover:bg-muted/80 transition-all hover:scale-105 cursor-pointer shrink-0"
               aria-label="Abrir menú"
             >
               <Menu className="size-5" />
             </button>
 
-            {/* Disparador Desktop: Colapsar/Descolapsar Rail 2 */}
-            <TooltipProvider delayDuration={150}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    type="button"
-                    onClick={toggleRailCollapse}
-                    className="hidden md:flex size-8.5 rounded-lg border border-border/80 items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors cursor-pointer shrink-0"
-                    aria-label={isRailCollapsed ? "Expandir panel lateral" : "Colapsar panel lateral"}
-                  >
-                    {isRailCollapsed ? (
-                      <PanelLeftOpen className="size-4 text-primary" />
-                    ) : (
-                      <PanelLeftClose className="size-4" />
-                    )}
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="text-xs font-medium">
-                  {isRailCollapsed ? "Expandir barra lateral" : "Colapsar barra lateral"}
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-
-            <Separator orientation="vertical" className="h-4 hidden sm:block" />
-
-            {/* Breadcrumb de navegación */}
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground min-w-0 truncate">
               <span className="hidden sm:inline font-medium">
-                {isCurrentAdminSection ? dict.common.administration : dict.common.mySpace}
+                {isCurrentAdminPath ? dict.common.administration : dict.common.mySpace}
               </span>
               <ChevronRight className="size-3 text-muted-foreground/50 hidden sm:inline shrink-0" />
               <h1 className="text-foreground text-sm font-bold truncate">{currentLabel}</h1>
             </div>
           </div>
 
-          {/* Lado Derecho: Idioma, Tema, Notificaciones y Perfil */}
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-            {/* Toggle de tema en Navbar (visible en escritorio) */}
-            <div className="hidden sm:flex items-center p-0.5 rounded-full border border-border/80 bg-muted/60">
-              <button
-                type="button"
-                onClick={() => toggleThemeMode("light")}
-                title="Modo Claro"
-                className={cn(
-                  "size-7 rounded-full flex items-center justify-center transition-all cursor-pointer",
-                  themeMode === "light"
-                    ? "bg-card text-primary shadow-xs font-bold"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                <Sun className="size-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={() => toggleThemeMode("dark")}
-                title="Modo Oscuro"
-                className={cn(
-                  "size-7 rounded-full flex items-center justify-center transition-all cursor-pointer",
-                  themeMode === "dark"
-                    ? "bg-primary text-primary-foreground shadow-xs font-bold"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                <Moon className="size-3.5" />
-              </button>
-            </div>
-
             <LanguageSwitcher />
 
             <Separator orientation="vertical" className="h-5 hidden sm:block" />
 
-            {/* Menú Dropdown de Perfil */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
                   type="button"
-                  className="flex items-center gap-2.5 rounded-xl p-1 sm:px-2.5 sm:py-1.5 hover:bg-muted/80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer group text-left border border-transparent hover:border-border/60"
+                  className="flex items-center gap-2.5 rounded-xl p-1 sm:px-2.5 sm:py-1.5 hover:bg-muted/80 transition-all hover:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer group text-left border border-transparent hover:border-border/60"
                 >
-                  <div className="bg-primary/15 text-primary flex aspect-square size-8 items-center justify-center rounded-lg font-bold text-xs uppercase shrink-0 border border-primary/25 group-hover:bg-primary group-hover:text-primary-foreground transition-colors overflow-hidden">
+                  <div className="bg-primary/15 text-primary flex aspect-square size-8 items-center justify-center rounded-lg font-bold text-xs uppercase shrink-0 border border-primary/25 group-hover:bg-primary group-hover:text-primary-foreground transition-all group-hover:scale-110 overflow-hidden">
                     {user?.avatarUrl ? (
                       <img
                         src={user.avatarUrl}
@@ -1125,7 +1118,7 @@ export const DashboardLayout = ({
                 </button>
               </DropdownMenuTrigger>
 
-              <DropdownMenuContent align="end" className="w-56 p-1.5">
+              <DropdownMenuContent align="end" className="w-56 p-1.5 shadow-xl">
                 <DropdownMenuLabel className="p-2 font-normal">
                   <div className="flex flex-col gap-1">
                     <div className="flex items-center justify-between gap-1">
@@ -1144,27 +1137,69 @@ export const DashboardLayout = ({
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>
                   <DropdownMenuItem asChild>
-                    <Link href="/account/dashboard" scroll={false} className="cursor-pointer flex items-center gap-2 text-xs">
+                    <Link
+                      href="/account/dashboard"
+                      scroll={false}
+                      onClick={() => handleNavClick("/account/dashboard")}
+                      className="cursor-pointer flex items-center gap-2 text-xs"
+                    >
                       <LayoutDashboard className="size-3.5 text-muted-foreground" />
                       <span>{dict.common.myAccount}</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link href="/account/profile" scroll={false} className="cursor-pointer flex items-center gap-2 text-xs">
+                    <Link
+                      href="/account/orders"
+                      scroll={false}
+                      onClick={() => handleNavClick("/account/orders")}
+                      className="cursor-pointer flex items-center gap-2 text-xs"
+                    >
+                      <ShoppingBag className="size-3.5 text-muted-foreground" />
+                      <span>Mis Pedidos</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link
+                      href="/account/favorites"
+                      scroll={false}
+                      onClick={() => handleNavClick("/account/favorites")}
+                      className="cursor-pointer flex items-center gap-2 text-xs"
+                    >
+                      <Heart className="size-3.5 text-muted-foreground" />
+                      <span>{dict.common.favorites}</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link
+                      href="/account/addresses"
+                      scroll={false}
+                      onClick={() => handleNavClick("/account/addresses")}
+                      className="cursor-pointer flex items-center gap-2 text-xs"
+                    >
+                      <MapPin className="size-3.5 text-muted-foreground" />
+                      <span>Mis Direcciones</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link
+                      href="/account/profile"
+                      scroll={false}
+                      onClick={() => handleNavClick("/account/profile")}
+                      className="cursor-pointer flex items-center gap-2 text-xs"
+                    >
                       <User className="size-3.5 text-muted-foreground" />
                       <span>{dict.common.myProfile}</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link href="/account/profile/security" scroll={false} className="cursor-pointer flex items-center gap-2 text-xs">
+                    <Link
+                      href="/account/profile/security"
+                      scroll={false}
+                      onClick={() => handleNavClick("/account/profile/security")}
+                      className="cursor-pointer flex items-center gap-2 text-xs"
+                    >
                       <ShieldCheck className="size-3.5 text-muted-foreground" />
                       <span>{dict.common.securitySessions}</span>
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/favorites" scroll={false} className="cursor-pointer flex items-center gap-2 text-xs">
-                      <Heart className="size-3.5 text-muted-foreground" />
-                      <span>{dict.common.favorites}</span>
                     </Link>
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
@@ -1174,8 +1209,13 @@ export const DashboardLayout = ({
                     <DropdownMenuSeparator />
                     <DropdownMenuGroup>
                       <DropdownMenuItem asChild>
-                        <Link href="/admin" scroll={false} className="cursor-pointer flex items-center gap-2 text-xs font-semibold text-primary">
-                          <Settings className="size-3.5 text-primary" />
+                        <Link
+                          href="/admin"
+                          scroll={false}
+                          onClick={() => handleNavClick("/admin")}
+                          className="cursor-pointer flex items-center gap-2 text-xs font-semibold text-primary"
+                        >
+                          <Store className="size-3.5 text-primary" />
                           <span>{dict.common.adminPanel}</span>
                         </Link>
                       </DropdownMenuItem>
@@ -1197,12 +1237,21 @@ export const DashboardLayout = ({
           </div>
         </header>
 
-        {/* Contenedor del contenido de la página */}
-        <main className="flex-1 w-full min-w-0 p-3 sm:p-5 md:p-6 lg:p-8 overflow-x-hidden">
-          {children}
+        <main className="flex-1 w-full min-w-0 relative overflow-x-hidden flex flex-col">
+          {isNavigating && (
+            <div className="absolute top-0 left-0 right-0 h-1 bg-primary/20 z-20 overflow-hidden">
+              <div className="h-full bg-gradient-to-r from-primary via-orange-400 to-primary animate-pulse" />
+            </div>
+          )}
+
+          <div
+            key={pathname}
+            className="flex-1 w-full p-3 sm:p-5 md:p-6 lg:p-8 transition-opacity duration-200"
+          >
+            {children}
+          </div>
         </main>
 
-        {/* Footer Tecnológico */}
         <footer className="w-full border-t border-border/40 bg-background/60 backdrop-blur-xl px-4 py-3 mt-auto text-xs text-muted-foreground">
           <div className="max-w-7xl mx-auto flex items-center justify-center gap-6 text-[11px] font-medium">
             <div className="flex items-center gap-1.5">

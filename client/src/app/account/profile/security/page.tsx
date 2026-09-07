@@ -2,8 +2,6 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
-import { DashboardLayout, customerNavItems } from "@/components/layout/DashboardLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -11,11 +9,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { ShieldCheck, Laptop, Smartphone, LogOut, ArrowLeft, Trash2, CheckCircle2, AlertCircle } from "lucide-react";
 import type { UserSessionItem } from "@/types";
-import { HttpAuthRepository } from "@/services/auth.service";
+import { authService } from "@/services/auth.service";
 
 const ProfileSecurityPage = () => {
   const { user, logoutAll } = useAuth();
-  const authService = new HttpAuthRepository();
 
   const [sessions, setSessions] = useState<UserSessionItem[]>([]);
   const [isLoadingSessions, setIsLoadingSessions] = useState(true);
@@ -66,9 +63,8 @@ const ProfileSecurityPage = () => {
   const safeSessions = Array.isArray(sessions) ? sessions : [];
 
   return (
-    <ProtectedRoute>
-      <DashboardLayout navItems={customerNavItems} title="Seguridad & Sesiones">
-        <div className="max-w-4xl mx-auto space-y-6">
+    <>
+      <div className="max-w-4xl mx-auto space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-6">
             <div>
               <div className="flex items-center gap-2 mb-1">
@@ -205,8 +201,7 @@ const ProfileSecurityPage = () => {
             </div>
           </div>
         </div>
-      </DashboardLayout>
-    </ProtectedRoute>
+    </>
   );
 };
 

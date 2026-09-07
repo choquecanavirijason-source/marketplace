@@ -1,16 +1,7 @@
-import type { Product } from "@/types";
+﻿import type { Product } from "@/types";
 import { useFavoritesStore } from "@/infrastructure/state/favoritesStore";
 
-export interface FavoriteService {
-  getItems(): Product[];
-  toggle(product: Product): Product[];
-  remove(productId: number): Product[];
-  subscribe(listener: () => void): () => void;
-}
-
-export type FavoriteRepository = FavoriteService;
-
-export class ZustandFavoriteService implements FavoriteService {
+export class FavoriteService {
   getItems(): Product[] {
     return useFavoritesStore.getState().items;
   }
@@ -30,4 +21,4 @@ export class ZustandFavoriteService implements FavoriteService {
   }
 }
 
-export const ZustandFavoriteRepository = ZustandFavoriteService;
+export const favoriteService = new FavoriteService();

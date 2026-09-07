@@ -1,37 +1,5 @@
-import type { NewReview, Review } from "@/types";
+﻿import type { NewReview, Review, ReviewSummary } from "@/types";
 import { apiRequest } from "@/config/axios";
-import { sampleReviewsSeed } from "@/infrastructure/data/reviews.data";
-
-export interface ReviewService {
-  listByProductId(productId: number): Promise<Review[]>;
-  add(review: NewReview): Promise<Review>;
-}
-
-export type ReviewRepository = ReviewService;
-
-export class InMemoryReviewService implements ReviewService {
-  private reviews: Review[] = sampleReviewsSeed.map((r) => ({ ...r, productId: 1 }));
-
-  async listByProductId(productId: number): Promise<Review[]> {
-    return this.reviews.filter((r) => r.productId === productId);
-  }
-
-  async add(review: NewReview): Promise<Review> {
-    const newRev: Review = {
-      id: Date.now(),
-      productId: review.productId,
-      name: "Usuario",
-      date: new Date().toISOString(),
-      rating: review.rating,
-      text: review.text,
-      helpful: 0,
-    };
-    this.reviews.push(newRev);
-    return newRev;
-  }
-}
-
-export const InMemoryReviewRepository = InMemoryReviewService;
 
 interface ApiReview {
   id: number;
@@ -54,7 +22,7 @@ const mapReview = (r: ApiReview): Review => ({
   helpful: 0,
 });
 
-export class HttpReviewService implements ReviewService {
+export class ReviewService {
   async listByProductId(productId: number): Promise<Review[]> {
     const payload = await apiRequest<{ data: ApiReview[] }>(`/products/${productId}/reviews`);
     return payload.data.map(mapReview);
@@ -73,4 +41,17 @@ export class HttpReviewService implements ReviewService {
   }
 }
 
-export const HttpReviewRepository = HttpReviewService;
+export const calculateReviewsSummary = (reviews: Review[]): ReviewSummary => {
+  const total = reviews.length;
+  const average = total
+    ? reviews.reduce((sum, r) => sum + r.rating, 0) / total
+    : 0;
+  const distribution: Record<1 | 2 | 3 | 4 | 5, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+  for (const review of reviews) {
+    const star = review.rating as 1 | 2 | 3 | 4 | 5;
+    if (distribution[star] !== undefined) distribution[star] += 1;
+  }
+  return { average: Number(average.toFixed(1)), total, distribution };
+};
+
+export const reviewService = new ReviewService();

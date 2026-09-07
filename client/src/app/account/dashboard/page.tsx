@@ -26,16 +26,14 @@ import {
   Wallet,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { DashboardLayout, customerNavItems } from "@/components/layout/DashboardLayout";
-import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { EmailVerificationModal } from "@/components/auth/EmailVerificationModal";
 import { useAuth, useAuthStore } from "@/hooks/useAuth";
-import { useMyOrders } from "@/hooks/useOrders";
+import { useApiQuery } from "@/hooks/useApi";
+import { orderService } from "@/services/order.service";
 import { formatPrice } from "@/shared/lib/format";
 import { ORDER_STATUS_CLASSES, ORDER_STATUS_LABELS, formatOrderDate } from "@/shared/lib/orderStatus";
-import type { Order, OrderStatus } from "@/types";
-import type { UserSessionItem } from "@/services";
-import { container } from "@/infrastructure/container";
+import type { Order, OrderStatus, UserSessionItem } from "@/types";
+import { authService } from "@/services/auth.service";
 import { ApiError } from "@/config/axios";
 import { PhoneCountryInput } from "@/components/ui/phone-country-input";
 import {
@@ -50,7 +48,7 @@ type TabType = "pedidos" | "perfil" | "comercial" | "sesiones";
 
 export default function CustomerDashboardPage() {
   const router = useRouter();
-  const { orders, isLoading: ordersLoading } = useMyOrders();
+  const { data: orders = [], isLoading: ordersLoading } = useApiQuery(["my-orders"], () => orderService.listMine());
   const { updateProfile, isUpdatingProfile, user, logoutAll, refreshUser, isAdmin } = useAuth();
 
   const [activeTab, setActiveTab] = useState<TabType>("pedidos");
@@ -120,8 +118,8 @@ export default function CustomerDashboardPage() {
   const loadSessions = async () => {
     setSessionsLoading(true);
     try {
-      if (container.auth?.getSessions) {
-        const list = await container.auth.getSessions();
+      if (authService.getSessions) {
+        const list = await authService.getSessions();
         setSessions(list);
       }
     } catch {
@@ -132,8 +130,8 @@ export default function CustomerDashboardPage() {
 
   const handleRevokeSession = async (sessionId: string) => {
     try {
-      if (container.auth?.revokeSession) {
-        await container.auth.revokeSession(sessionId);
+      if (authService.revokeSession) {
+        await authService.revokeSession(sessionId);
         setSessions((prev) => prev.filter((s) => s.id !== sessionId));
         setSessionsMessage("Sesión revocada exitosamente.");
         setTimeout(() => setSessionsMessage(""), 4000);
@@ -158,8 +156,8 @@ export default function CustomerDashboardPage() {
     setCommercialError("");
     setIsUpdatingBusiness(true);
     try {
-      if (container.auth?.updateBusinessProfile) {
-        await container.auth.updateBusinessProfile({
+      if (authService.updateBusinessProfile) {
+        await authService.updateBusinessProfile({
           legalName: legalName.trim(),
           tradeName: tradeName.trim() || undefined,
           taxId: taxId.trim(),
@@ -300,8 +298,7 @@ export default function CustomerDashboardPage() {
     .toUpperCase();
 
   return (
-    <ProtectedRoute redirectTo="/account/login?redirect=/account/dashboard">
-      <DashboardLayout navItems={customerNavItems} title="Mi cuenta">
+    <>
       {}
       <div className="w-full px-4 sm:px-6 lg:px-8 py-6 md:py-8 space-y-6 md:space-y-8">
         {}
@@ -1140,8 +1137,7 @@ export default function CustomerDashboardPage() {
           }}
           email={email || user?.email || ""}
         />
-      </DashboardLayout>
-    </ProtectedRoute>
+    </>
   );
 }
 

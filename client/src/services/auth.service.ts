@@ -10,6 +10,7 @@ import type {
   UserSessionItem,
   UserAuditEvent,
   UserAddress,
+  AddressInput,
 } from "@/types";
 import {
   logoutCustomer,
@@ -19,56 +20,6 @@ import {
   setSession,
   setAuthPermissions,
 } from "@/shared/lib/marketplaceStorage";
-
-export type {
-  AuthUser,
-  AuthSession,
-  LoginCredentials,
-  OtpLoginCredentials,
-  RegisterData,
-  UpdateProfileData,
-  UpdateBusinessProfileData,
-  UserSessionItem,
-  UserAuditEvent,
-  UserAddress,
-};
-
-export interface AuthService {
-  login(credentials: LoginCredentials): Promise<AuthSession>;
-  loginOtp?(credentials: OtpLoginCredentials): Promise<AuthSession>;
-  sendEmailOtp?(email: string): Promise<{ message: string; debugOtp?: string }>;
-  register(data: RegisterData): Promise<AuthSession>;
-  me(): Promise<AuthSession>;
-  updateProfile(data: UpdateProfileData): Promise<AuthSession>;
-  updateBusinessProfile?(data: UpdateBusinessProfileData): Promise<any>;
-  getSessions?(): Promise<UserSessionItem[]>;
-  revokeSession?(sessionId: string): Promise<void>;
-  forgotPassword?(email: string): Promise<{ message: string }>;
-  resetPassword?(token: string, password: string): Promise<{ success: boolean; message: string }>;
-  verifyEmail?(email: string, token: string): Promise<{ success: boolean; message: string }>;
-  sendPhoneOtp?(phone: string): Promise<{ message: string; debugOtp?: string }>;
-  verifyPhoneOtp?(phone: string, code: string): Promise<{ success: boolean; message: string }>;
-  phoneLogin?(phone: string, code: string): Promise<AuthSession>;
-  socialLogin?(data: { provider: "google" | "facebook" | "apple"; email: string; firstName?: string; lastName?: string; avatarUrl?: string; token?: string }): Promise<AuthSession>;
-  logout(): Promise<void>;
-  listAddresses?(): Promise<UserAddress[]>;
-  createAddress?(data: AddressInput): Promise<UserAddress>;
-  updateAddress?(id: string, data: Partial<AddressInput>): Promise<UserAddress>;
-  deleteAddress?(id: string): Promise<void>;
-}
-
-export interface AddressInput {
-  label?: string;
-  country: string;
-  province: string;
-  city: string;
-  street: string;
-  number: string;
-  zip: string;
-  isDefault?: boolean;
-}
-
-export type AuthRepository = AuthService;
 
 interface ApiUser {
   id: number | string;
@@ -169,7 +120,7 @@ const mapSession = (payload: any): AuthSession => {
   };
 };
 
-export class HttpAuthService implements AuthService {
+export class AuthService {
   async login(credentials: LoginCredentials): Promise<AuthSession> {
     const payload = await apiRequest<ApiAuthPayload>("/identity/login", {
       method: "POST",
@@ -398,5 +349,5 @@ export class HttpAuthService implements AuthService {
   }
 }
 
-export const HttpAuthRepository = HttpAuthService;
+export const authService = new AuthService();
 

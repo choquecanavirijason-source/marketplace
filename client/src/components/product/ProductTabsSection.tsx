@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Star } from "lucide-react";
-import type { Product } from "@/types";
-import { useReviews } from "@/hooks/useReviews";
+import type { Product, NewReview } from "@/types";
+import { useApiQuery, useApiMutation } from "@/hooks/useApi";
+import { reviewService, calculateReviewsSummary } from "@/services/review.service";
 import { StarRating } from "@/components/feedback/StarRating";
 import { ReviewCard } from "@/components/feedback/ReviewCard";
 import { cn } from "@/shared/lib/utils";
@@ -25,7 +26,18 @@ export function ProductTabsSection({ product }: { product: Product }) {
   const [activeTab, setActiveTab] = useState<Tab>("details");
   const router = useRouter();
   const { isAuthenticated, user } = useAuth();
-  const { reviews, summary, addReview, isSubmitting } = useReviews(product.id);
+  const { data: reviews = [] } = useApiQuery(
+    ["reviews", product.id],
+    () => reviewService.listByProductId(product.id),
+    { enabled: Boolean(product.id) }
+  );
+  const summary = calculateReviewsSummary(reviews);
+  const addReviewMutation = useApiMutation(
+    (review: NewReview) => reviewService.add(review),
+    { invalidateQueries: [["reviews", product.id]] }
+  );
+  const addReview = addReviewMutation.mutateAsync;
+  const isSubmitting = addReviewMutation.isLoading;
 
   const [reviewRating, setReviewRating] = useState(0);
   const [reviewName, setReviewName] = useState("");

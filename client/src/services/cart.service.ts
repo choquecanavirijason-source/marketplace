@@ -1,49 +1,8 @@
-import type { CartItem, Product } from "@/types";
+﻿import type { CartItem, Product, ServerCartItem } from "@/types";
 import { useCartStore } from "@/infrastructure/state/cartStore";
 import { apiRequest } from "@/config/axios";
 
-export interface CartService {
-  getItems(): CartItem[];
-  add(product: Product): CartItem[];
-  remove(productId: number): CartItem[];
-  updateQty(productId: number, delta: number): CartItem[];
-  clear(): CartItem[];
-  subscribe(listener: () => void): () => void;
-}
-
-export type CartRepository = CartService;
-
-export interface ServerCartProduct {
-  id: number;
-  slug: string;
-  name: string;
-  price: number;
-  originalPrice: number | null;
-  image: string | null;
-  images: string[];
-  stock: number;
-  inStock: boolean;
-  category: string | null;
-}
-
-export interface ServerCartItem {
-  id: number;
-  productId: number;
-  quantity: number;
-  product: ServerCartProduct;
-}
-
-export interface ServerCartService {
-  getCart(): Promise<ServerCartItem[]>;
-  addItem(productId: number, quantity: number): Promise<ServerCartItem>;
-  updateQuantity(cartItemId: number, quantity: number): Promise<ServerCartItem>;
-  removeItem(cartItemId: number): Promise<void>;
-  clearCart(): Promise<void>;
-}
-
-export type ServerCartRepository = ServerCartService;
-
-export class ZustandCartService implements CartService {
+export class CartService {
   getItems(): CartItem[] {
     return useCartStore.getState().items;
   }
@@ -73,7 +32,7 @@ export class ZustandCartService implements CartService {
   }
 }
 
-export const ZustandCartRepository = ZustandCartService;
+export const cartService = new CartService();
 
 interface ApiCartItem {
   id: number;
@@ -111,7 +70,7 @@ const mapServerItem = (i: ApiCartItem): ServerCartItem => ({
   },
 });
 
-export class HttpCartService implements ServerCartService {
+export class ServerCartService {
   async getCart(): Promise<ServerCartItem[]> {
     const payload = await apiRequest<{ data: ApiCartItem[] }>("/cart", { auth: true });
     return payload.data.map(mapServerItem);
@@ -144,56 +103,4 @@ export class HttpCartService implements ServerCartService {
   }
 }
 
-export const HttpCartRepository = HttpCartService;
-
-export class InMemoryServerCartService implements ServerCartService {
-  private items: ServerCartItem[] = [];
-
-  async getCart(): Promise<ServerCartItem[]> {
-    return this.items;
-  }
-
-  async addItem(productId: number, quantity: number): Promise<ServerCartItem> {
-    const existing = this.items.find((i) => i.productId === productId);
-    if (existing) {
-      existing.quantity += quantity;
-      return existing;
-    }
-    const newItem: ServerCartItem = {
-      id: Date.now(),
-      productId,
-      quantity,
-      product: {
-        id: productId,
-        slug: `prod-${productId}`,
-        name: `Producto ${productId}`,
-        price: 100,
-        originalPrice: null,
-        image: null,
-        images: [],
-        stock: 50,
-        inStock: true,
-        category: null,
-      },
-    };
-    this.items.push(newItem);
-    return newItem;
-  }
-
-  async updateQuantity(cartItemId: number, quantity: number): Promise<ServerCartItem> {
-    const item = this.items.find((i) => i.id === cartItemId);
-    if (!item) throw new Error("Item no encontrado");
-    item.quantity = quantity;
-    return item;
-  }
-
-  async removeItem(cartItemId: number): Promise<void> {
-    this.items = this.items.filter((i) => i.id !== cartItemId);
-  }
-
-  async clearCart(): Promise<void> {
-    this.items = [];
-  }
-}
-
-export const InMemoryServerCartRepository = InMemoryServerCartService;
+export const serverCartService = new ServerCartService();

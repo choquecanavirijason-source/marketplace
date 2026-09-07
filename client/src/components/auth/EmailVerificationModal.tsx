@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Mail, ShieldCheck, CheckCircle2, AlertCircle, RefreshCw } from "lucide-react";
-import { HttpAuthRepository } from "@/services/auth.service";
+import { authService } from "@/services/auth.service";
 import { toast } from "sonner";
 
 interface EmailVerificationModalProps {
@@ -21,8 +21,6 @@ interface EmailVerificationModalProps {
   onSuccess: () => void;
   email: string;
 }
-
-const authService = new HttpAuthRepository();
 
 export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
   isOpen,

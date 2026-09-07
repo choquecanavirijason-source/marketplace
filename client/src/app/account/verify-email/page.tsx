@@ -4,15 +4,13 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/providers/AuthProvider";
-import { HttpAuthRepository } from "@/services/auth.service";
+import { authService } from "@/services/auth.service";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ShieldCheck, Mail, ArrowLeft, AlertCircle, CheckCircle2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-
-const authService = new HttpAuthRepository();
 
 const VerifyEmailPage: React.FC = () => {
   const router = useRouter();

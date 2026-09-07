@@ -28,9 +28,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "@/hooks/useTranslation";
 import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
 import { ApiError } from "@/config/axios";
-import { getPublicAuthConfig, type PublicAuthSettings } from "@/services/auth-config.service";
+import { getPublicAuthConfig } from "@/services/auth-config.service";
+import type { PublicAuthSettings } from "@/types";
 import { GoogleIcon, FacebookIcon, AppleIcon } from "@/components/icons/SocialIcons";
-import { HttpAuthRepository } from "@/services/auth.service";
+import { authService } from "@/services/auth.service";
 import { syncAuthCookies } from "@/shared/lib/marketplaceStorage";
 
 const loginSchema = z.object({
@@ -82,8 +83,6 @@ const TEST_ACCOUNTS = [
     color: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-200/80 dark:border-emerald-800/40 hover:bg-emerald-500/20",
   },
 ];
-
-const authHttp = new HttpAuthRepository();
 
 const LoginForm = () => {
   const router = useRouter();
@@ -139,7 +138,6 @@ const LoginForm = () => {
     }
   };
 
-  // Consulta de configuración pública de métodos de autenticación
   const { data: rawAuthConfig } = useQuery<PublicAuthSettings>({
     queryKey: ["public-auth-config"],
     queryFn: getPublicAuthConfig,
@@ -151,7 +149,6 @@ const LoginForm = () => {
 
   const [activeTab, setActiveTab] = useState<"email" | "phone">("email");
 
-  // Estado para login por celular (OTP) con selector de país
   const [phoneNumber, setPhoneNumber] = useState("");
   const [phoneCountry, setPhoneCountry] = useState("BO");
   const [otpCode, setOtpCode] = useState("");
@@ -182,7 +179,6 @@ const LoginForm = () => {
 
   const { setValue, handleSubmit } = methods;
 
-  // Redirección inmediata y garantizada si ya está autenticado
   useEffect(() => {
     if (isAuthenticated && !isLoading) {
       syncAuthCookies();
@@ -243,7 +239,7 @@ const LoginForm = () => {
     setIsSendingOtp(true);
     setFormError(null);
     try {
-      const res = await authHttp.sendPhoneOtp(phoneNumber.trim());
+      const res = await authService.sendPhoneOtp(phoneNumber.trim());
       setOtpStep("code");
       toast.success(res.message || "Código enviado por SMS.");
       if (res.debugOtp) {
@@ -275,7 +271,7 @@ const LoginForm = () => {
     try {
       const session = await (phoneLogin
         ? phoneLogin(phoneNumber.trim(), otpCode.trim())
-        : authHttp.phoneLogin(phoneNumber.trim(), otpCode.trim()));
+        : authService.phoneLogin(phoneNumber.trim(), otpCode.trim()));
       toast.success(`¡Bienvenido, ${session.user.name || "Usuario"}!`);
       redirectAfterLogin(session);
     } catch (err: any) {
@@ -302,7 +298,7 @@ const LoginForm = () => {
             firstName: "Usuario",
             lastName: providerName,
           })
-        : authHttp.socialLogin({
+        : authService.socialLogin({
             provider,
             email: mockEmail,
             firstName: "Usuario",
@@ -328,14 +324,11 @@ const LoginForm = () => {
     setFormError(null);
   };
 
-  // Resuelve valores de configuración con fallback seguro a true
   const emailEnabled = authConfig?.emailPasswordEnabled ?? true;
   const phoneEnabled = authConfig?.phoneOtpEnabled ?? true;
   const socialEnabled = authConfig?.socialLoginEnabled ?? true;
-  // Seguridad: Si todos estuvieran inactivos, el correo debe prevalecer siempre
   const effectiveEmailEnabled = emailEnabled || (!phoneEnabled && !socialEnabled);
 
-  // ESTADO 1: Comprobando sesión activa
   if (isLoading) {
     return (
       <main className="min-h-screen w-full bg-gradient-to-br from-muted/40 via-background to-primary/5 flex flex-col justify-center items-center px-4 py-8">
@@ -347,7 +340,6 @@ const LoginForm = () => {
     );
   }
 
-  // ESTADO 2: Usuario ya autenticado (No puede volver a ver el formulario de login)
   if (isAuthenticated) {
     const displayName =
       user?.name ||
@@ -357,7 +349,6 @@ const LoginForm = () => {
 
     return (
       <main className="min-h-screen w-full bg-gradient-to-br from-muted/40 via-background to-primary/5 flex flex-col justify-center items-center px-4 py-8 sm:px-6 lg:px-8">
-        {/* Barra superior */}
         <div className="w-full max-w-md mb-4 flex items-center justify-between gap-2">
           <Link
             href="/"
@@ -447,10 +438,8 @@ const LoginForm = () => {
     );
   }
 
-  // ESTADO 3: Formulario de inicio de sesión
   return (
     <main className="min-h-screen w-full bg-gradient-to-br from-muted/40 via-background to-primary/5 flex flex-col justify-center items-center px-4 py-8 sm:px-6 lg:px-8">
-      {/* Barra superior */}
       <div className="w-full max-w-md mb-4 flex items-center justify-between gap-2">
         <Link
           href="/"
@@ -490,7 +479,6 @@ const LoginForm = () => {
           )}
         </div>
 
-        {/* Pestañas de Selección de Método (Email vs Celular) si ambos están habilitados */}
         {effectiveEmailEnabled && phoneEnabled && (
           <div className="grid grid-cols-2 p-1 bg-muted/60 rounded-2xl mb-5 border border-border/80">
             <button
@@ -526,7 +514,6 @@ const LoginForm = () => {
           </div>
         )}
 
-        {/* MÉTODO 1: Email + Contraseña */}
         {activeTab === "email" && effectiveEmailEnabled && (
           <FormProvider {...methods}>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -586,7 +573,6 @@ const LoginForm = () => {
           </FormProvider>
         )}
 
-        {/* MÉTODO 2: Celular + Código OTP (SMS) con Selector de País */}
         {activeTab === "phone" && phoneEnabled && (
           <div className="space-y-4">
             {otpStep === "phone" ? (
@@ -681,7 +667,6 @@ const LoginForm = () => {
           </div>
         )}
 
-        {/* MÉTODO 3: Redes Sociales (Social Login) */}
         {socialEnabled && (
           <>
             <div className="relative my-6">
@@ -696,7 +681,6 @@ const LoginForm = () => {
             </div>
 
             <div className="grid grid-cols-3 gap-2">
-              {/* Botón Google */}
               {(!authConfig || authConfig.googleAuthEnabled) && (
                 <button
                   type="button"
@@ -709,7 +693,6 @@ const LoginForm = () => {
                 </button>
               )}
 
-              {/* Botón Facebook */}
               {(!authConfig || authConfig.facebookAuthEnabled) && (
                 <button
                   type="button"
@@ -722,7 +705,6 @@ const LoginForm = () => {
                 </button>
               )}
 
-              {/* Botón Apple */}
               {(!authConfig || authConfig.appleAuthEnabled) && (
                 <button
                   type="button"
@@ -738,7 +720,6 @@ const LoginForm = () => {
           </>
         )}
 
-        {/* Acceso Rápido / Cuentas Demo */}
         <div className="relative my-6">
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-border" />

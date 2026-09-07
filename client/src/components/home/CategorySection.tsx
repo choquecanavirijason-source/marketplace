@@ -1,7 +1,8 @@
 "use client";
 
 import { Tag } from "lucide-react";
-import { useCategories } from "@/hooks/useCatalog";
+import { useApiQuery } from "@/hooks/useApi";
+import { categoryService } from "@/services/category.service";
 import { SectionEyebrow } from "@/components/common/SectionEyebrow";
 import { CategoryPill } from "@/components/home/CategoryPill";
 
@@ -12,7 +13,7 @@ export function CategorySection({
   activeCategory: string;
   onCategoryChange: (category: string) => void;
 }) {
-  const { data: categories } = useCategories();
+  const { data: categories } = useApiQuery(["categories"], () => categoryService.list());
 
   return (
     <section className="max-w-7xl mx-auto px-4 py-8 md:py-10">

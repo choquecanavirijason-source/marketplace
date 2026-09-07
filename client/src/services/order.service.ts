@@ -1,31 +1,6 @@
-import type { Order, OrderItem, OrderStatus, Paginated } from "@/types";
+﻿import type { Order, OrderItem, OrderStatus, Paginated, CreateOrderInput, AdminListOrdersParams } from "@/types";
 import { paginated } from "@/types";
 import { apiRequest } from "@/config/axios";
-
-export interface CreateOrderInput {
-  items: Array<{ productId: number; quantity: number }>;
-  shippingAddress?: string;
-  shippingCity?: string;
-  shippingPhone?: string;
-  notes?: string;
-}
-
-export interface AdminListOrdersParams {
-  status?: OrderStatus | "todos";
-  search?: string;
-  page?: number;
-  limit?: number;
-}
-
-export interface OrderService {
-  create(input: CreateOrderInput): Promise<Order>;
-  listMine(): Promise<Order[]>;
-  getById(id: number): Promise<Order | null>;
-  adminList(params?: AdminListOrdersParams): Promise<Paginated<Order>>;
-  adminUpdateStatus(id: number, status: OrderStatus): Promise<Order>;
-}
-
-export type OrderRepository = OrderService;
 
 interface ApiOrderItem {
   id: number;
@@ -104,7 +79,7 @@ const mapOrder = (o: ApiOrder): Order => ({
   createdAt: o.createdAt ?? o.created_at ?? new Date().toISOString(),
 });
 
-export class HttpOrderService implements OrderService {
+export class OrderService {
   async create(input: CreateOrderInput): Promise<Order> {
     const payload = await apiRequest<{ data: ApiOrder }>("/orders", {
       method: "POST",
@@ -183,63 +158,4 @@ export class HttpOrderService implements OrderService {
   }
 }
 
-export const HttpOrderRepository = HttpOrderService;
-
-export class InMemoryOrderService implements OrderService {
-  private orders: Order[] = [];
-
-  async create(input: CreateOrderInput): Promise<Order> {
-    const newOrder: Order = {
-      id: Date.now(),
-      orderNumber: `ORD-${Date.now()}`,
-      status: "pendiente",
-      subtotal: 100,
-      shipping: 0,
-      total: 100,
-      shippingAddress: input.shippingAddress ?? null,
-      shippingCity: input.shippingCity ?? null,
-      shippingPhone: input.shippingPhone ?? null,
-      notes: input.notes ?? null,
-      items: input.items.map((i) => ({
-        id: i.productId,
-        productId: i.productId,
-        name: "Producto",
-        price: 100,
-        image: null,
-        quantity: i.quantity,
-        subtotal: 100 * i.quantity,
-      })),
-      createdAt: new Date().toISOString(),
-    };
-    this.orders.push(newOrder);
-    return newOrder;
-  }
-
-  async listMine(): Promise<Order[]> {
-    return this.orders;
-  }
-
-  async getById(id: number): Promise<Order | null> {
-    return this.orders.find((o) => o.id === id) ?? null;
-  }
-
-  async adminList(params?: AdminListOrdersParams): Promise<Paginated<Order>> {
-    return paginated({
-      data: this.orders,
-      meta: {
-        total: this.orders.length,
-        current_page: params?.page ?? 1,
-        last_page: 1,
-      },
-    });
-  }
-
-  async adminUpdateStatus(id: number, status: OrderStatus): Promise<Order> {
-    const order = this.orders.find((o) => o.id === id);
-    if (!order) throw new Error("Order not found");
-    order.status = status;
-    return order;
-  }
-}
-
-export const InMemoryOrderRepository = InMemoryOrderService;
+export const orderService = new OrderService();

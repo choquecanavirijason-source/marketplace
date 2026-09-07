@@ -29,6 +29,15 @@ export interface RequestOptions {
   signal?: AbortSignal;
 }
 
+let navigationAbortController = new AbortController();
+
+export const cancelAllPendingRequests = () => {
+  if (navigationAbortController) {
+    navigationAbortController.abort();
+  }
+  navigationAbortController = new AbortController();
+};
+
 export const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
   timeout: APP_CONFIG.apiTimeoutMs ?? 15000,
@@ -44,6 +53,9 @@ apiClient.interceptors.request.use(
     const token = getAuthToken();
     if (token && !config.headers.Authorization) {
       config.headers.Authorization = `Bearer ${token}`;
+    }
+    if (!config.signal) {
+      config.signal = navigationAbortController.signal;
     }
     return config;
   },
@@ -85,8 +97,6 @@ apiClient.interceptors.response.use(
       data?.title ??
       error.message ??
       `Error ${status} al conectar con el servidor.`;
-
-    // Si recibimos 401 y no es un retry ni el endpoint de login/refresh
     const hasExistingTokens = Boolean(getAuthToken() || getRefreshToken());
     if (
       status === 401 &&

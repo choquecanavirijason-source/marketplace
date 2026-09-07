@@ -12,7 +12,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useAdminOrders, useAdminStats } from "@/hooks/useOrders";
+import { useApiQuery, useApiMutation } from "@/hooks/useApi";
+import { orderService } from "@/services/order.service";
+import { adminService } from "@/services/admin.service";
 import { formatPrice } from "@/shared/lib/format";
 import { ORDER_STATUS_CLASSES, ORDER_STATUS_LABELS, formatOrderDate } from "@/shared/lib/orderStatus";
 import { ORDER_STATUSES } from "@/types";
@@ -48,8 +50,21 @@ export default function AdminDashboardPage() {
   const [search, setSearch] = useState("");
   const [pendingStatus, setPendingStatus] = useState<{ orderId: number; orderNumber: string; status: OrderStatus } | null>(null);
 
-  const { data: stats, isLoading: statsLoading } = useAdminStats();
-  const { data: ordersData, isLoading: ordersLoading, updateStatus, isUpdating } = useAdminOrders(statusFilter, search);
+  const { data: stats, isLoading: statsLoading } = useApiQuery(
+    ["admin-stats"],
+    () => adminService.getStats(),
+  );
+  const { data: ordersData, isLoading: ordersLoading } = useApiQuery(
+    ["admin-orders", statusFilter, search, 1],
+    () => orderService.adminList({ status: statusFilter, search, page: 1 }),
+  );
+  const updateStatusMutation = useApiMutation(
+    ({ id, status: next }: { id: number; status: OrderStatus }) =>
+      orderService.adminUpdateStatus(id, next),
+    { invalidateQueries: [["admin-orders"], ["admin-stats"]] },
+  );
+  const updateStatus = updateStatusMutation.mutateAsync;
+  const isUpdating = updateStatusMutation.isLoading;
 
   return (
     <>

@@ -29,8 +29,9 @@ import {
 } from "@/components/ui/dialog";
 import { Can } from "@/components/auth/Can";
 import { ProductForm } from "@/components/product/ProductForm";
-import { useAdminProducts } from "@/hooks/useAdminProducts";
-import { useCategories } from "@/hooks/useCatalog";
+import { useApiQuery, useApiMutation } from "@/hooks/useApi";
+import { productService } from "@/services/product.service";
+import { categoryService } from "@/services/category.service";
 import { ApiError } from "@/config/axios";
 import { formatPrice } from "@/shared/lib/format";
 import type { Product } from "@/types";
@@ -63,7 +64,6 @@ const AdminProductsPage = () => {
   const handleSearchChange = (value: string) => {
     setSearch(value);
 
-    // Cancelación inmediata mientras el usuario continúa escribiendo
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
@@ -111,18 +111,46 @@ const AdminProductsPage = () => {
     );
   };
 
-  const { data: categories } = useCategories();
-  const { data, isLoading, toggleActive, isToggling, remove, isRemoving } = useAdminProducts({
-    search: debouncedSearch,
-    category: categoryFilter,
-    isActive: activeFilter,
-    sortBy: sortField ?? "name",
-    sortOrder,
-    page,
-    limit: PAGE_SIZE,
-  });
+  const { data: categories } = useApiQuery(["categories"], () => categoryService.list());
+  const { data, isLoading } = useApiQuery(
+    [
+      "admin-products",
+      debouncedSearch,
+      categoryFilter,
+      activeFilter,
+      sortField ?? "name",
+      sortOrder,
+      page,
+    ],
+    ({ signal }) =>
+      productService.adminList(
+        {
+          search: debouncedSearch,
+          category: categoryFilter,
+          isActive: activeFilter,
+          sortBy: sortField ?? "name",
+          sortOrder,
+          page,
+          limit: PAGE_SIZE,
+        },
+        signal,
+      ),
+  );
 
-  // Los productos vienen ordenados directamente por el backend/servicio antes de paginar
+  const toggleActiveMutation = useApiMutation(
+    ({ id, isActive }: { id: number; isActive: boolean }) =>
+      productService.toggleActive(id, isActive),
+    { invalidateQueries: [["admin-products"], ["admin-stats"]] },
+  );
+  const toggleActive = toggleActiveMutation.mutateAsync;
+  const isToggling = toggleActiveMutation.isLoading;
+
+  const removeMutation = useApiMutation((id: number) => productService.delete(id), {
+    invalidateQueries: [["admin-products"], ["admin-stats"]],
+  });
+  const remove = removeMutation.mutateAsync;
+  const isRemoving = removeMutation.isLoading;
+
   const sortedProducts = data?.items ?? [];
 
   const handleToggleActive = async (id: number, isActive: boolean) => {

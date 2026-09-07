@@ -2,78 +2,13 @@ import { Injectable } from '@nestjs/common';
 import { ProductRepository, ProductRow } from '../repositories/product.repository';
 import { EntityNotFoundException, DomainException } from '../../../shared';
 import { ProductStatus } from '../enums';
+import { ProductSerializer, ProductResponseDto } from '../serializers';
 
-export interface ProductApiOutput {
-  id: number;
-  slug: string;
-  name: string;
-  price: number;
-  price_raw: string;
-  original_price: number | null;
-  tag: string | null;
-  sku: string | null;
-  stock: number;
-  in_stock: boolean;
-  is_active: boolean;
-  description: string | null;
-  long_description: string | null;
-  details: string[] | null;
-  sizes: string[] | null;
-  colors: string[] | null;
-  tags: string[] | null;
-  weight: string | null;
-  warranty: string | null;
-  image: string | null;
-  images: string[];
-  category_id: number;
-  category: string | null;
-  category_slug: string | null;
-  rating: number;
-  reviews_count: number;
-  created_at: string;
-  updated_at: string;
-}
-
-export const toApiProduct = (p: ProductRow): ProductApiOutput => {
-  const sorted = [...p.images].sort((a, b) => {
-    if (Boolean(a.isPrimary) !== Boolean(b.isPrimary)) return a.isPrimary ? -1 : 1;
-    return (a.position ?? 0) - (b.position ?? 0);
-  });
-  const image = sorted[0]?.url ?? null;
-  return {
-    id: p.id,
-    slug: p.slug,
-    name: p.name,
-    price: Number(p.price),
-    price_raw: p.price,
-    original_price: p.originalPrice !== null ? Number(p.originalPrice) : null,
-    tag: p.tag,
-    sku: p.sku,
-    stock: p.stock,
-    in_stock: p.stock > 0,
-    is_active: p.status === ProductStatus.PUBLISHED,
-    description: p.description,
-    long_description: p.longDescription,
-    details: null,
-    sizes: null,
-    colors: null,
-    tags: null,
-    weight: p.weight,
-    warranty: p.warranty,
-    image,
-    images: sorted.map((i) => i.url),
-    category_id: p.categoryId,
-    category: p.categoryName,
-    category_slug: p.categorySlug,
-    rating: p.rating,
-    reviews_count: p.reviewsCount,
-    created_at: p.createdAt.toISOString(),
-    updated_at: p.updatedAt.toISOString(),
-  };
-};
+export type ProductApiOutput = ProductResponseDto;
+export const toApiProduct = ProductSerializer.serialize;
 
 const paginateOutput = (rows: ProductRow[], total: number, page: number, limit: number) => ({
-  items: rows.map(toApiProduct),
+  items: ProductSerializer.serializeMany(rows),
   total,
   page,
   limit,
@@ -84,7 +19,7 @@ const paginateOutput = (rows: ProductRow[], total: number, page: number, limit: 
 export class ProductService {
   constructor(private readonly productRepository: ProductRepository) {}
 
-  async publicList(query: any) {
+  publicList = async (query: any) => {
     const page = Number(query.page ?? 1);
     const limit = Number(query.limit ?? 12);
     const { items, total } = await this.productRepository.paginate({
@@ -93,20 +28,22 @@ export class ProductService {
       search: query.search,
       category: query.category,
       tag: query.tag,
+      sortBy: query.sort_by,
+      sortOrder: query.sort_order,
       includeNonPublished: false,
     });
     return paginateOutput(items, total, page, limit);
-  }
+  };
 
-  async publicById(id: number) {
+  publicById = async (id: number): Promise<ProductResponseDto> => {
     const product = await this.productRepository.findById(id);
     if (!product || product.status !== ProductStatus.PUBLISHED) {
       throw new EntityNotFoundException('Producto', String(id));
     }
-    return toApiProduct(product);
-  }
+    return ProductSerializer.serialize(product);
+  };
 
-  async adminList(query: any) {
+  adminList = async (query: any) => {
     const page = Number(query.page ?? 1);
     const limit = Number(query.limit ?? 10);
     const { items, total } = await this.productRepository.paginate({
@@ -120,17 +57,17 @@ export class ProductService {
       includeNonPublished: true,
     });
     return paginateOutput(items, total, page, limit);
-  }
+  };
 
-  async getById(id: number) {
+  getById = async (id: number): Promise<ProductResponseDto> => {
     const product = await this.productRepository.findById(id);
     if (!product) {
       throw new EntityNotFoundException('Producto', String(id));
     }
-    return toApiProduct(product);
-  }
+    return ProductSerializer.serialize(product);
+  };
 
-  async create(dto: any, sellerId?: string | null) {
+  create = async (dto: any, sellerId?: string | null): Promise<ProductResponseDto> => {
     const category = await this.productRepository.categoryNameOf(dto.categoryId);
     if (!category) {
       throw new DomainException('La categoría seleccionada no existe.');
@@ -154,10 +91,10 @@ export class ProductService {
       warranty: dto.warranty ?? null,
       images,
     });
-    return toApiProduct(product);
-  }
+    return ProductSerializer.serialize(product);
+  };
 
-  async update(id: number, dto: any) {
+  update = async (id: number, dto: any): Promise<ProductResponseDto> => {
     if (dto.categoryId !== undefined) {
       const category = await this.productRepository.categoryNameOf(dto.categoryId);
       if (!category) {
@@ -185,25 +122,25 @@ export class ProductService {
     if (!product) {
       throw new EntityNotFoundException('Producto', String(id));
     }
-    return toApiProduct(product);
-  }
+    return ProductSerializer.serialize(product);
+  };
 
-  async setActive(id: number, isActive: boolean) {
+  setActive = async (id: number, isActive: boolean): Promise<ProductResponseDto> => {
     const product = await this.productRepository.setStatus(id, isActive ? ProductStatus.PUBLISHED : ProductStatus.PAUSED);
     if (!product) {
       throw new EntityNotFoundException('Producto', String(id));
     }
-    return toApiProduct(product);
-  }
+    return ProductSerializer.serialize(product);
+  };
 
-  async remove(id: number) {
+  remove = async (id: number): Promise<void> => {
     const deleted = await this.productRepository.softDelete(id);
     if (!deleted) {
       throw new EntityNotFoundException('Producto', String(id));
     }
-  }
+  };
 
-  private normalizeImages(image: string | null | undefined, images: any): any {
+  private normalizeImages = (image: string | null | undefined, images: any): any => {
     const list = Array.isArray(images) && images.length > 0
       ? images
           .filter((i: any) => i && i.url)
@@ -212,5 +149,5 @@ export class ProductService {
         ? [{ url: image, alt: null }]
         : [];
     return list;
-  }
+  };
 }

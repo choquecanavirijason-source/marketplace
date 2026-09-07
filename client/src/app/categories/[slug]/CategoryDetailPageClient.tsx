@@ -2,23 +2,20 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, PackageSearch } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
 import { StorefrontTemplate } from "@/components/layout/StorefrontTemplate";
 import { ProductCard } from "@/components/product/ProductCard";
 import { LoadMoreButton } from "@/components/common/LoadMoreButton";
 import { useInfiniteProducts } from "@/hooks/useInfiniteProducts";
 import { useCart } from "@/hooks/useCart";
-import { container } from "@/infrastructure/container";
+import { useApiQuery } from "@/hooks/useApi";
+import { categoryService } from "@/services/category.service";
 
 export default function CategoryDetailPageClient() {
   const params = useParams<{ slug: string }>();
   const router = useRouter();
   const slug = params.slug;
 
-  const { data: category } = useQuery({
-    queryKey: ["category", slug],
-    queryFn: () => container.getCategoryBySlug.execute(slug),
-  });
+  const { data: category } = useApiQuery(["category", slug], () => categoryService.getBySlug(slug));
 
   const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage } = useInfiniteProducts({
     category: category?.slug,

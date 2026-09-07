@@ -8,20 +8,6 @@ import type {
 } from "@/types";
 import { apiRequest } from "@/config/axios";
 
-export interface UserService {
-  getUsers(filters?: UserFilters, signal?: AbortSignal): Promise<PaginatedUsers>;
-  getUserById(id: string): Promise<User>;
-  createUser(data: CreateUserData): Promise<User>;
-  updateUser(id: string, data: UpdateUserData): Promise<User>;
-  updateUserStatus(id: string, status: string, reason: string): Promise<any>;
-  updateUserRoles(id: string, roles: string[]): Promise<any>;
-  getUserAudit(id: string): Promise<{ userId: string; userEmail: string; events: UserAuditEvent[] }>;
-  deleteUser(id: string): Promise<void>;
-  uploadAvatar(imageDataUrl: string): Promise<{ avatarUrl: string }>;
-}
-
-export type UserRepository = UserService;
-
 const mapUser = (u: any): User => {
   const firstName = u.firstName || u.profile?.firstName || "";
   const lastName = u.lastName || u.profile?.lastName || "";
@@ -56,7 +42,7 @@ const mapUser = (u: any): User => {
   };
 };
 
-export class HttpUserService implements UserService {
+export class UserService {
   async getUsers(filters: UserFilters = {}, signal?: AbortSignal): Promise<PaginatedUsers> {
     const params: Record<string, any> = {};
     if (filters.page) params.page = filters.page;
@@ -202,4 +188,4 @@ export class HttpUserService implements UserService {
   }
 }
 
-export const HttpUserRepository = HttpUserService;
+export const userService = new UserService();

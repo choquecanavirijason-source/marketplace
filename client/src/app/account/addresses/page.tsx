@@ -1,15 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
-import { DashboardLayout, customerNavItems } from "@/components/layout/DashboardLayout";
 import { useAuth } from "@/hooks/useAuth";
-import {
-  useAddresses,
-  useCreateAddress,
-  useUpdateAddress,
-  useDeleteAddress,
-} from "@/hooks/useAddresses";
+import { useApiQuery, useApiMutation } from "@/hooks/useApi";
+import { authService } from "@/services/auth.service";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,7 +31,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { MapPin, Plus, Pencil, Trash2, Loader2, Home, Building2, Package } from "lucide-react";
-import type { AddressInput, UserAddress } from "@/services";
+import type { AddressInput, UserAddress } from "@/types";
 
 const EMPTY_FORM: AddressInput = {
   label: "Principal",
@@ -84,7 +78,7 @@ const AddressFormDialog = ({
   }, [open, initial]);
 
   const set = (field: keyof AddressInput, value: string | boolean) =>
-    setForm((prev) => ({ ...prev, [field]: value }));
+    setForm((prev: AddressInput) => ({ ...prev, [field]: value }));
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -205,10 +199,16 @@ const AddressCard = ({
   address: UserAddress;
   onEdit: (address: UserAddress) => void;
 }) => {
-  const deleteAddress = useDeleteAddress();
-  const updateAddress = useUpdateAddress();
-  const isDeleting = deleteAddress.isPending;
-  const isUpdating = updateAddress.isPending;
+  const deleteAddress = useApiMutation((id: string) => authService.deleteAddress(id), {
+    invalidateQueries: [["addresses"]],
+  });
+  const updateAddress = useApiMutation(
+    ({ id, data }: { id: string; data: Partial<AddressInput> }) =>
+      authService.updateAddress(id, data),
+    { invalidateQueries: [["addresses"]] },
+  );
+  const isDeleting = deleteAddress.isLoading;
+  const isUpdating = updateAddress.isLoading;
 
   const handleDelete = async () => {
     try {
@@ -300,13 +300,21 @@ const AddressCard = ({
 
 const AddressesPage = () => {
   const { user } = useAuth();
-  const { data: addresses, isLoading, isError, refetch } = useAddresses();
-  const createAddress = useCreateAddress();
-  const updateAddress = useUpdateAddress();
+  const { data: addresses = [], isLoading, isError, refetch } = useApiQuery(["addresses"], () =>
+    authService.listAddresses(),
+  );
+  const createAddress = useApiMutation((data: AddressInput) => authService.createAddress(data), {
+    invalidateQueries: [["addresses"]],
+  });
+  const updateAddress = useApiMutation(
+    ({ id, data }: { id: string; data: Partial<AddressInput> }) =>
+      authService.updateAddress(id, data),
+    { invalidateQueries: [["addresses"]] },
+  );
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<UserAddress | null>(null);
-  const isSaving = createAddress.isPending || updateAddress.isPending;
+  const isSaving = createAddress.isLoading || updateAddress.isLoading;
 
   const openCreate = () => {
     setEditing(null);
@@ -337,71 +345,54 @@ const AddressesPage = () => {
   const items = Array.isArray(addresses) ? addresses : [];
 
   return (
-    <ProtectedRoute>
-      <DashboardLayout navItems={customerNavItems} title="Mis Direcciones">
-        <div className="max-w-5xl mx-auto space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-6">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground">Mis Direcciones</h1>
-              <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                Administra los domicilios de envío y facturación de tu cuenta
-              </p>
-            </div>
-            <Button onClick={openCreate} className="rounded-xl">
-              <Plus className="mr-2 h-4 w-4" /> Nueva dirección
-            </Button>
+    <>
+      <div className="max-w-5xl mx-auto space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-6">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground">Mis Direcciones</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+              Administra los domicilios de envío y facturación de tu cuenta
+            </p>
           </div>
-
-          {isLoading ? (
-            <div className="flex items-center justify-center py-20 text-muted-foreground">
-              <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Cargando direcciones...
-            </div>
-          ) : isError ? (
-            <Card className="border-destructive/30 rounded-3xl">
-              <CardContent className="p-8 text-center space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  No se pudieron cargar tus direcciones. Intentalo nuevamente.
-                </p>
-                <Button variant="outline" className="rounded-xl" onClick={() => void refetch()}>
-                  Reintentar
-                </Button>
-              </CardContent>
-            </Card>
-          ) : items.length === 0 ? (
-            <Card className="border-dashed rounded-3xl">
-              <CardContent className="p-12 text-center space-y-4">
-                <div className="mx-auto size-14 rounded-3xl bg-primary/10 text-primary flex items-center justify-center">
-                  <MapPin className="size-7" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-foreground">Aún no tenés direcciones guardadas</h3>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Agregá tu primer domicilio para agilizar tus compras, {user?.name?.split(" ")[0] || ""}.
-                  </p>
-                </div>
-                <Button onClick={openCreate} className="rounded-xl">
-                  <Plus className="mr-2 h-4 w-4" /> Agregar dirección
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {items.map((address) => (
-                <AddressCard key={address.id} address={address} onEdit={openEdit} />
-              ))}
-            </div>
-          )}
+          <Button onClick={openCreate} className="rounded-xl">
+            <Plus className="mr-2 h-4 w-4" /> Nueva dirección
+          </Button>
         </div>
 
-        <AddressFormDialog
-          open={dialogOpen}
-          onOpenChange={setDialogOpen}
-          initial={editing}
-          isSaving={isSaving}
-          onSubmit={handleSubmit}
-        />
-      </DashboardLayout>
-    </ProtectedRoute>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : items.length === 0 ? (
+          <Card className="border-dashed">
+            <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+              <MapPin className="h-12 w-12 text-muted-foreground mb-4 opacity-50" />
+              <h3 className="text-lg font-semibold text-foreground mb-1">No tienes direcciones guardadas</h3>
+              <p className="text-sm text-muted-foreground max-w-sm mb-6">
+                Agrega una dirección para facilitar y agilizar tus compras en FerroMax.
+              </p>
+              <Button onClick={openCreate} className="rounded-xl">
+                <Plus className="mr-2 h-4 w-4" /> Agregar mi primera dirección
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {items.map((address) => (
+              <AddressCard key={address.id} address={address} onEdit={openEdit} />
+            ))}
+          </div>
+        )}
+      </div>
+
+      <AddressFormDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        initial={editing}
+        isSaving={isSaving}
+        onSubmit={handleSubmit}
+      />
+    </>
   );
 };
 

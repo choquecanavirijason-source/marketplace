@@ -4,11 +4,13 @@ import { useRouter } from "next/navigation";
 import { Tag } from "lucide-react";
 import { StorefrontTemplate } from "@/components/layout/StorefrontTemplate";
 import { CategoryPill } from "@/components/home/CategoryPill";
-import { useCategories } from "@/hooks/useCatalog";
+import { useApiQuery } from "@/hooks/useApi";
+import { CategoryService } from "@/services/category.service";
 
 export default function CategoriesPage() {
   const router = useRouter();
-  const { data: categories, isLoading } = useCategories();
+  const { data, isLoading } = useApiQuery(["categories"], () => CategoryService.getPaginated({ page: 1, per_page: 10 }));
+  const categories = data?.data;
 
   return (
     <StorefrontTemplate>
@@ -23,14 +25,14 @@ export default function CategoriesPage() {
           </p>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {(categories ?? []).map((category) => (
+          {/*  {(categories ?? []).map((category) => (
             <CategoryPill
-              key={category.name}
+              key={category}
               category={category}
               active={false}
               onClick={() => router.push(`/categories/${category.slug}`)}
             />
-          ))}
+          ))} */}
         </div>
       </section>
     </StorefrontTemplate>

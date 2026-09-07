@@ -32,12 +32,11 @@ import {
 import {
   getAdminAuthConfig,
   updateAdminAuthConfig,
-  type AdminAuthSettings,
-  type UpdateAuthSettingsData,
 } from "@/services/auth-config.service";
+import type { AdminAuthSettings, UpdateAuthSettingsData } from "@/types";
 import { GoogleIcon, FacebookIcon, AppleIcon } from "@/components/icons/SocialIcons";
 
-export default function AdminAuthSettingsPage() {
+const AdminAuthSettingsPage = () => {
   const queryClient = useQueryClient();
 
   const {
@@ -95,13 +94,12 @@ export default function AdminAuthSettingsPage() {
   });
 
   const handleToggle = (key: keyof UpdateAuthSettingsData, val: boolean) => {
-    setFormData((prev) => ({ ...prev, [key]: val }));
+    setFormData((prev: UpdateAuthSettingsData) => ({ ...prev, [key]: val }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validación de seguridad: al menos 1 método debe estar activo
     if (
       !formData.emailPasswordEnabled &&
       !formData.phoneOtpEnabled &&
@@ -127,7 +125,6 @@ export default function AdminAuthSettingsPage() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8 space-y-8">
-      {/* Encabezado */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
@@ -158,9 +155,7 @@ export default function AdminAuthSettingsPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Métodos Principales */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          {/* Método 1: Email y Contraseña */}
           <Card className={`rounded-3xl border transition-all ${formData.emailPasswordEnabled ? "border-primary/40 bg-card shadow-sm" : "border-border/60 bg-muted/20 opacity-75"}`}>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
@@ -191,7 +186,6 @@ export default function AdminAuthSettingsPage() {
             </CardContent>
           </Card>
 
-          {/* Método 2: Celular y SMS */}
           <Card className={`rounded-3xl border transition-all ${formData.phoneOtpEnabled ? "border-primary/40 bg-card shadow-sm" : "border-border/60 bg-muted/20 opacity-75"}`}>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
@@ -222,7 +216,6 @@ export default function AdminAuthSettingsPage() {
             </CardContent>
           </Card>
 
-          {/* Método 3: Redes Sociales */}
           <Card className={`rounded-3xl border transition-all ${formData.socialLoginEnabled ? "border-primary/40 bg-card shadow-sm" : "border-border/60 bg-muted/20 opacity-75"}`}>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
@@ -254,7 +247,6 @@ export default function AdminAuthSettingsPage() {
           </Card>
         </div>
 
-        {/* Proveedores de Redes Sociales Específicos */}
         {formData.socialLoginEnabled && (
           <Card className="rounded-3xl border border-border bg-card shadow-sm overflow-hidden">
             <CardHeader className="bg-muted/30 border-b border-border/80 px-6 py-4">
@@ -270,7 +262,6 @@ export default function AdminAuthSettingsPage() {
             </CardHeader>
 
             <CardContent className="p-6 divide-y divide-border">
-              {/* Google */}
               <div className="flex items-center justify-between py-3.5 first:pt-0 last:pb-0">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl border border-border bg-background flex items-center justify-center">
@@ -289,7 +280,6 @@ export default function AdminAuthSettingsPage() {
                 />
               </div>
 
-              {/* Facebook */}
               <div className="flex items-center justify-between py-3.5 first:pt-0 last:pb-0">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl border border-border bg-blue-600 text-white flex items-center justify-center">
@@ -308,7 +298,6 @@ export default function AdminAuthSettingsPage() {
                 />
               </div>
 
-              {/* Apple */}
               <div className="flex items-center justify-between py-3.5 first:pt-0 last:pb-0">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl border border-border bg-foreground text-background flex items-center justify-center">
@@ -330,7 +319,6 @@ export default function AdminAuthSettingsPage() {
           </Card>
         )}
 
-        {/* Políticas y Comportamiento de Acceso */}
         <Card className="rounded-3xl border border-border bg-card shadow-sm overflow-hidden">
           <CardHeader className="bg-muted/30 border-b border-border/80 px-6 py-4">
             <div className="flex items-center gap-2">
@@ -353,9 +341,9 @@ export default function AdminAuthSettingsPage() {
                 <select
                   value={formData.defaultAuthMethod}
                   onChange={(e) =>
-                    setFormData((prev) => ({
+                    setFormData((prev: UpdateAuthSettingsData) => ({
                       ...prev,
-                      defaultAuthMethod: e.target.value as any,
+                      defaultAuthMethod: e.target.value as "email" | "phone" | "social",
                     }))
                   }
                   className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary cursor-pointer font-medium"
@@ -420,4 +408,6 @@ export default function AdminAuthSettingsPage() {
       </form>
     </div>
   );
-}
+};
+
+export default AdminAuthSettingsPage;

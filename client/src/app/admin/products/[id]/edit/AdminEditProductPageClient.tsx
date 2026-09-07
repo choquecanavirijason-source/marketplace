@@ -1,18 +1,18 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
 import { ProductForm } from "@/components/product/ProductForm";
-import { container } from "@/infrastructure/container";
+import { useApiQuery } from "@/hooks/useApi";
+import { productService } from "@/services/product.service";
 
 export const AdminEditProductPageClient = () => {
   const params = useParams<{ id: string }>();
 
-  const { data: product, isLoading } = useQuery({
-    queryKey: ["admin-product-edit", params?.id],
-    queryFn: () => container.getProductById.execute(Number(params?.id)),
-    enabled: Boolean(params?.id),
-  });
+  const { data: product, isLoading } = useApiQuery(
+    ["admin-product-edit", params?.id],
+    () => productService.getById(Number(params?.id)),
+    { enabled: Boolean(params?.id) },
+  );
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">

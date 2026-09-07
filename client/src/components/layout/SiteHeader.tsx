@@ -9,8 +9,10 @@ import { SearchBar } from "@/components/layout/SearchBar";
 import { CartPopover } from "@/components/cart/CartPopover";
 import { AccountMenu } from "@/components/auth/AccountMenu";
 import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
+import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { useFavorites } from "@/hooks/useFavorites";
-import { useCategories } from "@/hooks/useCatalog";
+import { useApiQuery } from "@/hooks/useApi";
+import { categoryService } from "@/services/category.service";
 import { useHasMounted } from "@/hooks/useHasMounted";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -23,7 +25,7 @@ export function SiteHeader() {
   const [searchVal, setSearchVal] = useState("");
   const [scrolled, setScrolled] = useState(false);
   const { count: favoritesCount } = useFavorites();
-  const { data: categories } = useCategories();
+  const { data: categories } = useApiQuery(["categories"], () => categoryService.list());
   const { isAdmin } = useAuth();
   const { dict } = useTranslation();
   const mounted = useHasMounted();
@@ -147,6 +149,7 @@ export function SiteHeader() {
             <Search className="w-5 h-5" />
           </button>
 
+          <ThemeToggle variant="button" />
           <LanguageSwitcher />
           <AccountMenu />
 
@@ -241,7 +244,12 @@ export function SiteHeader() {
           </button>
         </div>
 
-        {/* Language switcher */}
+        {/* Theme and Language switchers */}
+        <div className="px-4 py-3 border-b border-border/60 flex items-center justify-between">
+          <span className="text-xs font-semibold text-muted-foreground">Tema / Modo</span>
+          <ThemeToggle variant="button" />
+        </div>
+
         <div className="px-4 py-3 border-b border-border/60 flex items-center justify-between">
           <span className="text-xs font-semibold text-muted-foreground">Idioma / Language</span>
           <LanguageSwitcher />

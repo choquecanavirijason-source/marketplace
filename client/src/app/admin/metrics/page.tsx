@@ -2,7 +2,8 @@
 
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, XAxis, YAxis } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
-import { useAdminStats } from "@/hooks/useOrders";
+import { useApiQuery } from "@/hooks/useApi";
+import { adminService } from "@/services/admin.service";
 import { formatPrice } from "@/shared/lib/format";
 import { ORDER_STATUS_LABELS } from "@/shared/lib/orderStatus";
 import { DollarSign, Package, ShoppingCart, TicketPercent, Users } from "lucide-react";
@@ -30,7 +31,7 @@ const ordersChartConfig = {
 } satisfies ChartConfig;
 
 export default function AdminMetricsPage() {
-  const { data: stats, isLoading } = useAdminStats();
+  const { data: stats, isLoading } = useApiQuery(["admin-stats"], () => adminService.getStats());
 
   const statusData = Object.entries(stats?.ordersByStatus ?? {}).map(([status, count]) => ({
     name: ORDER_STATUS_LABELS[status as keyof typeof ORDER_STATUS_LABELS] ?? status,

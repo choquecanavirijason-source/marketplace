@@ -24,7 +24,9 @@ import { StorefrontTemplate } from "@/components/layout/StorefrontTemplate";
 import { TrustBadgeItem } from "@/components/feedback/TrustBadgeItem";
 import { PaymentIconsRow } from "@/components/common/PaymentIconsRow";
 import { useCart } from "@/hooks/useCart";
-import { useCreateOrder } from "@/hooks/useOrders";
+import { useApiMutation } from "@/hooks/useApi";
+import { orderService } from "@/services/order.service";
+import type { CreateOrderInput } from "@/types";
 import { useAuth } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { formatPrice } from "@/shared/lib/format";
@@ -39,7 +41,10 @@ const TRUST_ITEMS = [
 export default function CheckoutPage() {
   const { user } = useAuth();
   const { items, total, clearCart } = useCart();
-  const { createOrder, isCreating, error } = useCreateOrder();
+  const { mutateAsync: createOrder, isLoading: isCreating, error } = useApiMutation(
+    (input: CreateOrderInput) => orderService.create(input),
+    { invalidateQueries: [["my-orders"]] }
+  );
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
   const [customerEmail, setCustomerEmail] = useState<string | null>(null);

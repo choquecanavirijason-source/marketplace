@@ -4,12 +4,15 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { StorefrontTemplate } from "@/components/layout/StorefrontTemplate";
 import { ProductDetailTemplate } from "@/components/product/ProductDetailTemplate";
-import { useProduct } from "@/hooks/useProducts";
+import { useApiQuery } from "@/hooks/useApi";
+import { productService } from "@/services/product.service";
 
 export default function ProductDetailPageClient() {
   const params = useParams<{ id: string }>();
   const id = Number(params.id);
-  const { data: product, isLoading } = useProduct(id);
+  const { data: product, isLoading } = useApiQuery(["product", id], () => productService.getById(id), {
+    enabled: !Number.isNaN(id) && id > 0,
+  });
 
   return (
     <StorefrontTemplate>

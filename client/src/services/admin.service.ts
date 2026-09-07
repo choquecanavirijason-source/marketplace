@@ -1,28 +1,5 @@
-import { apiRequest } from "@/config/axios";
+﻿import { apiRequest } from "@/config/axios";
 import type { Order, Product, AdminStats } from "@/types";
-import { productsSeed } from "@/infrastructure/data/products.data";
-
-export interface MonthlyMetric {
-  month: string;
-  label: string;
-  totalOrders: number;
-  revenue: number;
-}
-
-export interface TopProductMetric {
-  productId: number;
-  name: string;
-  totalSold: number;
-  totalRevenue: number;
-}
-
-export type { AdminStats };
-
-export interface AdminService {
-  getStats(): Promise<AdminStats>;
-}
-
-export type AdminRepository = AdminService;
 
 interface ApiStats {
   data: {
@@ -124,7 +101,7 @@ const mapRecentProduct = (p: ApiStats["data"]["recent_products"][number]): Produ
   sku: p.sku ?? undefined,
 });
 
-export class HttpAdminService implements AdminService {
+export class AdminService {
   async getStats(): Promise<AdminStats> {
     const payload = await apiRequest<ApiStats>("/admin/stats", { auth: true });
 
@@ -153,36 +130,4 @@ export class HttpAdminService implements AdminService {
   }
 }
 
-export const HttpAdminRepository = HttpAdminService;
-
-export class InMemoryAdminService implements AdminService {
-  async getStats(): Promise<AdminStats> {
-    return {
-      totalProducts: productsSeed.length,
-      totalOrders: 28,
-      totalClients: 142,
-      revenue: 145000,
-      averageOrder: 5178,
-      ordersByStatus: {
-        completed: 18,
-        pending: 6,
-        processing: 4,
-      },
-      ordersByMonth: [
-        { month: "2026-01", label: "Ene", totalOrders: 8, revenue: 42000 },
-        { month: "2026-02", label: "Feb", totalOrders: 10, revenue: 51000 },
-        { month: "2026-03", label: "Mar", totalOrders: 10, revenue: 52000 },
-      ],
-      topProducts: productsSeed.slice(0, 5).map((p) => ({
-        productId: p.id,
-        name: p.name,
-        totalSold: 12,
-        totalRevenue: p.price * 12,
-      })),
-      recentOrders: [],
-      recentProducts: productsSeed.slice(0, 5),
-    };
-  }
-}
-
-export const InMemoryAdminRepository = InMemoryAdminService;
+export const adminService = new AdminService();

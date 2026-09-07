@@ -3,12 +3,17 @@
 import { ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { Product } from "@/types";
-import { useRelatedProducts } from "@/hooks/useProducts";
+import { useApiQuery } from "@/hooks/useApi";
+import { productService } from "@/services/product.service";
 import { useCart } from "@/hooks/useCart";
 import { ProductCard } from "@/components/product/ProductCard";
 
 export function RelatedProductsSection({ product }: { product: Product }) {
-  const { data: related } = useRelatedProducts(product.id, product.category);
+  const { data: related = [] } = useApiQuery(
+    ["related-products", product.id, product.category],
+    () => productService.listRelated(product.id, product.category),
+    { enabled: Boolean(product.id) }
+  );
   const { addToCart } = useCart();
   const router = useRouter();
 

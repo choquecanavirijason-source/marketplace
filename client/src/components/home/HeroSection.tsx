@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
-import { useHeroSlides } from "@/hooks/useCatalog";
+import { useApiQuery } from "@/hooks/useApi";
+import { heroSlideService } from "@/services/hero-slide.service";
 
 const SIDE_CARDS = [
   {
@@ -18,7 +19,7 @@ const SIDE_CARDS = [
 ];
 
 export function HeroSection() {
-  const { data: slides } = useHeroSlides();
+  const { data: slides } = useApiQuery(["hero-slides"], () => heroSlideService.list());
   const [heroIdx, setHeroIdx] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
 

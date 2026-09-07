@@ -9,12 +9,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { KeyRound, Mail, ArrowLeft, ArrowRight, CheckCircle2, Lock } from "lucide-react";
-import { HttpAuthRepository } from "@/services/auth.service";
+import { authService } from "@/services/auth.service";
 
 const ForgotPasswordContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const authService = useMemo(() => new HttpAuthRepository(), []);
 
   const [step, setStep] = useState<"request" | "reset">("request");
   const [email, setEmail] = useState("");

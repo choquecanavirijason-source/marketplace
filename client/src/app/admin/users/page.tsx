@@ -26,13 +26,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
-import {
-  useUsers,
-  useCreateUser,
-  useUpdateUser,
-  useDeleteUser,
-} from "@/hooks/useUsers";
-import { container } from "@/infrastructure/container";
+import { useApiQuery, useApiMutation } from "@/hooks/useApi";
+import { userService } from "@/services/user.service";
 import { UserForm, type UserFormValues } from "./form";
 import { Button } from "@/components/ui/button";
 import { Can } from "@/components/auth/Can";
@@ -66,6 +61,7 @@ import {
 import type {
   User,
   KycLevel,
+  CreateUserData,
   UpdateUserData,
 } from "@/types";
 
@@ -128,7 +124,6 @@ const AdminUsersPage = () => {
   const handleSearchChange = (value: string) => {
     setSearch(value);
 
-    // Cancelación inmediata de cualquier búsqueda previa en proceso mientras siga escribiendo
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
@@ -139,7 +134,6 @@ const AdminUsersPage = () => {
       setSearchStatus("idle");
     }
 
-    // Solo cuando deja de escribir tras 500ms se despacha la petición al servidor
     debounceTimerRef.current = setTimeout(() => {
       setSearchStatus("searching");
       setDebouncedSearch(value.trim());
@@ -147,25 +141,47 @@ const AdminUsersPage = () => {
     }, 500);
   };
 
-
   const {
     data: usersData,
     isLoading: usersLoading,
     isError: usersIsError,
     error: usersError,
-  } = useUsers({
-    page,
-    limit,
-    search: debouncedSearch,
-    role: roleFilter as any,
-    status: statusFilter as any,
-    sortBy: sortField ?? "createdAt",
-    sortOrder,
-  });
+  } = useApiQuery(
+    [
+      "admin-users",
+      page,
+      limit,
+      debouncedSearch,
+      roleFilter,
+      statusFilter,
+      sortField ?? "createdAt",
+      sortOrder,
+    ],
+    ({ signal }) =>
+      userService.getUsers(
+        {
+          page,
+          limit,
+          search: debouncedSearch,
+          role: roleFilter as any,
+          status: statusFilter as any,
+          sortBy: sortField ?? "createdAt",
+          sortOrder,
+        },
+        signal,
+      ),
+  );
 
-  const createUserMutation = useCreateUser();
-  const updateUserMutation = useUpdateUser();
-  const deleteUserMutation = useDeleteUser();
+  const createUserMutation = useApiMutation((data: CreateUserData) => userService.createUser(data), {
+    invalidateQueries: [["admin-users"]],
+  });
+  const updateUserMutation = useApiMutation(
+    ({ id, data }: { id: string; data: UpdateUserData }) => userService.updateUser(id, data),
+    { invalidateQueries: [["admin-users"]] },
+  );
+  const deleteUserMutation = useApiMutation((id: string) => userService.deleteUser(id), {
+    invalidateQueries: [["admin-users"]],
+  });
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
@@ -288,7 +304,7 @@ const AdminUsersPage = () => {
 
     setIsUpdatingStatus(true);
     try {
-      await container.users.updateUserStatus(
+      await userService.updateUserStatus(
         userToChangeStatus.id,
         newStatusValue,
         statusReason.trim(),
@@ -308,7 +324,7 @@ const AdminUsersPage = () => {
     setAuditEvents([]);
     setAuditLoading(true);
     try {
-      const res = await container.users.getUserAudit(user.id);
+      const res = await userService.getUserAudit(user.id);
       setAuditEvents(res?.events ?? []);
     } catch {
       toast.error("No se pudo cargar la bitácora de seguridad.");
@@ -359,7 +375,6 @@ const AdminUsersPage = () => {
   const total = usersData?.total ?? 0;
   const totalPages = usersData?.totalPages ?? 1;
 
-  // Los usuarios ya vienen ordenados a nivel de base de datos directamente desde el backend
   const sortedUsers = users;
 
   return (

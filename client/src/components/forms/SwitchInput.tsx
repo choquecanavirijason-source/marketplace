@@ -54,7 +54,7 @@ export const SwitchInput = ({
             render={({ field }) => (
               <Switch
                 id={name}
-                checked={field.value}
+                checked={Boolean(field.value)}
                 onCheckedChange={field.onChange}
                 disabled={disabled}
               />

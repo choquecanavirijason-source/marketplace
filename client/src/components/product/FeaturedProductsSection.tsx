@@ -3,7 +3,8 @@
 import { ArrowRight, Zap } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/hooks/useCart";
-import { useCategories } from "@/hooks/useCatalog";
+import { useApiQuery } from "@/hooks/useApi";
+import { categoryService } from "@/services/category.service";
 import { useInfiniteProducts } from "@/hooks/useInfiniteProducts";
 import { SectionEyebrow } from "@/components/common/SectionEyebrow";
 import { ProductCard } from "@/components/product/ProductCard";
@@ -16,7 +17,7 @@ export function FeaturedProductsSection({
   activeCategory: string;
   onCategoryChange: (category: string) => void;
 }) {
-  const { data: categories } = useCategories();
+  const { data: categories } = useApiQuery(["categories"], () => categoryService.list());
   const { addToCart } = useCart();
   const router = useRouter();
 

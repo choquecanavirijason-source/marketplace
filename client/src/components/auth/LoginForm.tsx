@@ -50,7 +50,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, redirectUrl }) 
 
   return (
     <div className="w-full max-w-md mx-auto">
-      {/* Gradient glow behind card */}
       <div className="relative">
         <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 via-orange-400/10 to-primary/20 rounded-[2rem] blur-xl opacity-60" />
         <Card className="relative w-full shadow-xl border-border/60 rounded-3xl overflow-hidden">

@@ -146,6 +146,17 @@ export interface UserAddress {
   isDefault: boolean;
 }
 
+export interface AddressInput {
+  label: string;
+  country: string;
+  province: string;
+  city: string;
+  street: string;
+  number: string;
+  zip: string;
+  isDefault?: boolean;
+}
+
 export interface AuthenticatedUserProfile {
   id: string | number;
   email: string;
@@ -158,4 +169,39 @@ export interface AuthenticatedUserProfile {
   completionPct?: number;
   businessProfile?: BusinessProfileData | null;
   addresses?: UserAddress[];
+}
+
+export interface PublicAuthSettings {
+  emailPasswordEnabled: boolean;
+  phoneOtpEnabled: boolean;
+  socialLoginEnabled: boolean;
+  googleAuthEnabled: boolean;
+  facebookAuthEnabled: boolean;
+  appleAuthEnabled: boolean;
+  defaultAuthMethod: "email" | "phone" | "social";
+  requireEmailVerification: boolean;
+  requirePhoneVerification: boolean;
+}
+
+export interface AdminAuthSettings extends PublicAuthSettings {
+  id: string;
+  googleClientId?: string | null;
+  facebookClientId?: string | null;
+  appleClientId?: string | null;
+  updatedAt?: string;
+}
+
+export interface UpdateAuthSettingsData {
+  emailPasswordEnabled?: boolean;
+  phoneOtpEnabled?: boolean;
+  socialLoginEnabled?: boolean;
+  googleAuthEnabled?: boolean;
+  googleClientId?: string | null;
+  facebookAuthEnabled?: boolean;
+  facebookClientId?: string | null;
+  appleAuthEnabled?: boolean;
+  appleClientId?: string | null;
+  defaultAuthMethod?: "email" | "phone" | "social";
+  requireEmailVerification?: boolean;
+  requirePhoneVerification?: boolean;
 }

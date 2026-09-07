@@ -2,8 +2,6 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
-import { DashboardLayout, customerNavItems } from "@/components/layout/DashboardLayout";
 import { EmailVerificationModal } from "@/components/auth/EmailVerificationModal";
 import { useAuth, useAuthStore } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -31,11 +29,12 @@ import {
 } from "lucide-react";
 import { PhoneCountryInput } from "@/components/ui/phone-country-input";
 import { ImageCropUpload } from "@/components/common/ImageCropUpload";
-import { useUploadAvatar } from "@/hooks/useUsers";
+import { useApiMutation } from "@/hooks/useApi";
+import { userService } from "@/services/user.service";
 
 const ProfilePage = () => {
   const { user, updateProfile, updateBusinessProfile, refreshUser } = useAuth();
-  const uploadAvatarMutation = useUploadAvatar();
+  const uploadAvatarMutation = useApiMutation((imageDataUrl: string) => userService.uploadAvatar(imageDataUrl));
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
 
   const [firstName, setFirstName] = useState("");
@@ -151,9 +150,8 @@ const ProfilePage = () => {
   const completionPct = user?.completionPct ?? 20;
 
   return (
-    <ProtectedRoute>
-      <DashboardLayout navItems={customerNavItems} title="Mi Perfil">
-        <div className="max-w-5xl mx-auto space-y-6">
+    <>
+      <div className="max-w-5xl mx-auto space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-6">
             <div>
               <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground">
@@ -537,8 +535,7 @@ const ProfilePage = () => {
           title="Cambiar Foto de Perfil"
           cropShape="circle"
         />
-      </DashboardLayout>
-    </ProtectedRoute>
+    </>
   );
 };
 

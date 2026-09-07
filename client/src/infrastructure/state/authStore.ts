@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { container } from "@/infrastructure/container";
+import { authService } from "@/services/auth.service";
 import {
   getAuthToken,
   getCurrentUser,
@@ -132,7 +132,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     });
 
     try {
-      const session = await container.getSession.execute();
+      const session = await authService.me();
       const freshComputed = computeRoles(session.user);
       set({
         user: session.user,
@@ -168,7 +168,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   login: async (credentials: LoginCredentials) => {
     set({ isLoggingIn: true });
     try {
-      const session = await container.login.execute(credentials);
+      const session = await authService.login(credentials);
       const computed = computeRoles(session.user);
       set({
         user: session.user,
@@ -194,8 +194,8 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   loginOtp: async (credentials) => {
     set({ isLoggingIn: true });
     try {
-      if (!container.auth.loginOtp) throw new Error("loginOtp no implementado");
-      const session = await container.auth.loginOtp(credentials);
+      if (!authService.loginOtp) throw new Error("loginOtp no implementado");
+      const session = await authService.loginOtp(credentials);
       const computed = computeRoles(session.user);
       set({
         user: session.user,
@@ -221,8 +221,8 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   phoneLogin: async (phone: string, code: string) => {
     set({ isLoggingIn: true });
     try {
-      if (!container.auth.phoneLogin) throw new Error("phoneLogin no implementado");
-      const session = await container.auth.phoneLogin(phone, code);
+      if (!authService.phoneLogin) throw new Error("phoneLogin no implementado");
+      const session = await authService.phoneLogin(phone, code);
       const computed = computeRoles(session.user);
       set({
         user: session.user,
@@ -248,8 +248,8 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   socialLogin: async (data) => {
     set({ isLoggingIn: true });
     try {
-      if (!container.auth.socialLogin) throw new Error("socialLogin no implementado");
-      const session = await container.auth.socialLogin(data);
+      if (!authService.socialLogin) throw new Error("socialLogin no implementado");
+      const session = await authService.socialLogin(data);
       const computed = computeRoles(session.user);
       set({
         user: session.user,
@@ -273,16 +273,16 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   },
 
   sendEmailOtp: async (email: string) => {
-    if (!container.auth.sendEmailOtp) {
+    if (!authService.sendEmailOtp) {
       throw new Error("sendEmailOtp no implementado");
     }
-    return container.auth.sendEmailOtp(email);
+    return authService.sendEmailOtp(email);
   },
 
   register: async (data: RegisterData) => {
     set({ isRegistering: true });
     try {
-      const session = await container.register.execute(data);
+      const session = await authService.register(data);
       const computed = computeRoles(session.user);
       set({
         user: session.user,
@@ -308,7 +308,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   updateProfile: async (data: UpdateProfileData) => {
     set({ isUpdatingProfile: true });
     try {
-      const session = await container.updateProfile.execute(data);
+      const session = await authService.updateProfile(data);
       const computed = computeRoles(session.user);
       set({
         user: session.user,
@@ -330,8 +330,8 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   updateBusinessProfile: async (data: any) => {
     set({ isUpdatingProfile: true });
     try {
-      if (!container.auth.updateBusinessProfile) throw new Error("updateBusinessProfile no implementado");
-      const response = await container.auth.updateBusinessProfile(data);
+      if (!authService.updateBusinessProfile) throw new Error("updateBusinessProfile no implementado");
+      const response = await authService.updateBusinessProfile(data);
       await get().refreshUser();
       set({ isUpdatingProfile: false });
       return response;
@@ -344,7 +344,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   logout: async () => {
     set({ isLoggingOut: true });
     try {
-      await container.logout.execute();
+      await authService.logout();
     } catch {
     } finally {
       logoutCustomer();
@@ -367,8 +367,8 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   logoutAll: async () => {
     set({ isLoggingOut: true });
     try {
-      if (container.auth.logoutAll) {
-        await container.auth.logoutAll();
+      if (authService.logoutAll) {
+        await authService.logoutAll();
       }
     } catch {
     } finally {
@@ -391,7 +391,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
 
   refreshUser: async () => {
     try {
-      const session = await container.getSession.execute();
+      const session = await authService.me();
       const computed = computeRoles(session.user);
       set({
         user: session.user,

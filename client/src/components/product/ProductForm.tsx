@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { useCategories } from "@/hooks/useCatalog";
+import { useApiQuery } from "@/hooks/useApi";
+import { categoryService } from "@/services/category.service";
 import { apiRequest, ApiError } from "@/config/axios";
 import type { Product } from "@/types";
 import {
@@ -29,7 +30,7 @@ interface ProductFormProps {
 export const ProductForm = ({ product, onSuccess, onCancel, isModal }: ProductFormProps) => {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { data: categories } = useCategories();
+  const { data: categories } = useApiQuery(["categories"], () => categoryService.list());
   const isEditing = Boolean(product);
 
   const [form, setForm] = useState({
