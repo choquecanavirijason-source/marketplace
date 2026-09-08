@@ -18,13 +18,13 @@ const BANNERS = [
   },
 ];
 
-export function PromoBannerGrid() {
+export const PromoBannerGrid = () => {
   return (
     <section className="max-w-7xl mx-auto px-4 py-4 md:py-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
-        {BANNERS.map(({ title, sub, cta, bg, image }) => (
+        {BANNERS.map(({ title, sub, cta, bg, image }, idx) => (
           <div
-            key={title}
+            key={title || `banner-${idx}`}
             className={`relative overflow-hidden rounded-2xl md:rounded-3xl bg-gradient-to-br ${bg} min-h-[140px] sm:min-h-[160px] md:min-h-[180px] flex items-center p-5 sm:p-6 cursor-pointer group hover-lift`}
           >
             <div className="relative z-10">
@@ -44,4 +44,4 @@ export function PromoBannerGrid() {
       </div>
     </section>
   );
-}
+};

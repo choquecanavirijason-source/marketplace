@@ -59,9 +59,9 @@ export const AccountFavoritesPage = () => {
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {items.map((product) => (
+          {items.map((product, idx) => (
             <ProductCard
-              key={product.id}
+              key={product.id || `acc-fav-${idx}`}
               product={product}
               onAddToCart={addToCart}
               onSelect={(p) => router.push(`/products/${p.id}`)}

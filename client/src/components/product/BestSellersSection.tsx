@@ -8,7 +8,7 @@ import { SectionEyebrow } from "@/components/common/SectionEyebrow";
 import { RankedProductRow } from "@/components/product/ProductRow";
 import { LoadMoreButton } from "@/components/common/LoadMoreButton";
 
-export function BestSellersSection() {
+export const BestSellersSection = () => {
   const { data, isFetchingNextPage, hasNextPage, fetchNextPage } = useInfiniteProducts({ pageSize: 4 });
   const bestSellers = data?.pages.flatMap((page) => page.items) ?? [];
   const { addToCart } = useCart();
@@ -26,7 +26,7 @@ export function BestSellersSection() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 stagger-children">
           {bestSellers.map((product, i) => (
             <RankedProductRow
-              key={product.id}
+              key={product.id || `bestseller-${i}`}
               product={product}
               rank={i + 1}
               onSelect={() => router.push(`/products/${product.id}`)}
@@ -42,4 +42,4 @@ export function BestSellersSection() {
       />
     </section>
   );
-}
+};

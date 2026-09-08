@@ -369,7 +369,7 @@ export const PhoneCountryInput = ({
         </button>
 
         {isOpen && (
-          <div className="absolute left-0 top-full mt-1.5 w-72 max-h-72 bg-popover border border-border/80 rounded-2xl shadow-xl z-50 flex flex-col overflow-hidden animate-in fade-in-0 zoom-in-95">
+          <div className="absolute left-0 top-full mt-1.5 w-72 max-h-72 bg-popover bg-card bg-white dark:bg-[#1c1815] border border-border/80 rounded-2xl shadow-xl z-50 flex flex-col overflow-hidden animate-in fade-in-0 zoom-in-95">
             <div className="p-2 border-b border-border/60 bg-muted/20">
               <div className="relative">
                 <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />

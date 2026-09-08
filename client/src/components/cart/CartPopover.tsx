@@ -10,7 +10,7 @@ import { formatPrice } from "@/shared/lib/format";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "@/hooks/useTranslation";
 
-export function CartPopover() {
+export const CartPopover = () => {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -53,7 +53,7 @@ export function CartPopover() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-80 bg-card rounded-2xl shadow-2xl border border-border z-50 overflow-hidden">
+        <div className="absolute right-0 top-full mt-2 w-80 bg-card bg-white dark:bg-[#1c1815] rounded-2xl shadow-2xl border border-border z-50 overflow-hidden">
           <div className="p-4 border-b border-border flex items-center justify-between">
             <h3 className="font-bold text-sm">{dict.common.cart} ({count})</h3>
             <button type="button" onClick={() => setOpen(false)}>
@@ -67,9 +67,9 @@ export function CartPopover() {
                 <p className="text-sm">{dict.common.emptyCart}</p>
               </div>
             ) : (
-              items.map((item) => (
+              items.map((item, idx) => (
                 <CartLineItem
-                  key={item.id}
+                  key={item.id || `cart-${idx}`}
                   item={item}
                   onUpdateQty={(delta) => updateQty(item.id, delta)}
                   onRemove={() => removeFromCart(item.id)}

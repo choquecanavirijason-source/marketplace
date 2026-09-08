@@ -62,9 +62,9 @@ function BuscarContent() {
         ) : products && products.length > 0 ? (
           <>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {products.map((product) => (
+              {products.map((product, idx) => (
                 <ProductCard
-                  key={product.id}
+                  key={product.id || `search-prod-${idx}`}
                   product={product}
                   onAddToCart={addToCart}
                   onSelect={(p) => router.push(`/products/${p.id}`)}

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { OrderService } from '../../src/modules/orders/services/order.service';
+import { OrderService } from '../../src/modules/admin/orders/services/order.service';
 import { DomainException, EntityNotFoundException } from '../../src/shared';
 
 describe('OrderService - Unit Suite', () => {

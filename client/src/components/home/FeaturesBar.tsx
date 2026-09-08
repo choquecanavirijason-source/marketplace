@@ -8,16 +8,16 @@ const FEATURES = [
   { icon: Headphones, title: "Soporte 24/7", desc: "Siempre listos para ayudar", color: "text-orange-600" },
 ];
 
-export function FeaturesBar() {
+export const FeaturesBar = () => {
   return (
     <section className="bg-card border-y border-border">
       <div className="max-w-7xl mx-auto px-4 py-3 md:py-4">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-0 md:divide-x md:divide-border">
-          {FEATURES.map((feature) => (
-            <FeatureBarItem key={feature.title} {...feature} />
+          {FEATURES.map((feature, idx) => (
+            <FeatureBarItem key={feature.title || `feat-${idx}`} {...feature} />
           ))}
         </div>
       </div>
     </section>
   );
-}
+};

@@ -10,22 +10,25 @@ import { SectionEyebrow } from "@/components/common/SectionEyebrow";
 import { ProductCard } from "@/components/product/ProductCard";
 import { LoadMoreButton } from "@/components/common/LoadMoreButton";
 
-export function FeaturedProductsSection({
+export const FeaturedProductsSection = ({
   activeCategory,
   onCategoryChange,
 }: {
   activeCategory: string;
   onCategoryChange: (category: string) => void;
-}) {
+}) => {
   const { data: categories } = useApiQuery(["categories"], () => categoryService.list());
   const { addToCart } = useCart();
   const router = useRouter();
 
-  const quickFilters = ["Todos", ...(categories ?? []).map((category) => category.name)];
+  const validCategoryNames = (categories ?? [])
+    .map((category) => category.name)
+    .filter((name): name is string => typeof name === "string" && name.trim().length > 0);
+  const quickFilters = ["Todos", ...Array.from(new Set(validCategoryNames))];
   const activeSlug =
     activeCategory === "Todos"
       ? undefined
-      : categories?.find((category) => category.name === activeCategory)?.slug;
+      : (categories ?? []).find((cat) => cat.name === activeCategory)?.slug;
 
   const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage } = useInfiniteProducts({
     category: activeSlug,
@@ -43,10 +46,10 @@ export function FeaturedProductsSection({
         <select
           value={activeCategory}
           onChange={(event) => onCategoryChange(event.target.value)}
-          className="w-full sm:w-64 rounded-xl border border-border bg-background px-3 py-2 text-sm font-semibold text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
+          className="w-full sm:w-64 rounded-xl border border-border bg-card bg-white dark:bg-[#1c1815] px-3 py-2 text-sm font-semibold text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all cursor-pointer"
         >
-          {quickFilters.map((cat) => (
-            <option key={cat} value={cat}>
+          {quickFilters.map((cat, idx) => (
+            <option key={cat || `filter-${idx}`} value={cat} className="bg-card bg-white dark:bg-[#1c1815] text-foreground">
               {cat}
             </option>
           ))}
@@ -69,9 +72,9 @@ export function FeaturedProductsSection({
       ) : products.length > 0 ? (
         <>
           <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 stagger-children">
-            {products.map((product) => (
+            {products.map((product, idx) => (
               <ProductCard
-                key={product.id}
+                key={product.id || `featured-${idx}`}
                 product={product}
                 onAddToCart={addToCart}
                 onSelect={(p) => router.push(`/products/${p.id}`)}

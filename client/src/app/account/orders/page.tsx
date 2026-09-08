@@ -20,6 +20,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { orderService } from "@/services/order.service";
 import { useApiQuery } from "@/hooks/useApi";
 import { formatPrice } from "@/shared/lib/format";
+import { ImageWithFallback } from "@/components/common/ImageWithFallback";
 import {
   ORDER_STATUS_CLASSES,
   ORDER_STATUS_LABELS,
@@ -182,23 +183,17 @@ export const CustomerOrdersPage = () => {
 
                 <CardContent className="p-5 space-y-3">
                   <div className="divide-y divide-border/40">
-                    {order.items?.map((item) => (
+                    {order.items?.map((item, idx) => (
                       <div
-                        key={item.id}
+                        key={item.id || `order-item-${idx}`}
                         className="py-2.5 first:pt-0 last:pb-0 flex items-center justify-between gap-4 text-xs"
                       >
                         <div className="flex items-center gap-3 min-w-0">
-                          {item.image ? (
-                            <img
-                              src={item.image}
-                              alt={item.name}
-                              className="size-10 rounded-lg object-cover bg-muted shrink-0"
-                            />
-                          ) : (
-                            <div className="size-10 rounded-lg bg-muted flex items-center justify-center text-muted-foreground shrink-0">
-                              <Package className="size-5" />
-                            </div>
-                          )}
+                          <ImageWithFallback
+                            src={item.image}
+                            alt={item.name}
+                            className="size-10 rounded-lg object-cover bg-muted shrink-0"
+                          />
                           <div className="min-w-0">
                             <p className="font-semibold text-foreground truncate">
                               {item.name}

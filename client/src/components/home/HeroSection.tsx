@@ -18,7 +18,7 @@ const SIDE_CARDS = [
   },
 ];
 
-export function HeroSection() {
+export const HeroSection = () => {
   const { data: slides } = useApiQuery(["hero-slides"], () => heroSlideService.list());
   const [heroIdx, setHeroIdx] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -50,7 +50,6 @@ export function HeroSection() {
   return (
     <section className="max-w-7xl mx-auto px-4 py-4 md:py-6">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 md:gap-4">
-        {/* Main Hero Slide */}
         <div className={`lg:col-span-8 rounded-3xl bg-gradient-to-br ${slide.bg} overflow-hidden relative min-h-[280px] sm:min-h-[320px] md:min-h-[360px] flex items-center`}>
           <div
             className={`relative z-10 p-6 sm:p-8 md:p-12 max-w-sm transition-all duration-300 ${
@@ -79,7 +78,6 @@ export function HeroSection() {
             <img src={slide.image} alt={slide.title} className="w-full h-full object-cover" />
           </div>
 
-          {/* Dots */}
           <div className="absolute bottom-4 left-6 sm:left-8 flex items-center gap-2">
             {slides.map((_, i) => (
               <button
@@ -91,7 +89,6 @@ export function HeroSection() {
             ))}
           </div>
 
-          {/* Navigation arrows — touch-friendly 44px */}
           <button
             type="button"
             onClick={() => handleSlideChange((heroIdx - 1 + slides.length) % slides.length)}
@@ -108,7 +105,6 @@ export function HeroSection() {
           </button>
         </div>
 
-        {/* Side cards */}
         <div className="lg:col-span-4 grid grid-cols-2 lg:grid-cols-1 gap-3 md:gap-4">
           {SIDE_CARDS.map(({ title, sub, label, color, textColor, subColor, img }) => (
             <div
@@ -130,4 +126,4 @@ export function HeroSection() {
       </div>
     </section>
   );
-}
+};

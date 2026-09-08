@@ -50,9 +50,9 @@ const LEGAL_LINKS = [
 ];
 const PAYMENT_ICONS = [CreditCard, Landmark, Smartphone, Banknote];
 
-export function SiteFooter() {
+export const SiteFooter = () => {
   return (
-    <footer className="bg-foreground text-white">
+    <footer className="bg-[#1c1815] dark:bg-[#0c0a09] text-white border-t border-white/5">
       {/* Main Footer Content */}
       <div className="max-w-7xl mx-auto px-4 py-10 md:py-12">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-10">

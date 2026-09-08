@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { StorefrontTemplate } from "@/components/layout/StorefrontTemplate";
 import { TrustBadgeItem } from "@/components/feedback/TrustBadgeItem";
 import { PaymentIconsRow } from "@/components/common/PaymentIconsRow";
+import { ImageWithFallback } from "@/components/common/ImageWithFallback";
 import { useCart } from "@/hooks/useCart";
 import { useApiMutation } from "@/hooks/useApi";
 import { orderService } from "@/services/order.service";
@@ -260,9 +261,9 @@ export default function CheckoutPage() {
               <div className="px-5 py-4 border-b border-border">
                 <h2 className="text-sm font-bold text-foreground">Tu pedido · {items.length} {items.length === 1 ? "producto" : "productos"}</h2>
               </div>
-              {items.map((item) => (
-                <div key={item.id} className="flex items-center gap-4 p-5 border-b border-border last:border-0">
-                  <img src={item.image} alt={item.name} className="w-16 h-16 rounded-xl object-cover bg-secondary flex-shrink-0" />
+              {items.map((item, idx) => (
+                <div key={item.id || `checkout-${idx}`} className="flex items-center gap-4 p-5 border-b border-border last:border-0">
+                  <ImageWithFallback src={item.image} alt={item.name} className="w-16 h-16 rounded-xl object-cover bg-secondary flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-foreground truncate">{item.name}</p>
                     <p className="text-xs text-muted-foreground mt-0.5">{item.category}</p>

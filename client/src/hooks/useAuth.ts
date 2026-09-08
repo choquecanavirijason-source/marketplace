@@ -6,5 +6,5 @@ export {
   type AuthContextValue,
 } from "@/providers/AuthProvider";
 
-export { useAuthStore } from "@/infrastructure/state/authStore";
+export { useAuthStore } from "@/context/authStore";
 export { useRequireAuth } from "./useRequireAuth";

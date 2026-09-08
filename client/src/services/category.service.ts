@@ -36,7 +36,7 @@ const getPaginated = async (params: IPaginationRequest): Promise<IPaginatedRespo
 };
 
 const create = async (request: ICategoryRequest): Promise<IApiResponse<ICategory>> => {
-  const payload = await apiRequest<IApiResponse<ICategory>>("/categories", {
+  const payload = await apiRequest<IApiResponse<ICategory>>("/admin/categories", {
     method: "POST",
     auth: true,
     body: request,
@@ -45,7 +45,7 @@ const create = async (request: ICategoryRequest): Promise<IApiResponse<ICategory
 };
 
 const update = async (id: number, request: ICategoryRequest): Promise<IApiResponse<ICategory>> => {
-  const payload = await apiRequest<IApiResponse<ICategory>>(`/categories/${id}`, {
+  const payload = await apiRequest<IApiResponse<ICategory>>(`/admin/categories/${id}`, {
     method: "PUT",
     auth: true,
     body: request,
@@ -54,7 +54,7 @@ const update = async (id: number, request: ICategoryRequest): Promise<IApiRespon
 };
 
 const remove = async (id: number): Promise<IApiResponse<void>> => {
-  const payload = await apiRequest<IApiResponse<void>>(`/categories/${id}`, {
+  const payload = await apiRequest<IApiResponse<void>>(`/admin/categories/${id}`, {
     method: "DELETE",
     auth: true,
   });

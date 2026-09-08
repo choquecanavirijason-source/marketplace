@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { PaymentService } from '../../src/modules/payments/services/payment.service';
+import { PaymentService } from '../../src/modules/api/payments/services/payment.service';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
 
 describe('PaymentService - Unit Suite', () => {

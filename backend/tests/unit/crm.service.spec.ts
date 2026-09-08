@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { CrmService } from '../../src/modules/crm/services/crm.service';
+import { CrmService } from '../../src/modules/admin/crm/services/crm.service';
 import { NotFoundException } from '@nestjs/common';
 
 describe('CrmService - Unit Suite', () => {

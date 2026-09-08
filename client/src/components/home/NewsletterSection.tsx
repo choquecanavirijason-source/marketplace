@@ -1,7 +1,7 @@
 import { Mail } from "lucide-react";
 import { NewsletterForm } from "@/components/common/NewsletterForm";
 
-export function NewsletterSection() {
+export const NewsletterSection = () => {
   return (
     <section className="max-w-7xl mx-auto px-4 py-6 pb-10">
       <div
@@ -26,4 +26,4 @@ export function NewsletterSection() {
       </div>
     </section>
   );
-}
+};

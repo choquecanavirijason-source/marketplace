@@ -1,10 +1,9 @@
-﻿import type { HeroSlide } from "@/types";
-import { heroSlidesSeed } from "@/infrastructure/data/heroSlides.data";
+import { apiClient } from "@/config/axios";
+import type { HeroSlide } from "@/types";
 
-export class HeroSlideService {
-  async list(): Promise<HeroSlide[]> {
-    return heroSlidesSeed;
-  }
-}
-
-export const heroSlideService = new HeroSlideService();
+export const heroSlideService = {
+  list: async (): Promise<HeroSlide[]> => {
+    const { data } = await apiClient.get<HeroSlide[]>("/hero-slides");
+    return data;
+  },
+};

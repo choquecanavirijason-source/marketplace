@@ -14,6 +14,8 @@ import type {
 } from "@/types";
 import {
   logoutCustomer,
+  getAuthToken,
+  getRefreshToken,
   setAuthToken,
   setRefreshToken,
   setCurrentUser,
@@ -121,6 +123,8 @@ const mapSession = (payload: any): AuthSession => {
 };
 
 export class AuthService {
+  private mePromise: Promise<AuthSession> | null = null;
+
   async login(credentials: LoginCredentials): Promise<AuthSession> {
     const payload = await apiRequest<ApiAuthPayload>("/identity/login", {
       method: "POST",
@@ -195,16 +199,53 @@ export class AuthService {
   }
 
   async me(): Promise<AuthSession> {
-    const payload = await apiRequest<ApiAuthPayload>("/identity/me", { auth: true });
-    const session = mapSession(payload);
-    setCurrentUser(session.user);
-    if (session.accessToken && session.accessToken.trim() !== "") {
-      setAuthToken(session.accessToken);
+    if (this.mePromise) {
+      return this.mePromise;
     }
-    if (session.permissions && session.permissions.length > 0) {
-      setAuthPermissions(session.permissions);
+
+    this.mePromise = (async () => {
+      try {
+        const payload = await apiRequest<ApiAuthPayload>("/identity/me", { auth: true });
+        const session = mapSession(payload);
+        setCurrentUser(session.user);
+        if (session.accessToken && session.accessToken.trim() !== "") {
+          setAuthToken(session.accessToken);
+        }
+        if (session.permissions && session.permissions.length > 0) {
+          setAuthPermissions(session.permissions);
+        }
+        return session;
+      } finally {
+        this.mePromise = null;
+      }
+    })();
+
+    return this.mePromise;
+  }
+
+  async refreshToken(): Promise<string | null> {
+    try {
+      const currentRefreshToken = getRefreshToken();
+      const payload = currentRefreshToken ? { refreshToken: currentRefreshToken } : {};
+      const response = await apiRequest<any>("/identity/refresh", {
+        method: "POST",
+        body: payload,
+      });
+      const rawData = response?.data || response || {};
+      const newAccessToken = rawData.accessToken || rawData.access_token;
+      const newRefreshToken = rawData.refreshToken || rawData.refresh_token;
+
+      if (newAccessToken) {
+        setAuthToken(newAccessToken);
+        if (newRefreshToken) {
+          setRefreshToken(newRefreshToken);
+        }
+        return newAccessToken;
+      }
+      return null;
+    } catch {
+      return null;
     }
-    return session;
   }
 
   async updateProfile(data: UpdateProfileData): Promise<AuthSession> {

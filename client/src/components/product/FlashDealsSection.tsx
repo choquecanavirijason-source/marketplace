@@ -11,7 +11,7 @@ import { ProductCard } from "@/components/product/ProductCard";
 
 const FLASH_DEAL_DURATION_SECS = 4 * 3600 + 23 * 60 + 45;
 
-export function FlashDealsSection() {
+export const FlashDealsSection = () => {
   const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage } = useInfiniteProducts({
     tag: "Oferta,Nuevo",
     pageSize: 12,
@@ -48,9 +48,9 @@ export function FlashDealsSection() {
         ) : deals.length > 0 ? (
           <>
             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 stagger-children">
-              {deals.map((product) => (
+              {deals.map((product, idx) => (
                 <ProductCard
-                  key={product.id}
+                  key={product.id || `deal-${idx}`}
                   product={product}
                   onAddToCart={addToCart}
                   onSelect={(p) => router.push(`/products/${p.id}`)}
@@ -71,4 +71,4 @@ export function FlashDealsSection() {
       </div>
     </section>
   );
-}
+};

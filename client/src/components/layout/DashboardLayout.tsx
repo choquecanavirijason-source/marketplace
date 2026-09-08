@@ -87,8 +87,13 @@ export const adminNavItems: DashboardNavItem[] = [
     href: "/admin",
     label: "Panel General",
     icon: LayoutDashboard,
-    exact: true,
     children: [
+      {
+        href: "/admin",
+        label: "Resumen General",
+        icon: LayoutDashboard,
+        exact: true,
+      },
       {
         href: "/admin/orders",
         label: "Pedidos y Ventas",
@@ -463,34 +468,72 @@ export const DashboardLayout = ({
       return normalizedPath === normalizedHref;
     }
 
-    return normalizedPath.startsWith(normalizedHref);
+    return normalizedPath === normalizedHref || normalizedPath.startsWith(`${normalizedHref}/`);
   }, [pathname]);
 
   const railGroups = useMemo(() => {
     return currentNavItems
-      .filter(item => item.children && item.children.length > 0 && isAuthorizedItem(item))
-      .map(item => ({
+      .filter((item) => isAuthorizedItem(item))
+      .map((item) => ({
         id: item.href,
         label: item.label,
         icon: item.icon,
         href: item.href,
         match: (path: string) => {
-          if (item.exact) {
-            return path === item.href;
+          const normalizedPath = path.replace(/\/$/, "");
+          const normalizedItemHref = item.href.replace(/\/$/, "");
+
+          if (normalizedPath === normalizedItemHref) {
+            return true;
           }
-          if (path === item.href) return true;
-          return item.children?.some(child => {
-            if (child.exact) {
-              return path === child.href;
-            }
-            return path.startsWith(child.href);
-          }) || false;
-        }
+
+          if (item.children && item.children.length > 0) {
+            return item.children.some((child) => {
+              if (!isAuthorizedItem(child)) return false;
+              const normalizedChildHref = child.href.replace(/\/$/, "");
+              if (child.exact) {
+                return normalizedPath === normalizedChildHref;
+              }
+              return (
+                normalizedPath === normalizedChildHref ||
+                normalizedPath.startsWith(`${normalizedChildHref}/`)
+              );
+            });
+          }
+
+          if (
+            !item.exact &&
+            normalizedItemHref !== "/" &&
+            normalizedItemHref !== "/admin" &&
+            normalizedItemHref !== "/account/dashboard"
+          ) {
+            return normalizedPath.startsWith(`${normalizedItemHref}/`);
+          }
+
+          return false;
+        },
       }));
   }, [currentNavItems, isAuthorizedItem]);
 
+  const handleTier1Click = useCallback(
+    (groupHref: string) => {
+      const group = currentNavItems.find((item) => item.href === groupHref);
+      if (!group) return;
+
+      const authorizedChildren = (group.children || []).filter(isAuthorizedItem);
+      const targetHref =
+        authorizedChildren.length > 0 ? authorizedChildren[0].href : group.href;
+
+      setSelectedGroupHref(group.href);
+      handleNavClick(targetHref);
+      router.push(targetHref);
+      if (isRailCollapsed) setIsRailCollapsed(false);
+    },
+    [currentNavItems, isAuthorizedItem, handleNavClick, router, isRailCollapsed],
+  );
+
   useEffect(() => {
-    const activeGroup = railGroups.find(g => g.match(pathname));
+    const activeGroup = railGroups.find((g) => g.match(pathname));
     if (activeGroup) {
       setSelectedGroupHref(activeGroup.href);
     } else if (railGroups.length > 0 && !selectedGroupHref) {
@@ -642,12 +685,7 @@ export const DashboardLayout = ({
                       <TooltipTrigger asChild>
                         <button
                           type="button"
-                          onClick={() => {
-                            setSelectedGroupHref(group.href);
-                            handleNavClick(group.href);
-                            router.push(group.href);
-                            if (isRailCollapsed) setIsRailCollapsed(false);
-                          }}
+                          onClick={() => handleTier1Click(group.href)}
                           className={cn(
                             "size-10 rounded-2xl flex items-center justify-center transition-all duration-200 cursor-pointer relative",
                             isActive || isSelected
@@ -822,9 +860,7 @@ export const DashboardLayout = ({
                   {hasAdminAccess && (
                     <DropdownMenuItem
                       onClick={() => {
-                        handleNavClick("/admin");
-                        router.push("/admin");
-                        setSelectedGroupHref("/admin");
+                        handleTier1Click("/admin");
                       }}
                       className={cn(
                         "cursor-pointer text-xs p-2.5 rounded-xl flex items-center gap-2.5 transition-all",
@@ -846,9 +882,7 @@ export const DashboardLayout = ({
                   )}
                   <DropdownMenuItem
                     onClick={() => {
-                      handleNavClick("/account/dashboard");
-                      router.push("/account/dashboard");
-                      setSelectedGroupHref("/account/dashboard");
+                      handleTier1Click("/account/dashboard");
                     }}
                     className={cn(
                       "cursor-pointer text-xs p-2.5 rounded-xl flex items-center gap-2.5 transition-all",
@@ -954,9 +988,7 @@ export const DashboardLayout = ({
                 <div key={group.id} className="space-y-1">
                   <button
                     onClick={() => {
-                      setSelectedGroupHref(group.href);
-                      handleNavClick(group.href);
-                      router.push(group.href);
+                      handleTier1Click(group.href);
                       setIsMobileOpen(false);
                     }}
                     className="w-full text-left px-2 py-1.5 text-[10px] font-bold text-muted-foreground/70 tracking-wider uppercase hover:text-foreground transition-colors flex items-center justify-between"

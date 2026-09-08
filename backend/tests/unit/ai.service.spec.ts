@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { AiService } from '../../src/modules/ai/services/ai.service';
+import { AiService } from '../../src/modules/api/ai/services/ai.service';
 
 describe('AiService - Unit Suite', () => {
   let aiService: AiService;

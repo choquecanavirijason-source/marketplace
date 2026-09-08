@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { CartService } from '../../src/modules/cart/services/cart.service';
+import { CartService } from '../../src/modules/api/cart/services/cart.service';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 
 describe('CartService - Unit Suite', () => {

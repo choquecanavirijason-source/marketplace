@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmailVerificationModal } from "@/components/auth/EmailVerificationModal";
+import { ImageWithFallback } from "@/components/common/ImageWithFallback";
 import { useAuth, useAuthStore } from "@/hooks/useAuth";
 import { useApiQuery } from "@/hooks/useApi";
 import { orderService } from "@/services/order.service";
@@ -1247,17 +1248,11 @@ function OrderCardItem({ order }: { order: Order }) {
             key={item.id}
             className="flex items-center gap-4 p-3.5 rounded-2xl bg-secondary/20 hover:bg-secondary/40 transition-colors"
           >
-            {item.image ? (
-              <img
-                src={item.image}
-                alt={item.name}
-                className="w-14 h-14 rounded-xl object-cover bg-secondary flex-shrink-0 border border-border/50"
-              />
-            ) : (
-              <div className="w-14 h-14 rounded-xl bg-secondary flex items-center justify-center flex-shrink-0 border border-border/50">
-                <Package className="w-6 h-6 text-muted-foreground" />
-              </div>
-            )}
+            <ImageWithFallback
+              src={item.image}
+              alt={item.name}
+              className="w-14 h-14 rounded-xl object-cover bg-secondary flex-shrink-0 border border-border/50"
+            />
             <div className="min-w-0 flex-1">
               <p className="text-sm font-bold text-foreground truncate">{item.name}</p>
               <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">

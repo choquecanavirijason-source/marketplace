@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { AuthService } from '../../src/modules/users/services/auth.service';
-import { UserEntity } from '../../src/modules/users/entities/user.entity';
-import { SessionEntity } from '../../src/modules/users/entities/session.entity';
-import { UserStatus, UserType } from '../../src/modules/users/enums';
+import { AuthService } from '../../src/modules/admin/users/services/auth.service';
+import { UserEntity } from '../../src/modules/admin/users/entities/user.entity';
+import { SessionEntity } from '../../src/modules/admin/users/entities/session.entity';
+import { UserStatus, UserType } from '../../src/modules/admin/users/enums';
 import { CryptoUtils, DuplicateEntityException, UnauthorizedException } from '../../src/shared';
 
 describe('AuthService - Unit Suite', () => {

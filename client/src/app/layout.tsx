@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     "Tu ferretería de confianza. Herramientas, calefactores, pinturas y accesorios para el hogar, con envío rápido a todo el país.",
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+const RootLayout = ({ children }: { children: ReactNode }) => {
   return (
     <html lang="es" suppressHydrationWarning>
       <head>
@@ -58,4 +58,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       </body>
     </html>
   );
-}
+};
+
+export default RootLayout;

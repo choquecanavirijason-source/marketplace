@@ -1,4 +1,4 @@
-﻿import { apiRequest } from "@/config/axios";
+import { apiRequest } from "@/config/axios";
 import type { Order, Product, AdminStats } from "@/types";
 
 interface ApiStats {
@@ -103,29 +103,53 @@ const mapRecentProduct = (p: ApiStats["data"]["recent_products"][number]): Produ
 
 export class AdminService {
   async getStats(): Promise<AdminStats> {
-    const payload = await apiRequest<ApiStats>("/admin/stats", { auth: true });
+    const payload = await apiRequest<any>("/admin/stats", { auth: true });
+    const raw = payload?.data || payload || {};
+
+    const totalProducts = Number(raw.total_products ?? raw.totalProducts ?? 0);
+    const totalOrders = Number(raw.total_orders ?? raw.totalOrders ?? 0);
+    const totalClients = Number(raw.total_clients ?? raw.totalClients ?? 0);
+    const revenue = Number(raw.revenue ?? 0);
+    const averageOrder = Number(raw.average_order ?? raw.averageOrder ?? (totalOrders > 0 ? revenue / totalOrders : 0));
+    const ordersByStatus = raw.orders_by_status ?? raw.ordersByStatus ?? {};
+
+    const rawMonths = raw.orders_by_month ?? raw.ordersByMonth ?? [];
+    const ordersByMonth = Array.isArray(rawMonths)
+      ? rawMonths.map((m: any) => ({
+          month: String(m.month ?? ""),
+          label: String(m.label ?? m.month ?? ""),
+          totalOrders: Number(m.total_orders ?? m.totalOrders ?? 0),
+          revenue: Number(m.revenue ?? 0),
+        }))
+      : [];
+
+    const rawTop = raw.top_products ?? raw.topProducts ?? [];
+    const topProducts = Array.isArray(rawTop)
+      ? rawTop.map((p: any) => ({
+          productId: Number(p.product_id ?? p.productId ?? 0),
+          name: String(p.name ?? ""),
+          totalSold: Number(p.total_sold ?? p.totalSold ?? 0),
+          totalRevenue: Number(p.total_revenue ?? p.totalRevenue ?? 0),
+        }))
+      : [];
+
+    const rawOrders = raw.recent_orders ?? raw.recentOrders ?? [];
+    const recentOrders = Array.isArray(rawOrders) ? rawOrders.map(mapRecentOrder) : [];
+
+    const rawProd = raw.recent_products ?? raw.recentProducts ?? [];
+    const recentProducts = Array.isArray(rawProd) ? rawProd.map(mapRecentProduct) : [];
 
     return {
-      totalProducts: payload.data.total_products,
-      totalOrders: payload.data.total_orders,
-      totalClients: payload.data.total_clients,
-      revenue: payload.data.revenue,
-      averageOrder: payload.data.average_order,
-      ordersByStatus: payload.data.orders_by_status,
-      ordersByMonth: payload.data.orders_by_month.map((m) => ({
-        month: m.month,
-        label: m.label,
-        totalOrders: m.total_orders,
-        revenue: m.revenue,
-      })),
-      topProducts: payload.data.top_products.map((p) => ({
-        productId: p.product_id,
-        name: p.name,
-        totalSold: p.total_sold,
-        totalRevenue: p.total_revenue,
-      })),
-      recentOrders: payload.data.recent_orders.map(mapRecentOrder),
-      recentProducts: payload.data.recent_products.map(mapRecentProduct),
+      totalProducts,
+      totalOrders,
+      totalClients,
+      revenue,
+      averageOrder,
+      ordersByStatus,
+      ordersByMonth,
+      topProducts,
+      recentOrders,
+      recentProducts,
     };
   }
 }

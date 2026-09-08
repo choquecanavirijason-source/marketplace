@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { LogisticsService } from '../../src/modules/logistics/services/logistics.service';
+import { LogisticsService } from '../../src/modules/api/logistics/services/logistics.service';
 import { NotFoundException } from '@nestjs/common';
 
 describe('LogisticsService - Unit Suite', () => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useI18nStore } from "@/infrastructure/state/i18nStore";
+import { useI18nStore } from "@/context/i18nStore";
 
 export const useTranslation = () => {
   const locale = useI18nStore((s) => s.locale);

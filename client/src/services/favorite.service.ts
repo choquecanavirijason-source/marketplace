@@ -1,24 +1,22 @@
-﻿import type { Product } from "@/types";
-import { useFavoritesStore } from "@/infrastructure/state/favoritesStore";
+import type { Product } from "@/types";
+import { useFavoritesStore } from "@/context/favoritesStore";
 
-export class FavoriteService {
-  getItems(): Product[] {
+export const favoriteService = {
+  getItems: (): Product[] => {
     return useFavoritesStore.getState().items;
-  }
+  },
 
-  toggle(product: Product): Product[] {
+  toggle: (product: Product): Product[] => {
     useFavoritesStore.getState().toggle(product);
     return useFavoritesStore.getState().items;
-  }
+  },
 
-  remove(productId: number): Product[] {
+  remove: (productId: number): Product[] => {
     useFavoritesStore.getState().remove(productId);
     return useFavoritesStore.getState().items;
-  }
+  },
 
-  subscribe(listener: () => void): () => void {
+  subscribe: (listener: () => void): (() => void) => {
     return useFavoritesStore.subscribe(listener);
-  }
-}
-
-export const favoriteService = new FavoriteService();
+  },
+};

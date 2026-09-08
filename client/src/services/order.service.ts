@@ -1,4 +1,4 @@
-﻿import type { Order, OrderItem, OrderStatus, Paginated, CreateOrderInput, AdminListOrdersParams } from "@/types";
+import type { Order, OrderItem, OrderStatus, Paginated, CreateOrderInput, AdminListOrdersParams } from "@/types";
 import { paginated } from "@/types";
 import { apiRequest } from "@/config/axios";
 
@@ -97,7 +97,12 @@ export class OrderService {
 
   async listMine(): Promise<Order[]> {
     const payload = await apiRequest<ApiOrderPayload>("/orders?limit=50", { auth: true });
-    const data = Array.isArray(payload.data) ? payload.data : [];
+    const raw = payload.data;
+    const data = Array.isArray(raw)
+      ? raw
+      : Array.isArray((raw as any)?.items)
+      ? (raw as any).items
+      : [];
     return data.map(mapOrder);
   }
 
@@ -117,7 +122,7 @@ export class OrderService {
     if (params?.search) query.set("search", params.search);
     if (params?.page) query.set("page", String(params.page));
 
-    const payload = await apiRequest<ApiOrderPayload>(`/admin/orders?${query.toString()}`, {
+    const payload = await apiRequest<any>(`/admin/orders?${query.toString()}`, {
       auth: true,
     });
 
@@ -126,16 +131,18 @@ export class OrderService {
     let metaPage = params?.page ?? 1;
     let metaLastPage = 1;
 
-    if (payload.data && typeof payload.data === "object" && "items" in payload.data && Array.isArray((payload.data as any).items)) {
+    const pagination = payload?.pagination;
+
+    if (payload?.data && typeof payload.data === "object" && "items" in payload.data && Array.isArray((payload.data as any).items)) {
       rawList = (payload.data as any).items;
       metaTotal = (payload.data as any).total ?? rawList.length;
       metaPage = (payload.data as any).page ?? 1;
       metaLastPage = (payload.data as any).totalPages ?? 1;
-    } else if (Array.isArray(payload.data)) {
+    } else if (Array.isArray(payload?.data)) {
       rawList = payload.data;
-      metaTotal = payload.meta?.total ?? rawList.length;
-      metaPage = payload.meta?.current_page ?? 1;
-      metaLastPage = payload.meta?.last_page ?? 1;
+      metaTotal = pagination?.total ?? payload.meta?.total ?? rawList.length;
+      metaPage = pagination?.page ?? payload.meta?.current_page ?? 1;
+      metaLastPage = pagination?.totalPages ?? payload.meta?.last_page ?? 1;
     }
 
     return paginated({

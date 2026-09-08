@@ -17,8 +17,9 @@ import {
   SwitchInput,
 } from "@/components/forms";
 
-const defaultImage =
-  "https://images.unsplash.com/photo-1581147036324-c17ac5b5df98?w=600&h=600&fit=crop&auto=format";
+import { DEFAULT_PRODUCT_IMAGE } from "@/shared/lib/constants";
+
+const defaultImage = DEFAULT_PRODUCT_IMAGE;
 
 interface ProductFormProps {
   product?: Product | null;
@@ -102,14 +103,14 @@ export const ProductForm = ({ product, onSuccess, onCancel, isModal }: ProductFo
       };
 
       if (isEditing && product) {
-        await apiRequest(`/products/${product.id}`, {
+        await apiRequest(`/admin/products/${product.id}`, {
           method: "PUT",
           body: payload,
           auth: true,
         });
         toast.success("Producto actualizado correctamente.");
       } else {
-        await apiRequest("/products", {
+        await apiRequest("/admin/products", {
           method: "POST",
           body: payload,
           auth: true,

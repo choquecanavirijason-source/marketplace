@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { UsersController } from '../../src/modules/users/controllers/users.controller';
-import { UserService } from '../../src/modules/users/services/user.service';
-import { UserStatus, UserType } from '../../src/modules/users/enums';
+import { UsersController } from '../../src/modules/admin/users/controllers/users.controller';
+import { UserService } from '../../src/modules/admin/users/services/user.service';
+import { UserStatus, UserType } from '../../src/modules/admin/users/enums';
 
 describe('UsersController - Admin Integration Suite', () => {
   let controller: UsersController;

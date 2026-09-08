@@ -62,9 +62,13 @@ export const SelectInput = ({
         {...registration}
         {...props}
       >
-        {emptyOptionLabel && <option value="">{emptyOptionLabel}</option>}
-        {options.map((opt) => (
-          <option key={opt.value} value={opt.value}>
+        {emptyOptionLabel && (
+          <option value="" className="bg-card bg-white dark:bg-[#1c1815] text-foreground">
+            {emptyOptionLabel}
+          </option>
+        )}
+        {options.map((opt, idx) => (
+          <option key={opt.value ?? `opt-${idx}`} value={opt.value} className="bg-card bg-white dark:bg-[#1c1815] text-foreground">
             {opt.label}
           </option>
         ))}

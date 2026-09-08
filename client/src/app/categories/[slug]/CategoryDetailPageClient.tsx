@@ -9,8 +9,9 @@ import { useInfiniteProducts } from "@/hooks/useInfiniteProducts";
 import { useCart } from "@/hooks/useCart";
 import { useApiQuery } from "@/hooks/useApi";
 import { categoryService } from "@/services/category.service";
+import { CategoryIcon, getCategoryColor } from "@/components/common/CategoryIcon";
 
-export default function CategoryDetailPageClient() {
+const CategoryDetailPageClient = () => {
   const params = useParams<{ slug: string }>();
   const router = useRouter();
   const slug = params.slug;
@@ -35,7 +36,7 @@ export default function CategoryDetailPageClient() {
           <button
             type="button"
             onClick={() => router.push("/categories")}
-            className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-primary hover:underline"
+            className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-primary hover:underline cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4" /> Volver a todas las categorías
           </button>
@@ -50,15 +51,15 @@ export default function CategoryDetailPageClient() {
         <button
           type="button"
           onClick={() => router.push("/categories")}
-          className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-primary transition-colors"
+          className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-primary transition-colors cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" /> Todas las categorías
         </button>
 
         {category ? (
           <div className="mb-8 flex items-center gap-4 rounded-2xl border border-border bg-card p-6 shadow-sm">
-            <span className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{ background: category.color }}>
-              <category.icon className="w-7 h-7 text-foreground/70" strokeWidth={1.75} />
+            <span className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0" style={{ background: getCategoryColor(category) }}>
+              <CategoryIcon category={category} className="w-7 h-7 text-foreground/70" strokeWidth={1.75} />
             </span>
             <div>
               <h1 className="text-3xl font-black text-foreground">{category.name}</h1>
@@ -88,9 +89,9 @@ export default function CategoryDetailPageClient() {
         ) : products && products.length > 0 ? (
           <>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {products.map((product) => (
+              {products.map((product, idx) => (
                 <ProductCard
-                  key={product.id}
+                  key={product.id || `cat-prod-${idx}`}
                   product={product}
                   onAddToCart={addToCart}
                   onSelect={(p) => router.push(`/products/${p.id}`)}
@@ -112,4 +113,6 @@ export default function CategoryDetailPageClient() {
       </section>
     </StorefrontTemplate>
   );
-}
+};
+
+export default CategoryDetailPageClient;

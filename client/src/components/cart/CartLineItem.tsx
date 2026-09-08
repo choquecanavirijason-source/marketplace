@@ -1,8 +1,9 @@
 import { Minus, Plus, X } from "lucide-react";
 import type { CartItem } from "@/types";
+import { ImageWithFallback } from "@/components/common/ImageWithFallback";
 import { formatPrice } from "@/shared/lib/format";
 
-export function CartLineItem({
+export const CartLineItem = ({
   item,
   onUpdateQty,
   onRemove,
@@ -10,10 +11,14 @@ export function CartLineItem({
   item: CartItem;
   onUpdateQty: (delta: number) => void;
   onRemove: () => void;
-}) {
+}) => {
   return (
     <div className="flex items-center gap-3 p-2 rounded-xl hover:bg-secondary transition-colors">
-      <img src={item.image} alt={item.name} className="w-12 h-12 rounded-lg object-cover bg-secondary" />
+      <ImageWithFallback
+        src={item.image}
+        alt={item.name}
+        className="w-12 h-12 rounded-lg object-cover bg-secondary shrink-0"
+      />
       <div className="flex-1 min-w-0">
         <p className="text-xs font-semibold truncate">{item.name}</p>
         <p className="text-xs text-primary font-bold">{formatPrice(item.price)}</p>
@@ -40,4 +45,4 @@ export function CartLineItem({
       </button>
     </div>
   );
-}
+};

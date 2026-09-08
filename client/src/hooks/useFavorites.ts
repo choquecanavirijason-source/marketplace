@@ -1,7 +1,7 @@
 "use client";
 
 import { favoriteService } from "@/services/favorite.service";
-import { useFavoritesStore } from "@/infrastructure/state/favoritesStore";
+import { useFavoritesStore } from "@/context/favoritesStore";
 import type { Product } from "@/types";
 
 export const useFavorites = () => {

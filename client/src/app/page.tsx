@@ -4,7 +4,7 @@ import { useState } from "react";
 import { StorefrontTemplate } from "@/components/layout/StorefrontTemplate";
 import { HomeTemplate } from "@/components/home/HomeTemplate";
 
-export default function HomePage() {
+const HomePage = () => {
   const [activeCategory, setActiveCategory] = useState("Todos");
 
   return (
@@ -12,4 +12,6 @@ export default function HomePage() {
       <HomeTemplate activeCategory={activeCategory} onCategoryChange={setActiveCategory} />
     </StorefrontTemplate>
   );
-}
+};
+
+export default HomePage;

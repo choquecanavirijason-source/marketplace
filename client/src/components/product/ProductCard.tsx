@@ -8,9 +8,10 @@ import { StarRating } from "@/components/feedback/StarRating";
 import { ProductPriceBlock } from "@/components/product/ProductPriceBlock";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useHasMounted } from "@/hooks/useHasMounted";
+import { ImageWithFallback } from "@/components/common/ImageWithFallback";
 import { cn } from "@/shared/lib/utils";
 
-export function ProductCard({
+export const ProductCard = ({
   product,
   onAddToCart,
   onSelect,
@@ -18,7 +19,7 @@ export function ProductCard({
   product: Product;
   onAddToCart: (product: Product) => void;
   onSelect: (product: Product) => void;
-}) {
+}) => {
   const [added, setAdded] = useState(false);
   const mounted = useHasMounted();
   const { isFavorite, toggleFavorite } = useFavorites();
@@ -43,17 +44,11 @@ export function ProductCard({
       </button>
 
       <div className="relative overflow-hidden bg-secondary aspect-[4/3] cursor-pointer" onClick={() => onSelect(product)}>
-        {product.image ? (
-          <img
-            src={product.image}
-            alt={product.name}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs font-medium">
-            Sin imagen
-          </div>
-        )}
+        <ImageWithFallback
+          src={product.image}
+          alt={product.name}
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+        />
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 dark:group-hover:bg-black/10 transition-colors" />
         <div className="absolute bottom-0 left-0 right-0 flex justify-center pb-3 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-200">
           <button

@@ -10,13 +10,13 @@ import { TrendingNewArrivalsSection } from "@/components/product/TrendingNewArri
 import { BrandsStrip } from "@/components/home/BrandsStrip";
 import { NewsletterSection } from "@/components/home/NewsletterSection";
 
-export function HomeTemplate({
+export const HomeTemplate = ({
   activeCategory,
   onCategoryChange,
 }: {
   activeCategory: string;
   onCategoryChange: (category: string) => void;
-}) {
+}) => {
   return (
     <>
       <HeroSection />
@@ -32,4 +32,4 @@ export function HomeTemplate({
       <NewsletterSection />
     </>
   );
-}
+};

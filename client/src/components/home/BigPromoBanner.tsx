@@ -1,4 +1,4 @@
-export function BigPromoBanner() {
+export const BigPromoBanner = () => {
   return (
     <section className="max-w-7xl mx-auto px-4 py-4 md:py-6">
       <div className="rounded-2xl md:rounded-3xl overflow-hidden relative bg-gradient-to-r from-primary to-orange-700 min-h-[180px] md:min-h-[200px] flex items-center">
@@ -30,4 +30,4 @@ export function BigPromoBanner() {
       </div>
     </section>
   );
-}
+};

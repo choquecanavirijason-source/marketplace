@@ -8,7 +8,7 @@ import { productService } from "@/services/product.service";
 import { useCart } from "@/hooks/useCart";
 import { ProductCard } from "@/components/product/ProductCard";
 
-export function RelatedProductsSection({ product }: { product: Product }) {
+export const RelatedProductsSection = ({ product }: { product: Product }) => {
   const { data: related = [] } = useApiQuery(
     ["related-products", product.id, product.category],
     () => productService.listRelated(product.id, product.category),
@@ -35,10 +35,10 @@ export function RelatedProductsSection({ product }: { product: Product }) {
         </button>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {related.map((p) => (
-          <ProductCard key={p.id} product={p} onAddToCart={addToCart} onSelect={(sel) => router.push(`/products/${sel.id}`)} />
+        {related.map((p, idx) => (
+          <ProductCard key={p.id || `related-${idx}`} product={p} onAddToCart={addToCart} onSelect={(sel) => router.push(`/products/${sel.id}`)} />
         ))}
       </div>
     </div>
   );
-}
+};

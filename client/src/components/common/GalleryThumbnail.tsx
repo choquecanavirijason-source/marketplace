@@ -1,6 +1,7 @@
+import { ImageWithFallback } from "@/components/common/ImageWithFallback";
 import { cn } from "@/shared/lib/utils";
 
-export function GalleryThumbnail({
+export const GalleryThumbnail = ({
   src,
   active,
   onClick,
@@ -8,7 +9,7 @@ export function GalleryThumbnail({
   src: string;
   active: boolean;
   onClick: () => void;
-}) {
+}) => {
   return (
     <button
       type="button"
@@ -18,7 +19,7 @@ export function GalleryThumbnail({
         active ? "border-primary shadow-md" : "border-border hover:border-primary/40",
       )}
     >
-      <img src={src} alt="" className="w-full h-full object-cover" />
+      <ImageWithFallback src={src} alt="" className="w-full h-full object-cover" />
     </button>
   );
-}
+};

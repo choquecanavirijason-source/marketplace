@@ -23,6 +23,25 @@ export class JwtAuthGuard implements CanActivate {
     ]);
 
     if (isPublic) {
+      const request = context.switchToHttp().getRequest();
+      const token = this.extractTokenFromHeader(request);
+      if (token) {
+        try {
+          const payload = await this.jwtService.verifyAsync(token, {
+            secret: appConfig.jwt.accessSecret,
+          });
+          request.user = {
+            id: payload.sub,
+            email: payload.email,
+            type: payload.type,
+            role: payload.role,
+            roles: Array.isArray(payload.roles) ? payload.roles : payload.role ? [payload.role] : [],
+            permissions: payload.permissions || [],
+            kycLevel: payload.kycLevel ?? 0,
+          };
+        } catch {
+        }
+      }
       return true;
     }
 

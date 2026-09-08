@@ -10,7 +10,7 @@ import { useFavorites } from "@/hooks/useFavorites";
 import { useCart } from "@/hooks/useCart";
 import { useHasMounted } from "@/hooks/useHasMounted";
 
-export default function FavoritesPage() {
+const FavoritesPage = () => {
   const router = useRouter();
   const mounted = useHasMounted();
   const { items } = useFavorites();
@@ -28,25 +28,29 @@ export default function FavoritesPage() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-10">
-        <div className="flex items-center gap-3 mb-8">
-          <div className="w-11 h-11 rounded-2xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-            <Heart className="w-5 h-5 text-primary" />
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 rounded-2xl bg-red-500/10 flex items-center justify-center text-red-500">
+            <Heart className="w-5 h-5 fill-red-500" />
           </div>
           <div>
-            <h1 className="text-2xl md:text-3xl font-black text-foreground leading-tight">Mis Favoritos</h1>
-            <p className="text-sm text-muted-foreground">
-              {mounted && items.length > 0 ? `${items.length} ${items.length === 1 ? "producto guardado" : "productos guardados"}` : "Todavía no guardaste productos"}
+            <h1 className="text-2xl font-black text-foreground">Mis Favoritos</h1>
+            <p className="text-xs text-muted-foreground">
+              {mounted ? `${items.length} ${items.length === 1 ? "producto guardado" : "productos guardados"}` : "Cargando…"}
             </p>
           </div>
         </div>
 
-        {!mounted || items.length === 0 ? (
-          <div className="max-w-lg mx-auto text-center py-16">
-            <div className="w-20 h-20 rounded-full bg-secondary flex items-center justify-center mx-auto mb-5">
-              <Heart className="w-10 h-10 text-muted-foreground" />
-            </div>
-            <h2 className="text-xl font-black text-foreground mb-2">Tu lista de favoritos está vacía</h2>
+        {!mounted ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div key={index} className="h-72 rounded-2xl border border-border bg-card animate-pulse" />
+            ))}
+          </div>
+        ) : items.length === 0 ? (
+          <div className="bg-card rounded-3xl border border-border p-12 text-center max-w-md mx-auto my-8">
+            <Heart className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-40" />
+            <h2 className="text-lg font-bold text-foreground mb-2">No tenés favoritos guardados</h2>
             <p className="text-muted-foreground mb-8">Guardá los productos que te interesan tocando el corazón en cualquier tarjeta.</p>
             <Button asChild className="h-11 px-8">
               <Link href="/">Explorar productos</Link>
@@ -54,9 +58,9 @@ export default function FavoritesPage() {
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {items.map((product) => (
+            {items.map((product, idx) => (
               <ProductCard
-                key={product.id}
+                key={product.id || `fav-prod-${idx}`}
                 product={product}
                 onAddToCart={addToCart}
                 onSelect={(p) => router.push(`/products/${p.id}`)}
@@ -67,4 +71,6 @@ export default function FavoritesPage() {
       </div>
     </StorefrontTemplate>
   );
-}
+};
+
+export default FavoritesPage;

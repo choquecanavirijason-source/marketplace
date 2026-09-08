@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { MeController } from '../../src/modules/users/controllers/me.controller';
-import { UserService } from '../../src/modules/users/services/user.service';
-import { SessionService } from '../../src/modules/users/services/session.service';
+import { MeController } from '../../src/modules/admin/users/controllers/me.controller';
+import { UserService } from '../../src/modules/admin/users/services/user.service';
+import { SessionService } from '../../src/modules/admin/users/services/session.service';
 
 describe('MeController - Integration Suite', () => {
   let controller: MeController;

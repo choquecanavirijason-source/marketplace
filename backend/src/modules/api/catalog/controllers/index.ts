@@ -1,0 +1,3 @@
+export * from './categories.controller';
+export * from './products.controller';
+export * from './hero-slides.controller';

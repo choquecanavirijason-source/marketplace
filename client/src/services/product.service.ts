@@ -1,4 +1,4 @@
-﻿import type {
+import type {
   Product,
   Paginated,
   ListProductsParams,
@@ -6,6 +6,7 @@
   AdminListProductsParams,
   UpsertProductData,
 } from "@/types";
+import type { IPaginatedResponse, IPaginationRequest } from "@/types/pagination";
 import { paginated } from "@/types";
 import { apiRequest } from "@/config/axios";
 
@@ -14,49 +15,59 @@ interface ApiProduct {
   slug: string;
   name: string;
   price: number;
-  price_raw: string;
-  original_price: number | null;
-  tag: string | null;
-  sku: string | null;
-  stock: number;
-  in_stock: boolean;
-  is_active: boolean;
-  description: string | null;
-  long_description: string | null;
-  details: string[] | null;
-  sizes: string[] | null;
-  colors: string[] | null;
-  tags: string[] | null;
-  weight: string | null;
-  warranty: string | null;
-  image: string | null;
-  images: string[];
-  category_id: number;
-  category: string | null;
-  category_slug: string | null;
-  rating: number;
-  reviews_count: number;
-  created_at: string;
-  updated_at: string;
+  price_raw?: string;
+  priceRaw?: string;
+  original_price?: number | null;
+  originalPrice?: number | null;
+  tag?: string | null;
+  sku?: string | null;
+  stock?: number;
+  in_stock?: boolean;
+  inStock?: boolean;
+  is_active?: boolean;
+  isActive?: boolean;
+  description?: string | null;
+  long_description?: string | null;
+  longDescription?: string | null;
+  details?: string[] | null;
+  sizes?: string[] | null;
+  colors?: string[] | null;
+  tags?: string[] | null;
+  weight?: string | null;
+  warranty?: string | null;
+  image?: string | null;
+  images?: string[];
+  category_id?: number;
+  categoryId?: number;
+  category?: string | null;
+  category_slug?: string | null;
+  categorySlug?: string | null;
+  rating?: number;
+  reviews_count?: number;
+  reviewsCount?: number;
+  created_at?: string;
+  createdAt?: string;
+  updated_at?: string;
+  updatedAt?: string;
 }
 
 const mapProduct = (p: ApiProduct): Product => ({
   id: p.id,
   slug: p.slug,
   name: p.name,
-  price: p.price,
-  originalPrice: p.original_price ?? undefined,
-  rating: p.rating,
-  reviews: p.reviews_count,
+  price: Number(p.price),
+  originalPrice: p.original_price ?? p.originalPrice ?? undefined,
+  rating: p.rating ?? 0,
+  reviews: p.reviews_count ?? p.reviewsCount ?? 0,
   image: p.image ?? "",
-  images: p.images,
+  images: Array.isArray(p.images) ? p.images : [],
   category: p.category ?? "",
-  categoryId: p.category_id,
+  categoryId: p.category_id ?? p.categoryId,
   badge: p.tag ?? undefined,
   weight: p.weight ?? undefined,
-  inStock: p.in_stock,
-  stock: p.stock,
-  isActive: p.is_active,
+  inStock: p.in_stock ?? p.inStock ?? (p.stock !== undefined ? p.stock > 0 : true),
+  stock: p.stock ?? 0,
+  isActive: p.is_active ?? p.isActive ?? true,
   sku: p.sku ?? undefined,
   tags: p.tags ?? undefined,
   description: p.description ?? undefined,
@@ -76,144 +87,206 @@ const extractPage = (payload: any): { items: any[]; total: number; page: number;
   return { items, total, page, lastPage: Math.max(1, totalPages) };
 };
 
-export class ProductService {
-  async list(params?: ListProductsParams): Promise<Product[]> {
-    const query = new URLSearchParams({ limit: String(params?.limit ?? 50) });
-    if (params?.search) query.set("search", params.search);
-    if (params?.category && params.category !== "Todos") query.set("category", params.category);
-    if (params?.tag) query.set("tag", params.tag);
-    if (params?.sortBy) query.set("sort_by", params.sortBy);
-    if (params?.sortOrder) query.set("sort_order", params.sortOrder);
-
-    const payload = await apiRequest<any>(`/products?${query.toString()}`);
-    return extractPage(payload).items.map(mapProduct);
+const getPaginated = async (params: IPaginationRequest): Promise<IPaginatedResponse<Product>> => {
+  const query = new URLSearchParams({
+    page: String(params.page || 1),
+    limit: String(params.limit || params.per_page || 10),
+  });
+  if (params.search) query.set("search", String(params.search));
+  if (params.category && params.category !== "Todos") query.set("category", String(params.category));
+  if (params.tag) query.set("tag", String(params.tag));
+  if (params.isActive !== undefined && params.isActive !== "") {
+    query.set("is_active", String(params.isActive));
   }
+  if (params.sort_by) query.set("sort_by", String(params.sort_by));
+  if (params.sort_dir) query.set("sort_order", String(params.sort_dir));
 
-  async listFlashDeals(): Promise<Product[]> {
-    const query = new URLSearchParams({ tag: "Oferta", limit: "8" });
-    const payload = await apiRequest<any>(`/products?${query.toString()}`);
-    return extractPage(payload).items.map(mapProduct);
-  }
+  const payload = await apiRequest<any>(`/admin/products?${query.toString()}`, {
+    auth: true,
+  });
 
-  async paginate(params?: PaginateProductsParams): Promise<Paginated<Product>> {
-    const query = new URLSearchParams({
-      limit: String(params?.limit ?? 12),
-      page: String(params?.page ?? 1),
-    });
+  const rawData = payload?.data ?? payload ?? {};
+  const rawItems = Array.isArray(rawData)
+    ? rawData
+    : Array.isArray(rawData?.items)
+    ? rawData.items
+    : [];
 
-    if (params?.category && params.category !== "Todos") query.set("category", params.category);
-    if (params?.search) query.set("search", params.search);
-    if (params?.tag) query.set("tag", params.tag);
-    if (params?.sortBy) query.set("sort_by", params.sortBy);
-    if (params?.sortOrder) query.set("sort_order", params.sortOrder);
+  const items = rawItems.map(mapProduct);
 
-    const payload = await apiRequest<any>(`/products?${query.toString()}`);
-    const { items, total, page, lastPage } = extractPage(payload);
-    return paginated({
-      data: items.map(mapProduct),
-      meta: { total, current_page: page, last_page: lastPage },
-    });
-  }
+  const total = Number(payload?.pagination?.total ?? rawData?.total ?? items.length);
+  const limit = Number(params.limit || params.per_page || 10);
+  const page = Number(params.page || 1);
+  const totalPages = Number(payload?.pagination?.totalPages ?? Math.max(1, Math.ceil(total / limit)));
 
-  async getById(id: number): Promise<Product | null> {
-    try {
-      const payload = await apiRequest<{ data: ApiProduct }>(`/products/${id}`);
-      return mapProduct(payload.data);
-    } catch {
-      return null;
-    }
-  }
+  const pagination = {
+    page,
+    limit,
+    total,
+    totalPages,
+  };
 
-  async adminList(params?: AdminListProductsParams, signal?: AbortSignal): Promise<Paginated<Product>> {
-    const query = new URLSearchParams({
-      limit: String(params?.limit ?? 10),
-      page: String(params?.page ?? 1),
-    });
+  return {
+    success: payload?.success ?? true,
+    data: items,
+    pagination,
+    meta: payload?.meta,
+  };
+};
 
-    if (params?.search) query.set("search", params.search);
-    if (params?.category && params.category !== "Todos") query.set("category", params.category);
-    if (params?.isActive !== undefined && params.isActive !== "") {
-      query.set("is_active", String(params.isActive));
-    }
-    if (params?.sortBy) query.set("sort_by", params.sortBy);
-    if (params?.sortOrder) query.set("sort_order", params.sortOrder);
+const create = async (data: UpsertProductData): Promise<Product> => {
+  const payload = await apiRequest<{ data: ApiProduct }>("/admin/products", {
+    method: "POST",
+    auth: true,
+    body: {
+      name: data.name,
+      categoryId: data.categoryId,
+      price: data.price,
+      originalPrice: data.originalPrice ? data.originalPrice : null,
+      tag: data.tag ?? null,
+      sku: data.sku ?? null,
+      stock: data.stock ?? 0,
+      weight: data.weight ?? null,
+      warranty: data.warranty ?? null,
+      isActive: data.isActive ?? true,
+      description: data.description ?? "",
+      images: data.image ? [{ url: data.image, alt: data.name }] : [],
+    },
+  });
+  const item = payload?.data ?? payload;
+  return mapProduct(item);
+};
 
-    const payload = await apiRequest<any>(`/admin/products?${query.toString()}`, {
-      auth: true,
-      signal,
-    });
+const update = async (id: number, data: UpsertProductData): Promise<Product> => {
+  const payload = await apiRequest<{ data: ApiProduct }>(`/admin/products/${id}`, {
+    method: "PUT",
+    auth: true,
+    body: {
+      name: data.name,
+      categoryId: data.categoryId,
+      price: data.price,
+      originalPrice: data.originalPrice ? data.originalPrice : null,
+      tag: data.tag ?? null,
+      sku: data.sku ?? null,
+      stock: data.stock ?? 0,
+      weight: data.weight ?? null,
+      warranty: data.warranty ?? null,
+      isActive: data.isActive ?? true,
+      description: data.description ?? "",
+      images: data.image ? [{ url: data.image, alt: data.name }] : [],
+    },
+  });
+  const item = payload?.data ?? payload;
+  return mapProduct(item);
+};
 
-    const { items, total, page, lastPage } = extractPage(payload);
-    return paginated({
-      data: items.map(mapProduct),
-      meta: { total, current_page: page, last_page: lastPage },
-    });
-  }
+const remove = async (id: number): Promise<void> => {
+  await apiRequest(`/admin/products/${id}`, { method: "DELETE", auth: true });
+};
 
-  async toggleActive(id: number, isActive: boolean): Promise<Product> {
-    const payload = await apiRequest<any>(`/admin/products/${id}/status`, {
-      method: "PATCH",
-      auth: true,
-      body: { is_active: isActive },
-    });
-    const item = payload?.data ?? payload;
-    return mapProduct(item);
-  }
+const toggleActive = async (id: number, isActive: boolean): Promise<Product> => {
+  const payload = await apiRequest<any>(`/admin/products/${id}/status`, {
+    method: "PATCH",
+    auth: true,
+    body: { is_active: isActive },
+  });
+  const item = payload?.data ?? payload;
+  return mapProduct(item);
+};
 
-  async delete(id: number): Promise<void> {
-    await apiRequest(`/products/${id}`, { method: "DELETE", auth: true });
-  }
+const list = async (params?: ListProductsParams): Promise<Product[]> => {
+  const query = new URLSearchParams({ limit: String(params?.limit ?? 50) });
+  if (params?.search) query.set("search", params.search);
+  if (params?.category && params.category !== "Todos") query.set("category", params.category);
+  if (params?.tag) query.set("tag", params.tag);
+  if (params?.sortBy) query.set("sort_by", params.sortBy);
+  if (params?.sortOrder) query.set("sort_order", params.sortOrder);
 
-  async update(id: number, data: UpsertProductData): Promise<Product> {
-    const payload = await apiRequest<{ data: ApiProduct }>(`/products/${id}`, {
-      method: "PUT",
-      auth: true,
-      body: {
-        name: data.name,
-        category_id: data.categoryId,
-        price: data.price,
-        original_price: data.originalPrice ?? null,
-        tag: data.tag ?? null,
-        sku: data.sku ?? null,
-        stock: data.stock ?? 0,
-        weight: data.weight ?? null,
-        warranty: data.warranty ?? null,
-        is_active: data.isActive ?? true,
-        description: data.description ?? "",
-        images: [{ url: data.image, alt: data.name }],
-      },
-    });
+  const payload = await apiRequest<any>(`/products?${query.toString()}`);
+  return extractPage(payload).items.map(mapProduct);
+};
+
+const listFlashDeals = async (): Promise<Product[]> => {
+  const query = new URLSearchParams({ tag: "Oferta", limit: "8" });
+  const payload = await apiRequest<any>(`/products?${query.toString()}`);
+  return extractPage(payload).items.map(mapProduct);
+};
+
+const paginate = async (params?: PaginateProductsParams): Promise<Paginated<Product>> => {
+  const query = new URLSearchParams({
+    limit: String(params?.limit ?? 12),
+    page: String(params?.page ?? 1),
+  });
+
+  if (params?.category && params.category !== "Todos") query.set("category", params.category);
+  if (params?.search) query.set("search", params.search);
+  if (params?.tag) query.set("tag", params.tag);
+  if (params?.sortBy) query.set("sort_by", params.sortBy);
+  if (params?.sortOrder) query.set("sort_order", params.sortOrder);
+
+  const payload = await apiRequest<any>(`/products?${query.toString()}`);
+  const { items, total, page, lastPage } = extractPage(payload);
+  return paginated({
+    data: items.map(mapProduct),
+    meta: { total, current_page: page, last_page: lastPage },
+  });
+};
+
+const getById = async (id: number): Promise<Product | null> => {
+  try {
+    const payload = await apiRequest<{ data: ApiProduct }>(`/products/${id}`);
     return mapProduct(payload.data);
+  } catch {
+    return null;
   }
+};
 
-  async create(data: UpsertProductData): Promise<Product> {
-    const payload = await apiRequest<{ data: ApiProduct }>("/products", {
-      method: "POST",
-      auth: true,
-      body: {
-        name: data.name,
-        category_id: data.categoryId,
-        price: data.price,
-        original_price: data.originalPrice ?? null,
-        tag: data.tag ?? null,
-        sku: data.sku ?? null,
-        stock: data.stock ?? 0,
-        weight: data.weight ?? null,
-        warranty: data.warranty ?? null,
-        is_active: data.isActive ?? true,
-        description: data.description ?? "",
-        images: [{ url: data.image, alt: data.name }],
-      },
-    });
-    return mapProduct(payload.data);
+const adminList = async (params?: AdminListProductsParams, signal?: AbortSignal): Promise<Paginated<Product>> => {
+  const query = new URLSearchParams({
+    limit: String(params?.limit ?? 10),
+    page: String(params?.page ?? 1),
+  });
+
+  if (params?.search) query.set("search", params.search);
+  if (params?.category && params.category !== "Todos") query.set("category", params.category);
+  if (params?.isActive !== undefined && params.isActive !== "") {
+    query.set("is_active", String(params.isActive));
   }
+  if (params?.sortBy) query.set("sort_by", params.sortBy);
+  if (params?.sortOrder) query.set("sort_order", params.sortOrder);
 
-  async listRelated(id: number, category: string): Promise<Product[]> {
-    const query = new URLSearchParams({ category, limit: "5" });
-    const payload = await apiRequest<any>(`/products?${query.toString()}`);
-    const items = extractPage(payload).items.map(mapProduct);
-    return items.filter((p) => p.id !== id).slice(0, 4);
-  }
-}
+  const payload = await apiRequest<any>(`/admin/products?${query.toString()}`, {
+    auth: true,
+    signal,
+  });
 
-export const productService = new ProductService();
+  const { items, total, page, lastPage } = extractPage(payload);
+  return paginated({
+    data: items.map(mapProduct),
+    meta: { total, current_page: page, last_page: lastPage },
+  });
+};
+
+const listRelated = async (id: number, category: string): Promise<Product[]> => {
+  const query = new URLSearchParams({ category, limit: "5" });
+  const payload = await apiRequest<any>(`/products?${query.toString()}`);
+  const items = extractPage(payload).items.map(mapProduct);
+  return items.filter((p) => p.id !== id).slice(0, 4);
+};
+
+export const ProductService = {
+  getPaginated,
+  create,
+  update,
+  remove,
+  delete: remove,
+  toggleActive,
+  list,
+  listFlashDeals,
+  paginate,
+  getById,
+  adminList,
+  listRelated,
+};
+
+export const productService = ProductService;

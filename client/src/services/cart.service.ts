@@ -1,38 +1,36 @@
-﻿import type { CartItem, Product, ServerCartItem } from "@/types";
-import { useCartStore } from "@/infrastructure/state/cartStore";
+import type { CartItem, Product, ServerCartItem } from "@/types";
+import { useCartStore } from "@/context/cartStore";
 import { apiRequest } from "@/config/axios";
 
-export class CartService {
-  getItems(): CartItem[] {
+export const cartService = {
+  getItems: (): CartItem[] => {
     return useCartStore.getState().items;
-  }
+  },
 
-  add(product: Product): CartItem[] {
+  add: (product: Product): CartItem[] => {
     useCartStore.getState().add(product);
     return useCartStore.getState().items;
-  }
+  },
 
-  remove(productId: number): CartItem[] {
+  remove: (productId: number): CartItem[] => {
     useCartStore.getState().remove(productId);
     return useCartStore.getState().items;
-  }
+  },
 
-  updateQty(productId: number, delta: number): CartItem[] {
+  updateQty: (productId: number, delta: number): CartItem[] => {
     useCartStore.getState().updateQty(productId, delta);
     return useCartStore.getState().items;
-  }
+  },
 
-  clear(): CartItem[] {
+  clear: (): CartItem[] => {
     useCartStore.getState().clear();
     return useCartStore.getState().items;
-  }
+  },
 
-  subscribe(listener: () => void): () => void {
+  subscribe: (listener: () => void): (() => void) => {
     return useCartStore.subscribe(listener);
-  }
-}
-
-export const cartService = new CartService();
+  },
+};
 
 interface ApiCartItem {
   id: number;
@@ -52,55 +50,87 @@ interface ApiCartItem {
   };
 }
 
-const mapServerItem = (i: ApiCartItem): ServerCartItem => ({
-  id: i.id,
-  productId: i.product_id,
-  quantity: i.quantity,
-  product: {
-    id: i.product.id,
-    slug: i.product.slug,
-    name: i.product.name,
-    price: i.product.price,
-    originalPrice: i.product.original_price,
-    image: i.product.image,
-    images: i.product.images,
-    stock: i.product.stock,
-    inStock: i.product.in_stock,
-    category: i.product.category,
+const mapServerItem = (i: any): ServerCartItem => {
+  const prod = i?.product || {};
+  const productId = Number(i?.productId ?? i?.product_id ?? prod.id ?? 0);
+  const name = String(prod.name ?? i?.name ?? i?.productName ?? "Producto");
+  const slug = String(prod.slug ?? i?.slug ?? i?.productSlug ?? "");
+  const price = Number(prod.price ?? i?.unitPrice ?? i?.currentPrice ?? 0);
+  const originalPrice = prod.original_price ?? prod.originalPrice ?? null;
+  const image = prod.image ?? i?.image ?? null;
+  const images = Array.isArray(prod.images) ? prod.images : (image ? [image] : []);
+  const stock = Number(prod.stock ?? i?.stockAvailable ?? 99);
+  const inStock = Boolean(prod.in_stock ?? prod.inStock ?? (stock > 0));
+  const category = String(prod.category ?? i?.category ?? "");
+
+  return {
+    id: Number(i?.id ?? 0),
+    productId,
+    quantity: Number(i?.quantity ?? 1),
+    product: {
+      id: productId,
+      slug,
+      name,
+      price,
+      originalPrice: originalPrice !== null ? Number(originalPrice) : null,
+      image,
+      images,
+      stock,
+      inStock,
+      category,
+    },
+  };
+};
+
+export const serverCartService = {
+  getCart: async (): Promise<ServerCartItem[]> => {
+    const payload = await apiRequest<any>("/cart", { auth: true });
+    const raw = payload?.data || payload || {};
+    const rawItems = Array.isArray(raw)
+      ? raw
+      : Array.isArray(raw.items)
+      ? raw.items
+      : [];
+    return rawItems.map(mapServerItem);
   },
-});
 
-export class ServerCartService {
-  async getCart(): Promise<ServerCartItem[]> {
-    const payload = await apiRequest<{ data: ApiCartItem[] }>("/cart", { auth: true });
-    return payload.data.map(mapServerItem);
-  }
-
-  async addItem(productId: number, quantity: number): Promise<ServerCartItem> {
-    const payload = await apiRequest<{ data: ApiCartItem }>("/cart/items", {
+  addItem: async (productId: number, quantity: number): Promise<ServerCartItem> => {
+    const payload = await apiRequest<any>("/cart/items", {
       method: "POST",
       auth: true,
-      body: { product_id: productId, quantity },
+      body: { productId, product_id: productId, quantity },
     });
-    return mapServerItem(payload.data);
-  }
+    const raw = payload?.data || payload || {};
+    const rawItems = Array.isArray(raw)
+      ? raw
+      : Array.isArray(raw.items)
+      ? raw.items
+      : [raw];
+    const found = rawItems.find((it: any) => (it.productId ?? it.product_id) === productId) || rawItems[0] || raw;
+    return mapServerItem(found);
+  },
 
-  async updateQuantity(cartItemId: number, quantity: number): Promise<ServerCartItem> {
-    const payload = await apiRequest<{ data: ApiCartItem }>(`/cart/items/${cartItemId}`, {
+  updateQuantity: async (cartItemId: number, quantity: number): Promise<ServerCartItem> => {
+    const payload = await apiRequest<any>(`/cart/items/${cartItemId}`, {
       method: "PATCH",
       auth: true,
       body: { quantity },
     });
-    return mapServerItem(payload.data);
-  }
+    const raw = payload?.data || payload || {};
+    const rawItems = Array.isArray(raw)
+      ? raw
+      : Array.isArray(raw.items)
+      ? raw.items
+      : [raw];
+    const found = rawItems.find((it: any) => it.id === cartItemId) || rawItems[0] || raw;
+    return mapServerItem(found);
+  },
 
-  async removeItem(cartItemId: number): Promise<void> {
+  removeItem: async (cartItemId: number): Promise<void> => {
     await apiRequest(`/cart/items/${cartItemId}`, { method: "DELETE", auth: true });
-  }
+  },
 
-  async clearCart(): Promise<void> {
+  clearCart: async (): Promise<void> => {
     await apiRequest("/cart", { method: "DELETE", auth: true });
-  }
-}
-
-export const serverCartService = new ServerCartService();
+  },
+};

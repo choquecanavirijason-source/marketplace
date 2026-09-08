@@ -8,7 +8,7 @@ import { CompactProductRow } from "@/components/product/ProductRow";
 import { LoadMoreButton } from "@/components/common/LoadMoreButton";
 import type { Product } from "@/types";
 
-export function TrendingNewArrivalsSection() {
+export const TrendingNewArrivalsSection = () => {
   const trending = useInfiniteProducts({ pageSize: 4, startPage: 2 });
   const newArrivals = useInfiniteProducts({ tag: "Nuevo", pageSize: 4 });
   const { addToCart } = useCart();
@@ -39,9 +39,9 @@ export function TrendingNewArrivalsSection() {
               </a>
             </div>
             <div className="space-y-3">
-              {items.map((product) => (
+              {items.map((product, idx) => (
                 <CompactProductRow
-                  key={product.id}
+                  key={product.id || `trending-${idx}`}
                   product={product}
                   onSelect={() => router.push(`/products/${product.id}`)}
                   onAddToCart={() => addToCart(product)}
@@ -62,4 +62,4 @@ export function TrendingNewArrivalsSection() {
       </div>
     </section>
   );
-}
+};

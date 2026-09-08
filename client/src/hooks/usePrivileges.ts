@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuthStore } from "@/infrastructure/state/authStore";
+import { useAuthStore } from "@/context/authStore";
 
 export const usePrivileges = () => {
   const user = useAuthStore((s) => s.user);

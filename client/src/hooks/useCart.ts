@@ -1,9 +1,9 @@
 "use client";
 
 import { useCallback, useEffect } from "react";
-import { useCartStore } from "@/infrastructure/state/cartStore";
+import { useCartStore } from "@/context/cartStore";
 import { getAuthToken } from "@/shared/lib/marketplaceStorage";
-import { mergeCartWithServer } from "@/infrastructure/cartSync";
+import { mergeCartWithServer } from "@/context/cartSync";
 import { cartService, serverCartService } from "@/services/cart.service";
 import type { Product } from "@/types";
 

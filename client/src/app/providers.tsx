@@ -24,7 +24,7 @@ if (typeof window !== "undefined") {
   );
 }
 
-export function Providers({ children }: { children: ReactNode }) {
+export const Providers = ({ children }: { children: ReactNode }) => {
   const [queryClient] = useState(
     () =>
       new QueryClient({

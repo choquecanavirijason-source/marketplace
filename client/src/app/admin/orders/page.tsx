@@ -44,8 +44,9 @@ import { ORDER_STATUS_CLASSES, ORDER_STATUS_LABELS, formatOrderDate } from "@/sh
 import { ORDER_STATUSES } from "@/types";
 import type { Order, OrderStatus } from "@/types";
 import { toast } from "sonner";
+import { ImageWithFallback } from "@/components/common/ImageWithFallback";
 
-export default function AdminOrdersPage() {
+const AdminOrdersPage = () => {
   const [statusFilter, setStatusFilter] = useState<OrderStatus | "todos">("todos");
   const [search, setSearch] = useState("");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -92,7 +93,6 @@ export default function AdminOrdersPage() {
 
   return (
     <div className="w-full px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-          {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h1 className="text-2xl font-black text-foreground tracking-tight flex items-center gap-2.5">
@@ -105,7 +105,6 @@ export default function AdminOrdersPage() {
             </div>
           </div>
 
-          {/* Quick Stats Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
               <div className="flex items-center gap-3">
@@ -160,7 +159,6 @@ export default function AdminOrdersPage() {
             </div>
           </div>
 
-          {/* Filters & Search */}
           <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 bg-card rounded-2xl border border-border p-4 shadow-sm">
             <div className="relative flex-1">
               <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -192,7 +190,6 @@ export default function AdminOrdersPage() {
             </div>
           </div>
 
-          {/* Orders List */}
           <div className="space-y-4">
             {ordersLoading ? (
               <div className="rounded-2xl border border-border bg-card p-12 text-center text-sm text-muted-foreground flex flex-col items-center justify-center gap-2">
@@ -253,7 +250,6 @@ export default function AdminOrdersPage() {
                     </div>
                   </div>
 
-                  {/* Order Items preview */}
                   <div className="p-5 flex flex-wrap items-center justify-between gap-4">
                     <div className="space-y-1 text-xs text-muted-foreground">
                       <p className="flex items-center gap-1.5">
@@ -291,7 +287,6 @@ export default function AdminOrdersPage() {
             )}
           </div>
 
-        {/* Modal: Order Details */}
         <Dialog open={selectedOrder !== null} onOpenChange={(open) => { if (!open) setSelectedOrder(null); }}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl p-6">
             <DialogHeader>
@@ -316,7 +311,6 @@ export default function AdminOrdersPage() {
 
             {selectedOrder && (
               <div className="space-y-6 pt-2">
-                {/* Client & Shipping info */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 rounded-2xl bg-secondary/30 p-4 border border-border text-xs">
                   <div>
                     <h4 className="font-bold text-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
@@ -345,7 +339,6 @@ export default function AdminOrdersPage() {
                   </div>
                 </div>
 
-                {/* Items */}
                 <div>
                   <h4 className="font-bold text-foreground uppercase tracking-wider text-xs mb-3">
                     Productos del Pedido ({selectedOrder.items.length})
@@ -356,17 +349,11 @@ export default function AdminOrdersPage() {
                         key={item.id}
                         className="flex items-center gap-3.5 p-3 rounded-2xl border border-border bg-card"
                       >
-                        {item.image ? (
-                          <img
-                            src={item.image}
-                            alt={item.name}
-                            className="w-12 h-12 rounded-xl object-cover bg-secondary flex-shrink-0"
-                          />
-                        ) : (
-                          <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center flex-shrink-0">
-                            <Package className="w-5 h-5 text-muted-foreground" />
-                          </div>
-                        )}
+                        <ImageWithFallback
+                          src={item.image}
+                          alt={item.name}
+                          className="w-12 h-12 rounded-xl object-cover bg-secondary flex-shrink-0"
+                        />
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-bold text-foreground truncate">{item.name}</p>
                           <p className="text-xs text-muted-foreground">
@@ -379,7 +366,6 @@ export default function AdminOrdersPage() {
                   </div>
                 </div>
 
-                {/* Totals */}
                 <div className="border-t border-border pt-4 space-y-2 text-xs">
                   <div className="flex justify-between text-muted-foreground">
                     <span>Subtotal:</span>
@@ -399,7 +385,6 @@ export default function AdminOrdersPage() {
           </DialogContent>
         </Dialog>
 
-        {/* Modal: Confirm Status Change */}
         <AlertDialog open={pendingStatus !== null} onOpenChange={(open) => { if (!open) setPendingStatus(null); }}>
           <AlertDialogContent>
             <AlertDialogHeader>
@@ -423,4 +408,6 @@ export default function AdminOrdersPage() {
         </AlertDialog>
     </div>
   );
-}
+};
+
+export default AdminOrdersPage;
