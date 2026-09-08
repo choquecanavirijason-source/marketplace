@@ -236,6 +236,134 @@ export interface CurrentUser {
 export type DashboardMode = "buyer" | "seller" | "company" | "admin";
 export const ACTIVE_MODE_KEY = "ferromax-active-mode";
 
+export const getSavedActiveMode = (userId?: string | number): DashboardMode => {
+  if (typeof window === "undefined") return "buyer";
+  try {
+    if (userId) {
+      const userCookie = getCookie(`${ACTIVE_MODE_KEY}-${userId}`) as DashboardMode;
+      if (
+        userCookie === "buyer" ||
+        userCookie === "seller" ||
+        userCookie === "company" ||
+        userCookie === "admin"
+      ) {
+        return userCookie;
+      }
+      const userLocal = window.localStorage.getItem(`${ACTIVE_MODE_KEY}-${userId}`) as DashboardMode;
+      if (
+        userLocal === "buyer" ||
+        userLocal === "seller" ||
+        userLocal === "company" ||
+        userLocal === "admin"
+      ) {
+        return userLocal;
+      }
+    }
+
+    const cookieMode = getCookie(ACTIVE_MODE_KEY) as DashboardMode;
+    if (
+      cookieMode === "buyer" ||
+      cookieMode === "seller" ||
+      cookieMode === "company" ||
+      cookieMode === "admin"
+    ) {
+      return cookieMode;
+    }
+    const localMode = window.localStorage.getItem(ACTIVE_MODE_KEY) as DashboardMode;
+    if (
+      localMode === "buyer" ||
+      localMode === "seller" ||
+      localMode === "company" ||
+      localMode === "admin"
+    ) {
+      return localMode;
+    }
+  } catch {}
+  return "buyer";
+};
+
+export const setSavedActiveMode = (mode: DashboardMode, userId?: string | number): void => {
+  if (typeof window === "undefined") return;
+  try {
+    setCookie(ACTIVE_MODE_KEY, mode, 30);
+    window.localStorage.setItem(ACTIVE_MODE_KEY, mode);
+    if (userId) {
+      setCookie(`${ACTIVE_MODE_KEY}-${userId}`, mode, 30);
+      window.localStorage.setItem(`${ACTIVE_MODE_KEY}-${userId}`, mode);
+    }
+  } catch {}
+};
+
+export const resolveValidMode = (
+  desiredMode: DashboardMode | null | undefined,
+  user: CurrentUser | null,
+  computedRoles?: {
+    isAdmin?: boolean;
+    isSeller?: boolean;
+    hasSellerProfile?: boolean;
+    hasBusinessProfile?: boolean;
+  }
+): DashboardMode => {
+  if (!user) return "buyer";
+
+  const isAdm =
+    computedRoles?.isAdmin ??
+    Boolean(
+      user.role === "admin" ||
+        user.role === "superadmin" ||
+        user.role === "support" ||
+        user.role === "staff" ||
+        user.type === "admin" ||
+        user.type === "superadmin" ||
+        user.type === "support" ||
+        user.roles?.includes("admin") ||
+        user.roles?.includes("superadmin")
+    );
+
+  const isSel =
+    computedRoles?.isSeller ??
+    Boolean(
+      user.role === "seller" ||
+        user.role === "seller_individual" ||
+        user.role === "seller_company" ||
+        user.type === "seller" ||
+        user.type === "seller_individual" ||
+        user.type === "seller_company" ||
+        user.roles?.includes("seller") ||
+        user.roles?.includes("seller_individual") ||
+        user.roles?.includes("seller_company") ||
+        Boolean(user.sellerProfile)
+    );
+
+  const isComp =
+    computedRoles?.hasBusinessProfile ??
+    Boolean(user.businessProfile || user.type === "company" || user.type === "seller_company");
+
+  if (desiredMode === "admin" && isAdm) return "admin";
+  if (desiredMode === "seller" && isSel) return "seller";
+  if (desiredMode === "company" && isComp) return "company";
+  if (desiredMode === "buyer") return "buyer";
+
+  if (isAdm) return "admin";
+  if (isSel) return "seller";
+  if (isComp) return "company";
+  return "buyer";
+};
+
+export const getDestinationForMode = (mode: DashboardMode): string => {
+  switch (mode) {
+    case "admin":
+      return "/admin";
+    case "seller":
+      return "/seller/dashboard";
+    case "company":
+      return "/account/company";
+    case "buyer":
+    default:
+      return "/account/dashboard";
+  }
+};
+
 export const syncAuthCookies = (): void => {
   if (typeof window === "undefined") return;
 

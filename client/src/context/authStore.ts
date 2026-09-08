@@ -9,6 +9,9 @@ import {
   logoutCustomer,
   syncAuthCookies,
   ACTIVE_MODE_KEY,
+  getSavedActiveMode,
+  setSavedActiveMode,
+  resolveValidMode,
   type DashboardMode,
 } from "@/shared/lib/marketplaceStorage";
 import { mergeCartWithServer } from "./cartSync";
@@ -116,11 +119,8 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   role: null,
 
   setActiveMode: (mode: DashboardMode) => {
-    if (typeof window !== "undefined") {
-      try {
-        window.localStorage.setItem(ACTIVE_MODE_KEY, mode);
-      } catch {}
-    }
+    const user = get().user;
+    setSavedActiveMode(mode, user?.id);
     set({ activeMode: mode });
   },
 
@@ -135,16 +135,12 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     };
     setCurrentUser(updatedUser);
     const computed = computeRoles(updatedUser);
+    setSavedActiveMode("seller", updatedUser.id);
     set({
       user: updatedUser,
       activeMode: "seller",
       ...computed,
     });
-    if (typeof window !== "undefined") {
-      try {
-        window.localStorage.setItem(ACTIVE_MODE_KEY, "seller");
-      } catch {}
-    }
   },
 
   init: async () => {
@@ -174,16 +170,10 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         return;
       }
 
-      let savedMode: DashboardMode = "buyer";
-      try {
-        const raw = window.localStorage.getItem(ACTIVE_MODE_KEY) as DashboardMode;
-        if (raw === "buyer" || raw === "seller" || raw === "company" || raw === "admin") {
-          savedMode = raw;
-        }
-      } catch {}
-
       if (storedUser) {
         const initialComputed = computeRoles(storedUser);
+        const savedMode = getSavedActiveMode(storedUser.id);
+        const validMode = resolveValidMode(savedMode, storedUser, initialComputed);
         set({
           user: storedUser,
           token: token ?? null,
@@ -195,7 +185,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
           isSeller: initialComputed.isSeller,
           hasSellerProfile: initialComputed.hasSellerProfile,
           hasBusinessProfile: initialComputed.hasBusinessProfile,
-          activeMode: savedMode,
+          activeMode: validMode,
           role: initialComputed.role,
           isInitialized: true,
         });
@@ -217,6 +207,8 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       try {
         const session = await authService.me();
         const freshComputed = computeRoles(session.user);
+        const savedMode = getSavedActiveMode(session.user.id);
+        const validMode = resolveValidMode(savedMode, session.user, freshComputed);
         set({
           user: session.user,
           token: session.accessToken || token || getAuthToken(),
@@ -228,7 +220,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
           isSeller: freshComputed.isSeller,
           hasSellerProfile: freshComputed.hasSellerProfile,
           hasBusinessProfile: freshComputed.hasBusinessProfile,
-          activeMode: savedMode,
+          activeMode: validMode,
           role: freshComputed.role,
           isInitialized: true,
         });
@@ -281,6 +273,9 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     try {
       const session = await authService.login(credentials);
       const computed = computeRoles(session.user);
+      const savedMode = getSavedActiveMode(session.user.id);
+      const validMode = resolveValidMode(savedMode, session.user, computed);
+      setSavedActiveMode(validMode, session.user.id);
       set({
         user: session.user,
         token: session.accessToken,
@@ -288,6 +283,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         status: "authenticated",
         isAuthenticated: true,
         ...computed,
+        activeMode: validMode,
         isLoggingIn: false,
         isInitialized: true,
       });
@@ -305,6 +301,9 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       if (!authService.loginOtp) throw new Error("loginOtp no implementado");
       const session = await authService.loginOtp(credentials);
       const computed = computeRoles(session.user);
+      const savedMode = getSavedActiveMode(session.user.id);
+      const validMode = resolveValidMode(savedMode, session.user, computed);
+      setSavedActiveMode(validMode, session.user.id);
       set({
         user: session.user,
         token: session.accessToken,
@@ -312,6 +311,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         status: "authenticated",
         isAuthenticated: true,
         ...computed,
+        activeMode: validMode,
         isLoggingIn: false,
         isInitialized: true,
       });
@@ -329,6 +329,9 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       if (!authService.phoneLogin) throw new Error("phoneLogin no implementado");
       const session = await authService.phoneLogin(phone, code);
       const computed = computeRoles(session.user);
+      const savedMode = getSavedActiveMode(session.user.id);
+      const validMode = resolveValidMode(savedMode, session.user, computed);
+      setSavedActiveMode(validMode, session.user.id);
       set({
         user: session.user,
         token: session.accessToken,
@@ -336,6 +339,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         status: "authenticated",
         isAuthenticated: true,
         ...computed,
+        activeMode: validMode,
         isLoggingIn: false,
         isInitialized: true,
       });
@@ -353,6 +357,9 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       if (!authService.socialLogin) throw new Error("socialLogin no implementado");
       const session = await authService.socialLogin(data);
       const computed = computeRoles(session.user);
+      const savedMode = getSavedActiveMode(session.user.id);
+      const validMode = resolveValidMode(savedMode, session.user, computed);
+      setSavedActiveMode(validMode, session.user.id);
       set({
         user: session.user,
         token: session.accessToken,
@@ -360,6 +367,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         status: "authenticated",
         isAuthenticated: true,
         ...computed,
+        activeMode: validMode,
         isLoggingIn: false,
         isInitialized: true,
       });
@@ -383,6 +391,9 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     try {
       const session = await authService.register(data);
       const computed = computeRoles(session.user);
+      const savedMode = getSavedActiveMode(session.user.id);
+      const validMode = resolveValidMode(savedMode, session.user, computed);
+      setSavedActiveMode(validMode, session.user.id);
       set({
         user: session.user,
         token: session.accessToken,
@@ -390,6 +401,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         status: "authenticated",
         isAuthenticated: true,
         ...computed,
+        activeMode: validMode,
         isRegistering: false,
         isInitialized: true,
       });

@@ -32,7 +32,12 @@ import { getPublicAuthConfig } from "@/services/auth-config.service";
 import type { PublicAuthSettings } from "@/types";
 import { GoogleIcon, FacebookIcon, AppleIcon } from "@/components/icons/SocialIcons";
 import { authService } from "@/services/auth.service";
-import { syncAuthCookies } from "@/shared/lib/marketplaceStorage";
+import {
+  syncAuthCookies,
+  getSavedActiveMode,
+  resolveValidMode,
+  getDestinationForMode,
+} from "@/shared/lib/marketplaceStorage";
 
 const loginSchema = z.object({
   email: z
@@ -100,6 +105,8 @@ const LoginForm = () => {
     isAdmin,
     isLoading,
     user,
+    activeMode,
+    setActiveMode,
     logout,
   } = useAuth();
 
@@ -126,7 +133,18 @@ const LoginForm = () => {
   };
 
   const safeRedirect = sanitizeRedirect(rawRedirect);
-  const targetDestination = safeRedirect || (isAdmin ? "/admin" : "/account/dashboard");
+  const activeValidMode = resolveValidMode(
+    activeMode || getSavedActiveMode(user?.id),
+    user
+  );
+  const targetDestination = safeRedirect || getDestinationForMode(activeValidMode);
+
+  const getContinueButtonLabel = () => {
+    if (activeValidMode === "admin") return "Ir al Panel de Administración";
+    if (activeValidMode === "seller") return "Ir al Panel de Vendedor";
+    if (activeValidMode === "company") return "Ir a Datos de Empresa (B2B)";
+    return "Continuar a mi Panel";
+  };
 
   const handleNavigateToDestination = (destination: string) => {
     syncAuthCookies();
@@ -180,28 +198,21 @@ const LoginForm = () => {
   const { setValue, handleSubmit } = methods;
 
   useEffect(() => {
-    if (isAuthenticated && !isLoading) {
+    if (isAuthenticated && !isLoading && user) {
       syncAuthCookies();
       const timer = setTimeout(() => {
         handleNavigateToDestination(targetDestination);
       }, 350);
       return () => clearTimeout(timer);
     }
-  }, [isAuthenticated, isLoading, targetDestination]);
+  }, [isAuthenticated, isLoading, user, targetDestination]);
 
   const redirectAfterLogin = (session: any) => {
     syncAuthCookies();
-    const role = (session.user.role || session.user.roleName || session.user.type || "").toLowerCase();
-    const userRoles = (session.user.roles || []).map((r: string) => r.toLowerCase());
-    const isAdminRole =
-      role === "admin" ||
-      role === "superadmin" ||
-      role === "support" ||
-      role === "staff" ||
-      userRoles.includes("admin") ||
-      userRoles.includes("superadmin");
-
-    const destination = safeRedirect || (isAdminRole ? "/admin" : "/account/dashboard");
+    const savedMode = getSavedActiveMode(session.user?.id);
+    const validMode = resolveValidMode(savedMode, session.user);
+    setActiveMode(validMode);
+    const destination = safeRedirect || getDestinationForMode(validMode);
     handleNavigateToDestination(destination);
   };
 
@@ -416,7 +427,7 @@ const LoginForm = () => {
                   handleNavigateToDestination(targetDestination);
                 }}
               >
-                <span>{isAdmin ? "Ir al Panel de Administración" : "Continuar a mi Panel"}</span>
+                <span>{getContinueButtonLabel()}</span>
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </Button>

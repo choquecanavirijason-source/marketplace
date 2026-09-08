@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
-import { DashboardLayout, adminNavItems } from "@/components/layout/DashboardLayout";
+import { DashboardLayout, adminNavItems } from "@/components/dashboard/DashboardLayout";
 
 interface AdminLayoutProps {
   children: ReactNode;

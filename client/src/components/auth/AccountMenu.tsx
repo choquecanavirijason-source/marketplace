@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  Building2,
   ChevronDown,
   Heart,
   LayoutDashboard,
@@ -25,10 +26,23 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "@/hooks/useTranslation";
 import { cn } from "@/shared/lib/utils";
+import {
+  getDestinationForMode,
+  resolveValidMode,
+} from "@/shared/lib/marketplaceStorage";
 
 export const AccountMenu = () => {
   const router = useRouter();
-  const { user, isAuthenticated, isAdmin, isSeller, logout, isLoggingOut, isLoading } = useAuth();
+  const {
+    user,
+    isAuthenticated,
+    isAdmin,
+    isSeller,
+    activeMode,
+    logout,
+    isLoggingOut,
+    isLoading,
+  } = useAuth();
   const { dict } = useTranslation();
   const [mounted, setMounted] = useState(false);
 
@@ -60,7 +74,15 @@ export const AccountMenu = () => {
   const name = user?.name || user?.firstName || dict.common.myAccount;
   const email = user?.email || "";
   const avatarLetter = (name?.[0] || "U").toUpperCase();
-  const dashboardHref = isAdmin ? "/admin" : "/account/dashboard";
+  const validMode = resolveValidMode(activeMode, user);
+  const dashboardHref = getDestinationForMode(validMode);
+
+  const getDashboardLabel = () => {
+    if (validMode === "admin") return dict.common.adminPanel;
+    if (validMode === "seller") return "Panel de Vendedor";
+    if (validMode === "company") return "Panel Empresa (B2B)";
+    return dict.common.myAccount;
+  };
 
   const handleLogout = async () => {
     try {
@@ -141,13 +163,17 @@ export const AccountMenu = () => {
                 href={dashboardHref}
                 className="cursor-pointer flex items-center gap-2.5 text-xs py-2"
               >
-                {isAdmin ? (
+                {validMode === "admin" ? (
                   <Store className="size-4 text-primary" />
+                ) : validMode === "seller" ? (
+                  <Store className="size-4 text-primary" />
+                ) : validMode === "company" ? (
+                  <Building2 className="size-4 text-primary" />
                 ) : (
                   <LayoutDashboard className="size-4 text-primary" />
                 )}
                 <span className="font-semibold text-foreground">
-                  {isAdmin ? dict.common.adminPanel : dict.common.myAccount}
+                  {getDashboardLabel()}
                 </span>
               </Link>
             </DropdownMenuItem>
