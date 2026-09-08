@@ -5,6 +5,7 @@ import {
   UserEntity,
   UserProfileProps,
   BusinessProfileProps,
+  SellerProfileProps,
   AddressProps,
   OnboardingStateProps,
 } from '../entities/user.entity';
@@ -13,6 +14,7 @@ import {
   usersTable,
   userProfilesTable,
   businessProfilesTable,
+  sellerProfilesTable,
   rolesTable,
   userRolesTable,
   addressesTable,
@@ -27,18 +29,26 @@ export class UserRepository implements UserRepositoryPort {
   private async hydrateUser(userRow: typeof usersTable.$inferSelect): Promise<UserEntity> {
     const userId = userRow.id;
 
-    const [profileRows, businessRows, userRoleRows, addressRows, onboardingRows] =
+    const [profileRows, businessRows, sellerRows, userRoleRows, addressRows, onboardingRows] =
       await Promise.all([
         this.drizzle.db
           .select()
           .from(userProfilesTable)
           .where(eq(userProfilesTable.userId, userId))
-          .limit(1),
+          .limit(1)
+          .catch(() => []),
         this.drizzle.db
           .select()
           .from(businessProfilesTable)
           .where(eq(businessProfilesTable.userId, userId))
-          .limit(1),
+          .limit(1)
+          .catch(() => []),
+        this.drizzle.db
+          .select()
+          .from(sellerProfilesTable)
+          .where(eq(sellerProfilesTable.userId, userId))
+          .limit(1)
+          .catch(() => []),
         this.drizzle.db
           .select({
             roleCodename: rolesTable.codename,
@@ -46,16 +56,19 @@ export class UserRepository implements UserRepositoryPort {
           })
           .from(userRolesTable)
           .innerJoin(rolesTable, eq(userRolesTable.roleId, rolesTable.id))
-          .where(eq(userRolesTable.userId, userId)),
+          .where(eq(userRolesTable.userId, userId))
+          .catch(() => []),
         this.drizzle.db
           .select()
           .from(addressesTable)
           .where(eq(addressesTable.userId, userId))
-          .orderBy(desc(addressesTable.isDefault)),
+          .orderBy(desc(addressesTable.isDefault))
+          .catch(() => []),
         this.drizzle.db
           .select()
           .from(onboardingStatesTable)
-          .where(eq(onboardingStatesTable.userId, userId)),
+          .where(eq(onboardingStatesTable.userId, userId))
+          .catch(() => []),
       ]);
 
     const profile: UserProfileProps = profileRows[0]
@@ -91,6 +104,23 @@ export class UserRepository implements UserRepositoryPort {
           billingEmail: businessRows[0].billingEmail,
           fiscalAddress: businessRows[0].fiscalAddress,
           reviewStatus: businessRows[0].reviewStatus,
+        }
+      : null;
+
+    const sellerProfile: SellerProfileProps | null = sellerRows[0]
+      ? {
+          id: sellerRows[0].id,
+          userId: sellerRows[0].userId,
+          storeName: sellerRows[0].storeName,
+          storeSlug: sellerRows[0].storeSlug,
+          description: sellerRows[0].description,
+          logoUrl: sellerRows[0].logoUrl,
+          bannerUrl: sellerRows[0].bannerUrl,
+          taxId: sellerRows[0].taxId,
+          rating: sellerRows[0].rating,
+          totalSales: sellerRows[0].totalSales,
+          isVerified: sellerRows[0].isVerified,
+          status: sellerRows[0].status,
         }
       : null;
 
@@ -143,6 +173,7 @@ export class UserRepository implements UserRepositoryPort {
       deletedAt: userRow.deletedAt,
       profile,
       businessProfile,
+      sellerProfile,
       roles,
       permissions: Array.from(permissionSet),
       addresses,
@@ -245,6 +276,26 @@ export class UserRepository implements UserRepositoryPort {
       });
     }
 
+    if (json.sellerProfile) {
+      await this.drizzle.db
+        .insert(sellerProfilesTable)
+        .values({
+          userId: createdUser.id,
+          storeName: json.sellerProfile.storeName,
+          storeSlug: json.sellerProfile.storeSlug,
+          description: json.sellerProfile.description || null,
+          logoUrl: json.sellerProfile.logoUrl || null,
+          bannerUrl: json.sellerProfile.bannerUrl || null,
+          taxId: json.sellerProfile.taxId || null,
+          status: json.sellerProfile.status || 'active',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .catch((err) => {
+          console.error('Error auto-creating seller profile on registration:', err);
+        });
+    }
+
     const defaultRoleCodename = json.type || 'buyer';
     await this.assignRoles(createdUser.id, [defaultRoleCodename]);
 
@@ -330,6 +381,38 @@ export class UserRepository implements UserRepositoryPort {
             reviewStatus: json.businessProfile.reviewStatus || 'pending',
             updatedAt: new Date(),
           },
+        });
+    }
+
+    if (json.sellerProfile) {
+      await this.drizzle.db
+        .insert(sellerProfilesTable)
+        .values({
+          userId: user.id,
+          storeName: json.sellerProfile.storeName,
+          storeSlug: json.sellerProfile.storeSlug,
+          description: json.sellerProfile.description || null,
+          logoUrl: json.sellerProfile.logoUrl || null,
+          bannerUrl: json.sellerProfile.bannerUrl || null,
+          taxId: json.sellerProfile.taxId || null,
+          status: json.sellerProfile.status || 'active',
+          updatedAt: new Date(),
+        })
+        .onConflictDoUpdate({
+          target: sellerProfilesTable.userId,
+          set: {
+            storeName: json.sellerProfile.storeName,
+            storeSlug: json.sellerProfile.storeSlug,
+            description: json.sellerProfile.description || null,
+            logoUrl: json.sellerProfile.logoUrl || null,
+            bannerUrl: json.sellerProfile.bannerUrl || null,
+            taxId: json.sellerProfile.taxId || null,
+            status: json.sellerProfile.status || 'active',
+            updatedAt: new Date(),
+          },
+        })
+        .catch((err) => {
+          console.error('Error updating seller profile:', err);
         });
     }
 

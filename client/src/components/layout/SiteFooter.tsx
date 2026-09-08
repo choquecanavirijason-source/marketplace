@@ -16,9 +16,9 @@ const LINK_COLUMNS = [
     links: [
       { label: "Inicio", href: "/" },
       { label: "Tienda", href: "/categories" },
-      { label: "Sobre Nosotros", href: "#" },
-      { label: "Blog", href: "#" },
-      { label: "Contacto", href: "#" },
+      { label: "Sobre Nosotros", href: "/about" },
+      { label: "Contacto", href: "/contact" },
+      { label: "Preguntas Frecuentes", href: "/contact" },
     ],
   },
   {
@@ -35,10 +35,10 @@ const LINK_COLUMNS = [
     title: "Mi Cuenta",
     links: [
       { label: "Mi Perfil", href: "/account/profile" },
-      { label: "Historial de Pedidos", href: "/account/dashboard" },
+      { label: "Mis Pedidos", href: "/account/orders" },
       { label: "Favoritos", href: "/favorites" },
-      { label: "Seguir Pedido", href: "#" },
-      { label: "Devoluciones", href: "#" },
+      { label: "Seguir Pedido", href: "/account/orders" },
+      { label: "Devoluciones", href: "/contact" },
     ],
   },
 ];

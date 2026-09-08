@@ -26,6 +26,21 @@ export interface BusinessProfileProps {
   reviewStatus?: string;
 }
 
+export interface SellerProfileProps {
+  id?: number;
+  userId?: string;
+  storeName: string;
+  storeSlug: string;
+  description?: string | null;
+  logoUrl?: string | null;
+  bannerUrl?: string | null;
+  taxId?: string | null;
+  rating?: string | number;
+  totalSales?: string | number;
+  isVerified?: boolean;
+  status?: string;
+}
+
 export interface AddressProps {
   id?: string;
   userId?: string;
@@ -63,6 +78,7 @@ export interface UserProps {
 
   profile?: UserProfileProps | null;
   businessProfile?: BusinessProfileProps | null;
+  sellerProfile?: SellerProfileProps | null;
   roles?: string[];
   permissions?: string[];
   addresses?: AddressProps[];
@@ -118,6 +134,7 @@ export class UserEntity {
 
   get profile(): UserProfileProps | undefined | null { return this.props.profile; }
   get businessProfile(): BusinessProfileProps | undefined | null { return this.props.businessProfile; }
+  get sellerProfile(): SellerProfileProps | undefined | null { return this.props.sellerProfile; }
   get roles(): string[] { return this.props.roles ?? [this.type]; }
   get permissions(): string[] { return this.props.permissions ?? []; }
   get addresses(): AddressProps[] { return this.props.addresses ?? []; }
@@ -182,6 +199,16 @@ export class UserEntity {
       ...businessData,
       legalName: businessData.legalName ?? this.props.businessProfile?.legalName ?? '',
       taxId: businessData.taxId ?? this.props.businessProfile?.taxId ?? '',
+    };
+    this.props.updatedAt = new Date();
+  }
+
+  updateSellerProfile(sellerData: Partial<SellerProfileProps>) {
+    this.props.sellerProfile = {
+      ...this.props.sellerProfile,
+      ...sellerData,
+      storeName: sellerData.storeName ?? this.props.sellerProfile?.storeName ?? '',
+      storeSlug: sellerData.storeSlug ?? this.props.sellerProfile?.storeSlug ?? '',
     };
     this.props.updatedAt = new Date();
   }
@@ -301,6 +328,7 @@ export class UserEntity {
       completionPct: this.completionPct,
       profile: this.profile,
       businessProfile: this.businessProfile,
+      sellerProfile: this.sellerProfile,
       roles: this.roles,
       permissions: this.permissions,
       addresses: this.addresses,

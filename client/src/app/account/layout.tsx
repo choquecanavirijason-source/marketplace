@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
-import { DashboardLayout, customerNavItems } from "@/components/layout/DashboardLayout";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
 
 interface AccountLayoutProps {
   children: ReactNode;
@@ -26,7 +26,7 @@ export const AccountLayout = ({ children }: AccountLayoutProps) => {
 
   return (
     <ProtectedRoute redirectTo="/account/login">
-      <DashboardLayout navItems={customerNavItems} title="Mi Cuenta">
+      <DashboardLayout title="Mi Cuenta">
         {children}
       </DashboardLayout>
     </ProtectedRoute>

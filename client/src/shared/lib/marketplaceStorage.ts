@@ -213,11 +213,28 @@ export interface CurrentUser {
     billingEmail?: string;
     fiscalAddress?: string;
   } | null;
+  sellerProfile?: {
+    id?: number;
+    userId?: string;
+    storeName: string;
+    storeSlug: string;
+    description?: string | null;
+    logoUrl?: string | null;
+    bannerUrl?: string | null;
+    taxId?: string | null;
+    rating?: string | number;
+    totalSales?: string | number;
+    isVerified?: boolean;
+    status?: string;
+  } | null;
   onboardingStates?: Array<{
     stepCode: string;
     status: string;
   }> | null;
 }
+
+export type DashboardMode = "buyer" | "seller" | "company" | "admin";
+export const ACTIVE_MODE_KEY = "ferromax-active-mode";
 
 export const syncAuthCookies = (): void => {
   if (typeof window === "undefined") return;

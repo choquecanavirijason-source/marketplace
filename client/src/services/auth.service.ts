@@ -102,6 +102,7 @@ const mapUser = (u?: any): AuthUser => {
     emailVerified: Boolean(u.emailVerified || u.emailVerifiedAt),
     phoneVerified: Boolean(u.phoneVerified || u.phoneVerifiedAt),
     businessProfile: u.businessProfile || null,
+    sellerProfile: u.sellerProfile || null,
   };
 };
 

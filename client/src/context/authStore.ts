@@ -4,9 +4,12 @@ import {
   getAuthToken,
   getRefreshToken,
   getCurrentUser,
+  setCurrentUser,
   getAuthPermissions,
   logoutCustomer,
   syncAuthCookies,
+  ACTIVE_MODE_KEY,
+  type DashboardMode,
 } from "@/shared/lib/marketplaceStorage";
 import { mergeCartWithServer } from "./cartSync";
 import { normalizePermission } from "@/config/permissions";
@@ -33,8 +36,12 @@ export interface AuthState {
   isAdmin: boolean;
   isSuperAdmin: boolean;
   isSeller: boolean;
+  hasSellerProfile: boolean;
+  hasBusinessProfile: boolean;
+  activeMode: DashboardMode;
   role: string | null;
 
+  setActiveMode: (mode: DashboardMode) => void;
   init: () => Promise<void>;
   login: (credentials: LoginCredentials) => Promise<AuthSession>;
   loginOtp: (credentials: { phone?: string; email?: string; code: string }) => Promise<AuthSession>;
@@ -44,6 +51,7 @@ export interface AuthState {
   register: (data: RegisterData) => Promise<AuthSession>;
   updateProfile: (data: UpdateProfileData) => Promise<AuthSession>;
   updateBusinessProfile: (data: any) => Promise<any>;
+  setSellerProfile: (profile: any) => void;
   logout: () => Promise<void>;
   logoutAll: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -65,19 +73,24 @@ const computeRoles = (user: CurrentUser | null) => {
     role === "staff" ||
     userRoles.includes("admin") ||
     userRoles.includes("superadmin");
+  const hasSellerProfile = Boolean(user?.sellerProfile);
+  const hasBusinessProfile = Boolean(user?.businessProfile);
   const isSeller =
     role === "seller" ||
     role === "seller_individual" ||
     role === "seller_company" ||
     userRoles.includes("seller") ||
     userRoles.includes("seller_individual") ||
-    userRoles.includes("seller_company");
+    userRoles.includes("seller_company") ||
+    hasSellerProfile;
 
   return {
     role,
     isAdmin,
     isSuperAdmin,
     isSeller,
+    hasSellerProfile,
+    hasBusinessProfile,
   };
 };
 
@@ -97,7 +110,42 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   isAdmin: false,
   isSuperAdmin: false,
   isSeller: false,
+  hasSellerProfile: false,
+  hasBusinessProfile: false,
+  activeMode: "buyer" as DashboardMode,
   role: null,
+
+  setActiveMode: (mode: DashboardMode) => {
+    if (typeof window !== "undefined") {
+      try {
+        window.localStorage.setItem(ACTIVE_MODE_KEY, mode);
+      } catch {}
+    }
+    set({ activeMode: mode });
+  },
+
+  setSellerProfile: (profile: any) => {
+    const current = get().user;
+    if (!current) return;
+    const roles = Array.from(new Set([...(current.roles || []), "seller"]));
+    const updatedUser = {
+      ...current,
+      sellerProfile: profile,
+      roles,
+    };
+    setCurrentUser(updatedUser);
+    const computed = computeRoles(updatedUser);
+    set({
+      user: updatedUser,
+      activeMode: "seller",
+      ...computed,
+    });
+    if (typeof window !== "undefined") {
+      try {
+        window.localStorage.setItem(ACTIVE_MODE_KEY, "seller");
+      } catch {}
+    }
+  },
 
   init: async () => {
     if (typeof window === "undefined") return;
@@ -126,6 +174,14 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         return;
       }
 
+      let savedMode: DashboardMode = "buyer";
+      try {
+        const raw = window.localStorage.getItem(ACTIVE_MODE_KEY) as DashboardMode;
+        if (raw === "buyer" || raw === "seller" || raw === "company" || raw === "admin") {
+          savedMode = raw;
+        }
+      } catch {}
+
       if (storedUser) {
         const initialComputed = computeRoles(storedUser);
         set({
@@ -137,6 +193,9 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
           isAdmin: initialComputed.isAdmin,
           isSuperAdmin: initialComputed.isSuperAdmin,
           isSeller: initialComputed.isSeller,
+          hasSellerProfile: initialComputed.hasSellerProfile,
+          hasBusinessProfile: initialComputed.hasBusinessProfile,
+          activeMode: savedMode,
           role: initialComputed.role,
           isInitialized: true,
         });
@@ -167,6 +226,9 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
           isAdmin: freshComputed.isAdmin,
           isSuperAdmin: freshComputed.isSuperAdmin,
           isSeller: freshComputed.isSeller,
+          hasSellerProfile: freshComputed.hasSellerProfile,
+          hasBusinessProfile: freshComputed.hasBusinessProfile,
+          activeMode: savedMode,
           role: freshComputed.role,
           isInitialized: true,
         });
@@ -183,10 +245,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
                 permissions: retrySession.permissions,
                 status: "authenticated",
                 isAuthenticated: true,
-                isAdmin: retryComputed.isAdmin,
-                isSuperAdmin: retryComputed.isSuperAdmin,
-                isSeller: retryComputed.isSeller,
-                role: retryComputed.role,
+                ...retryComputed,
                 isInitialized: true,
               });
               return;
@@ -228,10 +287,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         permissions: session.permissions,
         status: "authenticated",
         isAuthenticated: true,
-        isAdmin: computed.isAdmin,
-        isSuperAdmin: computed.isSuperAdmin,
-        isSeller: computed.isSeller,
-        role: computed.role,
+        ...computed,
         isLoggingIn: false,
         isInitialized: true,
       });
@@ -255,10 +311,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         permissions: session.permissions,
         status: "authenticated",
         isAuthenticated: true,
-        isAdmin: computed.isAdmin,
-        isSuperAdmin: computed.isSuperAdmin,
-        isSeller: computed.isSeller,
-        role: computed.role,
+        ...computed,
         isLoggingIn: false,
         isInitialized: true,
       });
@@ -282,10 +335,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         permissions: session.permissions,
         status: "authenticated",
         isAuthenticated: true,
-        isAdmin: computed.isAdmin,
-        isSuperAdmin: computed.isSuperAdmin,
-        isSeller: computed.isSeller,
-        role: computed.role,
+        ...computed,
         isLoggingIn: false,
         isInitialized: true,
       });
@@ -309,10 +359,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         permissions: session.permissions,
         status: "authenticated",
         isAuthenticated: true,
-        isAdmin: computed.isAdmin,
-        isSuperAdmin: computed.isSuperAdmin,
-        isSeller: computed.isSeller,
-        role: computed.role,
+        ...computed,
         isLoggingIn: false,
         isInitialized: true,
       });
@@ -342,10 +389,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         permissions: session.permissions,
         status: "authenticated",
         isAuthenticated: true,
-        isAdmin: computed.isAdmin,
-        isSuperAdmin: computed.isSuperAdmin,
-        isSeller: computed.isSeller,
-        role: computed.role,
+        ...computed,
         isRegistering: false,
         isInitialized: true,
       });
@@ -366,10 +410,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         user: session.user,
         token: session.accessToken || get().token,
         permissions: session.permissions,
-        isAdmin: computed.isAdmin,
-        isSuperAdmin: computed.isSuperAdmin,
-        isSeller: computed.isSeller,
-        role: computed.role,
+        ...computed,
         isUpdatingProfile: false,
       });
       return session;
@@ -453,10 +494,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         permissions: session.permissions,
         status: "authenticated",
         isAuthenticated: true,
-        isAdmin: computed.isAdmin,
-        isSuperAdmin: computed.isSuperAdmin,
-        isSeller: computed.isSeller,
-        role: computed.role,
+        ...computed,
       });
     } catch {
       const refreshToken = getRefreshToken();
@@ -472,10 +510,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
               permissions: retrySession.permissions,
               status: "authenticated",
               isAuthenticated: true,
-              isAdmin: retryComputed.isAdmin,
-              isSuperAdmin: retryComputed.isSuperAdmin,
-              isSeller: retryComputed.isSeller,
-              role: retryComputed.role,
+              ...retryComputed,
             });
           }
         } catch {}

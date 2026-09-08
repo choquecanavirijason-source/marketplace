@@ -19,6 +19,10 @@ export interface AuthContextValue {
   isAuthenticated: boolean;
   isAdmin: boolean;
   isSeller: boolean;
+  hasSellerProfile: boolean;
+  hasBusinessProfile: boolean;
+  activeMode: import("@/shared/lib/marketplaceStorage").DashboardMode;
+  setActiveMode: (mode: import("@/shared/lib/marketplaceStorage").DashboardMode) => void;
   isLoading: boolean;
   isLoggingIn: boolean;
   isRegistering: boolean;
@@ -32,6 +36,7 @@ export interface AuthContextValue {
   register: (data: RegisterData) => Promise<AuthSession>;
   updateProfile: (data: UpdateProfileData) => Promise<AuthSession>;
   updateBusinessProfile?: (data: any) => Promise<any>;
+  setSellerProfile?: (profile: any) => void;
   logout: () => Promise<void>;
   logoutAll?: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -59,6 +64,10 @@ export const useAuth = (): AuthContextValue => {
     isAuthenticated: store.isAuthenticated,
     isAdmin: store.isAdmin,
     isSeller: store.isSeller,
+    hasSellerProfile: store.hasSellerProfile,
+    hasBusinessProfile: store.hasBusinessProfile,
+    activeMode: store.activeMode,
+    setActiveMode: store.setActiveMode,
     isLoading: !store.isInitialized || store.status === "loading",
     isLoggingIn: store.isLoggingIn,
     isRegistering: store.isRegistering,
@@ -72,6 +81,7 @@ export const useAuth = (): AuthContextValue => {
     register: store.register,
     updateProfile: store.updateProfile,
     updateBusinessProfile: store.updateBusinessProfile,
+    setSellerProfile: store.setSellerProfile,
     logout: store.logout,
     logoutAll: store.logoutAll,
     refreshUser: store.refreshUser,

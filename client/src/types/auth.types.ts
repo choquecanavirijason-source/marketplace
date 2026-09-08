@@ -32,11 +32,27 @@ export interface AuthUser {
     billingEmail?: string;
     fiscalAddress?: string;
   } | null;
+  sellerProfile?: {
+    id?: number;
+    userId?: string;
+    storeName: string;
+    storeSlug: string;
+    description?: string | null;
+    logoUrl?: string | null;
+    bannerUrl?: string | null;
+    taxId?: string | null;
+    rating?: string | number;
+    totalSales?: string | number;
+    isVerified?: boolean;
+    status?: string;
+  } | null;
   onboardingStates?: Array<{
     stepCode: string;
     status: string;
   }> | null;
 }
+
+export type DashboardMode = "buyer" | "seller" | "company" | "admin";
 
 export interface AuthSession {
   accessToken: string;

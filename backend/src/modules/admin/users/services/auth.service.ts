@@ -79,6 +79,29 @@ export class AuthService {
     const firstName = command.firstName || nameParts[0] || 'Usuario';
     const lastName = command.lastName || nameParts.slice(1).join(' ') || '';
 
+    let sellerProfile: any = null;
+    if (
+      userType === UserType.SELLER_INDIVIDUAL ||
+      userType === UserType.SELLER_COMPANY ||
+      userType === UserType.SELLER
+    ) {
+      const storeName = command.tradeName || command.name || `${firstName} Store`;
+      const cleanSlug = storeName
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '');
+      const uniqueSuffix = crypto.randomUUID().substring(0, 5);
+      sellerProfile = {
+        storeName,
+        storeSlug: `${cleanSlug || 'store'}-${uniqueSuffix}`,
+        description: `Tienda oficial de ${firstName}`,
+        taxId: command.taxId || null,
+        status: 'active',
+      };
+    }
+
     const newUser = new UserEntity({
       id: crypto.randomUUID(),
       email: cleanEmail,
@@ -96,6 +119,7 @@ export class AuthService {
         completionPct: 30,
       },
       businessProfile,
+      sellerProfile,
       createdAt: new Date(),
       updatedAt: new Date(),
     });

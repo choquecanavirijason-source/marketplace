@@ -36,9 +36,14 @@ import {
   Gift,
   Star,
   Receipt,
+  Building2,
+  Sparkles,
+  Check,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
+import { ActivateSellerModal } from "@/components/seller/ActivateSellerModal";
+import type { DashboardMode } from "@/types";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -99,21 +104,21 @@ export const adminNavItems: DashboardNavItem[] = [
         label: "Pedidos y Ventas",
         icon: ShoppingBag,
         permission: "pedido.ver",
-        roles: ["admin", "superadmin", "seller", "support"],
+        roles: ["admin", "superadmin", "support"],
       },
       {
         href: "/admin/logistics",
         label: "Logística y Envíos",
         icon: Truck,
         permission: "logistica.ver",
-        roles: ["admin", "superadmin", "seller", "support"],
+        roles: ["admin", "superadmin", "support"],
       },
       {
         href: "/admin/products",
         label: "Productos",
         icon: Package,
         permission: "producto.ver",
-        roles: ["admin", "superadmin", "seller", "seller_individual", "seller_company"],
+        roles: ["admin", "superadmin"],
       },
       {
         href: "/admin/categories",
@@ -134,7 +139,7 @@ export const adminNavItems: DashboardNavItem[] = [
         label: "CRM & Clientes",
         icon: Contact,
         permission: "crm.ver",
-        roles: ["admin", "superadmin", "seller"],
+        roles: ["admin", "superadmin"],
       },
       {
         href: "/admin/inbox",
@@ -148,7 +153,7 @@ export const adminNavItems: DashboardNavItem[] = [
         label: "Live Shopping",
         icon: Radio,
         permission: "live.ver",
-        roles: ["admin", "superadmin", "seller"],
+        roles: ["admin", "superadmin"],
         badge: "En Vivo",
       },
     ]
@@ -171,7 +176,7 @@ export const adminNavItems: DashboardNavItem[] = [
         label: "Métricas y Reportes",
         icon: TrendingUp,
         permission: "metricas.ver",
-        roles: ["admin", "superadmin", "finance", "seller"],
+        roles: ["admin", "superadmin", "finance"],
       },
       {
         href: "/admin/users",
@@ -331,6 +336,104 @@ export const customerNavItems: DashboardNavItem[] = [
   },
 ];
 
+export const sellerNavItems: DashboardNavItem[] = [
+  {
+    href: "/seller/dashboard",
+    label: "Mi Negocio",
+    icon: LayoutDashboard,
+    children: [
+      {
+        href: "/seller/dashboard",
+        label: "Panel de Ventas",
+        icon: LayoutDashboard,
+        exact: true,
+      },
+      {
+        href: "/seller/products",
+        label: "Mis Productos",
+        icon: Package,
+      },
+      {
+        href: "/seller/store",
+        label: "Mi Tienda",
+        icon: Store,
+      },
+    ],
+  },
+  {
+    href: "/account/dashboard",
+    label: "Mi Cuenta",
+    icon: User,
+    children: [
+      {
+        href: "/account/dashboard",
+        label: "Resumen de Compras",
+        icon: LayoutDashboard,
+        exact: true,
+      },
+      {
+        href: "/account/orders",
+        label: "Mis Compras",
+        icon: ShoppingBag,
+      },
+      {
+        href: "/account/favorites",
+        label: "Mis Favoritos",
+        icon: Heart,
+      },
+      {
+        href: "/account/profile",
+        label: "Mi Perfil Personal",
+        icon: User,
+      },
+    ],
+  },
+];
+
+export const companyNavItems: DashboardNavItem[] = [
+  {
+    href: "/account/company",
+    label: "Datos Corporativos",
+    icon: Building2,
+    children: [
+      {
+        href: "/account/company",
+        label: "Perfil Fiscal & CUIT",
+        icon: Building2,
+        exact: true,
+      },
+      {
+        href: "/account/orders",
+        label: "Compras B2B",
+        icon: ShoppingBag,
+      },
+      {
+        href: "/account/addresses",
+        label: "Direcciones Fiscales",
+        icon: MapPin,
+      },
+    ],
+  },
+  {
+    href: "/account/dashboard",
+    label: "Mi Cuenta",
+    icon: User,
+    children: [
+      {
+        href: "/account/dashboard",
+        label: "Resumen Personal",
+        icon: LayoutDashboard,
+        exact: true,
+      },
+      {
+        href: "/account/profile",
+        label: "Mi Perfil",
+        icon: User,
+      },
+    ],
+  },
+];
+
 const FerroMaxRibbonLogo = ({ className = "size-7" }: { className?: string }) => (
   <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
     <path
@@ -378,7 +481,17 @@ export const DashboardLayout = ({
   const router = useRouter();
   const pathname = usePathname();
   const queryClient = useQueryClient();
-  const { user, isAdmin, logout, isLoggingOut } = useAuth();
+  const {
+    user,
+    isAdmin,
+    isSeller,
+    hasSellerProfile,
+    hasBusinessProfile,
+    activeMode,
+    setActiveMode,
+    logout,
+    isLoggingOut,
+  } = useAuth();
   const { can, hasAnyRole } = usePrivileges();
   const { dict } = useTranslation();
 
@@ -387,6 +500,10 @@ export const DashboardLayout = ({
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
   const [selectedGroupHref, setSelectedGroupHref] = useState<string>("");
+  const [isActivateModalOpen, setIsActivateModalOpen] = useState(false);
+
+  const isSellerAvailable = Boolean(hasSellerProfile || user?.sellerProfile || isSeller);
+  const isCompanyAvailable = Boolean(hasBusinessProfile || user?.businessProfile);
 
   useEffect(() => {
     setIsMounted(true);
@@ -450,11 +567,26 @@ export const DashboardLayout = ({
     return true;
   }, [hasAnyRole, can]);
 
-  const hasAdminAccess = isAdmin || adminNavItems.some(isAuthorizedItem);
+  const hasAdminAccess = isAdmin;
+
+  const isSellerRoute = pathname.startsWith("/seller");
+  const isAdminRoute = pathname.startsWith("/admin");
+  const isCompanyRoute = pathname.startsWith("/account/company");
+
+  const effectiveMode = useMemo((): DashboardMode => {
+    if (isAdminRoute && isAdmin) return "admin";
+    if (isSellerRoute) return "seller";
+    if (isCompanyRoute) return "company";
+    return activeMode || "buyer";
+  }, [isAdminRoute, isAdmin, isSellerRoute, isCompanyRoute, activeMode]);
 
   const currentNavItems = useMemo(() => {
-    return hasAdminAccess ? adminNavItems : customerNavItems;
-  }, [hasAdminAccess]);
+    if (navItems && navItems.length > 0) return navItems;
+    if (effectiveMode === "admin" && isAdmin) return adminNavItems;
+    if (effectiveMode === "seller") return sellerNavItems;
+    if (effectiveMode === "company") return companyNavItems;
+    return customerNavItems;
+  }, [navItems, effectiveMode, isAdmin]);
 
   const isPathActive = useCallback((itemHref: string, exact?: boolean) => {
     const normalizedPath = pathname.replace(/\/$/, "");
@@ -518,7 +650,11 @@ export const DashboardLayout = ({
   const handleTier1Click = useCallback(
     (groupHref: string) => {
       const group = currentNavItems.find((item) => item.href === groupHref);
-      if (!group) return;
+      if (!group) {
+        handleNavClick(groupHref);
+        router.push(groupHref);
+        return;
+      }
 
       const authorizedChildren = (group.children || []).filter(isAuthorizedItem);
       const targetHref =
@@ -831,19 +967,46 @@ export const DashboardLayout = ({
                     className="flex-1 min-w-0 rounded-2xl px-3 py-2 border border-border/80 bg-card hover:bg-muted/60 text-foreground flex items-center justify-between text-xs font-bold transition-all cursor-pointer shadow-2xs group hover:scale-[0.98]"
                   >
                     <div className="flex items-center gap-2 min-w-0 truncate">
-                      <div className="size-6 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                        {hasAdminAccess ? (
+                      <div
+                        className={cn(
+                          "size-6 rounded-lg flex items-center justify-center shrink-0",
+                          effectiveMode === "admin"
+                            ? "bg-red-500/15 text-red-600 dark:text-red-400"
+                            : effectiveMode === "seller"
+                            ? "bg-primary/15 text-primary"
+                            : effectiveMode === "company"
+                            ? "bg-blue-500/15 text-blue-600 dark:text-blue-400"
+                            : "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                        )}
+                      >
+                        {effectiveMode === "admin" ? (
                           <ShieldCheck className="size-3.5" />
+                        ) : effectiveMode === "seller" ? (
+                          <Store className="size-3.5" />
+                        ) : effectiveMode === "company" ? (
+                          <Building2 className="size-3.5" />
                         ) : (
                           <User className="size-3.5" />
                         )}
                       </div>
                       <div className="flex flex-col text-left truncate">
                         <span className="truncate leading-tight font-extrabold text-foreground">
-                          {hasAdminAccess ? "FerroMax Admin" : "Mi Cuenta"}
+                          {effectiveMode === "admin"
+                            ? "FerroMax Admin"
+                            : effectiveMode === "seller"
+                            ? user?.sellerProfile?.storeName || "Mi Tienda"
+                            : effectiveMode === "company"
+                            ? user?.businessProfile?.legalName || "Mi Empresa"
+                            : user?.name || "Mi Cuenta"}
                         </span>
                         <span className="text-[10px] text-muted-foreground font-medium leading-none mt-0.5">
-                          {hasAdminAccess ? "Panel de Gestión" : "Perfil de Usuario"}
+                          {effectiveMode === "admin"
+                            ? "Panel de Gestión"
+                            : effectiveMode === "seller"
+                            ? "Modo Vendedor"
+                            : effectiveMode === "company"
+                            ? "Modo Empresa (B2B)"
+                            : "Modo Comprador"}
                         </span>
                       </div>
                     </div>
@@ -853,54 +1016,187 @@ export const DashboardLayout = ({
                   </button>
                 </DropdownMenuTrigger>
 
-                <DropdownMenuContent align="start" className="w-64 p-1.5 shadow-xl">
+                <DropdownMenuContent align="start" className="w-72 p-1.5 shadow-xl">
                   <DropdownMenuLabel className="text-[10px] font-black text-muted-foreground uppercase px-2 py-1 tracking-wider">
-                    Espacios Disponibles
+                    Cambiar Perfil / Modo
                   </DropdownMenuLabel>
-                  {hasAdminAccess && (
-                    <DropdownMenuItem
-                      onClick={() => {
-                        handleTier1Click("/admin");
-                      }}
-                      className={cn(
-                        "cursor-pointer text-xs p-2.5 rounded-xl flex items-center gap-2.5 transition-all",
-                        isCurrentAdminPath && !isAccountPath
-                          ? "bg-primary/10 text-primary font-bold"
-                          : "hover:bg-muted/70 text-foreground hover:scale-[0.98]"
-                      )}
-                    >
-                      <div className="size-7 rounded-lg bg-primary/15 text-primary flex items-center justify-center shrink-0">
-                        <LayoutDashboard className="size-4" />
-                      </div>
-                      <div className="flex flex-col min-w-0">
-                        <span className="font-bold">FerroMax Admin</span>
-                        <span className="text-[10px] text-muted-foreground font-normal">
-                          Gestión comercial, pedidos y catálogo
-                        </span>
-                      </div>
-                    </DropdownMenuItem>
-                  )}
+
+                  {/* Modo Comprador */}
                   <DropdownMenuItem
                     onClick={() => {
-                      handleTier1Click("/account/dashboard");
+                      setActiveMode("buyer");
+                      handleNavClick("/account/dashboard");
+                      router.push("/account/dashboard");
                     }}
                     className={cn(
-                      "cursor-pointer text-xs p-2.5 rounded-xl flex items-center gap-2.5 transition-all",
-                      isAccountPath || (!isCurrentAdminPath && !hasAdminAccess)
-                        ? "bg-primary/10 text-primary font-bold"
-                        : "hover:bg-muted/70 text-foreground hover:scale-[0.98]"
+                      "cursor-pointer text-xs p-2.5 rounded-xl flex items-center justify-between transition-all",
+                      effectiveMode === "buyer"
+                        ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 font-bold"
+                        : "hover:bg-muted/70 text-foreground"
                     )}
                   >
-                    <div className="size-7 rounded-lg bg-primary/15 text-primary flex items-center justify-center shrink-0">
-                      <User className="size-4" />
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="size-7 rounded-lg bg-emerald-500/15 text-emerald-600 flex items-center justify-center shrink-0">
+                        <User className="size-4" />
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <span className="font-bold truncate">Modo Comprador</span>
+                        <span className="text-[10px] text-muted-foreground font-normal">
+                          Compras personales y pedidos
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex flex-col min-w-0">
-                      <span className="font-bold">Mi Cuenta Personal</span>
-                      <span className="text-[10px] text-muted-foreground font-normal">
-                        Mis pedidos, direcciones y favoritos
-                      </span>
-                    </div>
+                    {effectiveMode === "buyer" && (
+                      <Check className="size-4 text-emerald-600 shrink-0 ml-2" />
+                    )}
                   </DropdownMenuItem>
+
+                  {/* Modo Vendedor */}
+                  {isSellerAvailable ? (
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setActiveMode("seller");
+                        handleNavClick("/seller/dashboard");
+                        router.push("/seller/dashboard");
+                      }}
+                      className={cn(
+                        "cursor-pointer text-xs p-2.5 rounded-xl flex items-center justify-between transition-all",
+                        effectiveMode === "seller"
+                          ? "bg-primary/10 text-primary font-bold"
+                          : "hover:bg-muted/70 text-foreground"
+                      )}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="size-7 rounded-lg bg-primary/15 text-primary flex items-center justify-center shrink-0">
+                          <Store className="size-4" />
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <span className="font-bold truncate">
+                            {user?.sellerProfile?.storeName || "Modo Vendedor"}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground font-normal">
+                            Gestión de catálogo y ventas
+                          </span>
+                        </div>
+                      </div>
+                      {effectiveMode === "seller" && (
+                        <Check className="size-4 text-primary shrink-0 ml-2" />
+                      )}
+                    </DropdownMenuItem>
+                  ) : (
+                    <DropdownMenuItem
+                      onClick={() => setIsActivateModalOpen(true)}
+                      className="cursor-pointer text-xs p-2.5 rounded-xl flex items-center justify-between hover:bg-primary/10 hover:text-primary transition-all text-foreground"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="size-7 rounded-lg bg-muted text-muted-foreground flex items-center justify-center shrink-0">
+                          <Store className="size-4" />
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <span className="font-bold text-foreground">Activar Modo Vendedor</span>
+                          <span className="text-[10px] text-muted-foreground font-normal">
+                            Empieza a vender en FerroMax
+                          </span>
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-bold bg-primary/15 text-primary px-2 py-0.5 rounded-full shrink-0">
+                        Activar
+                      </span>
+                    </DropdownMenuItem>
+                  )}
+
+                  {/* Modo Empresa */}
+                  {isCompanyAvailable ? (
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setActiveMode("company");
+                        handleNavClick("/account/company");
+                        router.push("/account/company");
+                      }}
+                      className={cn(
+                        "cursor-pointer text-xs p-2.5 rounded-xl flex items-center justify-between transition-all",
+                        effectiveMode === "company"
+                          ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 font-bold"
+                          : "hover:bg-muted/70 text-foreground"
+                      )}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="size-7 rounded-lg bg-blue-500/15 text-blue-600 flex items-center justify-center shrink-0">
+                          <Building2 className="size-4" />
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <span className="font-bold truncate">
+                            {user?.businessProfile?.legalName || "Modo Empresa"}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground font-normal">
+                            CUIT: {user?.businessProfile?.taxId || "Registrado"} · B2B
+                          </span>
+                        </div>
+                      </div>
+                      {effectiveMode === "company" && (
+                        <Check className="size-4 text-blue-600 shrink-0 ml-2" />
+                      )}
+                    </DropdownMenuItem>
+                  ) : (
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setActiveMode("company");
+                        handleNavClick("/account/company");
+                        router.push("/account/company");
+                      }}
+                      className="cursor-pointer text-xs p-2.5 rounded-xl flex items-center justify-between hover:bg-blue-500/10 hover:text-blue-600 transition-all text-foreground"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="size-7 rounded-lg bg-muted text-muted-foreground flex items-center justify-center shrink-0">
+                          <Building2 className="size-4" />
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <span className="font-bold text-foreground">Modo Empresa (B2B)</span>
+                          <span className="text-[10px] text-muted-foreground font-normal">
+                            Registrar CUIT y datos fiscales
+                          </span>
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-bold bg-blue-500/15 text-blue-600 px-2 py-0.5 rounded-full shrink-0">
+                        Registrar
+                      </span>
+                    </DropdownMenuItem>
+                  )}
+
+                  {/* Admin Global */}
+                  {isAdmin && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={() => {
+                          setActiveMode("admin");
+                          handleNavClick("/admin");
+                          router.push("/admin");
+                        }}
+                        className={cn(
+                          "cursor-pointer text-xs p-2.5 rounded-xl flex items-center justify-between transition-all",
+                          effectiveMode === "admin"
+                            ? "bg-red-500/10 text-red-600 dark:text-red-400 font-bold"
+                            : "hover:bg-muted/70 text-foreground"
+                        )}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="size-7 rounded-lg bg-red-500/15 text-red-600 flex items-center justify-center shrink-0">
+                            <ShieldCheck className="size-4" />
+                          </div>
+                          <div className="flex flex-col min-w-0">
+                            <span className="font-bold">FerroMax Admin</span>
+                            <span className="text-[10px] text-muted-foreground font-normal">
+                              Panel general y gobernanza
+                            </span>
+                          </div>
+                        </div>
+                        {effectiveMode === "admin" && (
+                          <Check className="size-4 text-red-600 shrink-0 ml-2" />
+                        )}
+                      </DropdownMenuItem>
+                    </>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
 
@@ -975,6 +1271,97 @@ export const DashboardLayout = ({
             >
               <X className="size-4" />
             </button>
+          </div>
+
+          {/* Selector de Modo en Móvil */}
+          <div className="p-3 bg-muted/40 border-b border-border/60">
+            <p className="text-[10px] font-black text-muted-foreground uppercase px-1 pb-1.5 tracking-wider">
+              Perfil / Modo Activo
+            </p>
+            <div className="grid grid-cols-2 gap-1.5">
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveMode("buyer");
+                  setIsMobileOpen(false);
+                  handleNavClick("/account/dashboard");
+                  router.push("/account/dashboard");
+                }}
+                className={cn(
+                  "p-2 rounded-xl text-left border transition-all flex items-center gap-2",
+                  effectiveMode === "buyer"
+                    ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-700 dark:text-emerald-400 font-bold"
+                    : "bg-background border-border/70 text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <User className="size-3.5 shrink-0" />
+                <span className="text-[11px] truncate">Comprador</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (isSellerAvailable) {
+                    setActiveMode("seller");
+                    setIsMobileOpen(false);
+                    handleNavClick("/seller/dashboard");
+                    router.push("/seller/dashboard");
+                  } else {
+                    setIsMobileOpen(false);
+                    setIsActivateModalOpen(true);
+                  }
+                }}
+                className={cn(
+                  "p-2 rounded-xl text-left border transition-all flex items-center gap-2",
+                  effectiveMode === "seller"
+                    ? "bg-primary/15 border-primary/40 text-primary font-bold"
+                    : "bg-background border-border/70 text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <Store className="size-3.5 shrink-0" />
+                <span className="text-[11px] truncate">Vendedor</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveMode("company");
+                  setIsMobileOpen(false);
+                  handleNavClick("/account/company");
+                  router.push("/account/company");
+                }}
+                className={cn(
+                  "p-2 rounded-xl text-left border transition-all flex items-center gap-2",
+                  effectiveMode === "company"
+                    ? "bg-blue-500/15 border-blue-500/40 text-blue-600 dark:text-blue-400 font-bold"
+                    : "bg-background border-border/70 text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <Building2 className="size-3.5 shrink-0" />
+                <span className="text-[11px] truncate">Empresa</span>
+              </button>
+
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveMode("admin");
+                    setIsMobileOpen(false);
+                    handleNavClick("/admin");
+                    router.push("/admin");
+                  }}
+                  className={cn(
+                    "p-2 rounded-xl text-left border transition-all flex items-center gap-2",
+                    effectiveMode === "admin"
+                      ? "bg-red-500/15 border-red-500/40 text-red-600 dark:text-red-400 font-bold"
+                      : "bg-background border-border/70 text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <ShieldCheck className="size-3.5 shrink-0" />
+                  <span className="text-[11px] truncate">Admin</span>
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
@@ -1300,6 +1687,11 @@ export const DashboardLayout = ({
           </div>
         </footer>
       </div>
+
+      <ActivateSellerModal
+        open={isActivateModalOpen}
+        onOpenChange={setIsActivateModalOpen}
+      />
     </div>
   );
 };

@@ -1,11 +1,13 @@
 import { Injectable } from '@nestjs/common';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, and } from 'drizzle-orm';
 import { DrizzleService } from '../../../../infrastructure/database/drizzle.service';
 import {
   sellerProfilesTable,
   productsTable,
   ordersTable,
   orderItemsTable,
+  rolesTable,
+  userRolesTable,
 } from '../../../../infrastructure/database/schema';
 import { UpsertSellerProfileDto } from '../dto/seller.dto';
 
@@ -24,8 +26,15 @@ export class SellerRepository {
 
   async upsertProfile(userId: string, dto: UpsertSellerProfileDto) {
     const existing = await this.getProfile(userId);
-    const storeSlug = dto.storeSlug || dto.storeName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    const baseSlug = (dto.storeName || 'tienda')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '') || 'tienda';
+    const storeSlug = dto.storeSlug || (existing ? existing.storeSlug : `${baseSlug}-${userId.substring(0, 6)}`);
 
+    let result;
     if (existing) {
       const [updated] = await this.drizzle.db
         .update(sellerProfilesTable)
@@ -40,22 +49,55 @@ export class SellerRepository {
         })
         .where(eq(sellerProfilesTable.id, existing.id))
         .returning();
-      return updated;
+      result = updated;
+    } else {
+      const [created] = await this.drizzle.db
+        .insert(sellerProfilesTable)
+        .values({
+          userId,
+          storeName: dto.storeName,
+          storeSlug,
+          description: dto.description || 'Tienda oficial en el marketplace',
+          logoUrl: dto.logoUrl,
+          bannerUrl: dto.bannerUrl,
+          taxId: dto.taxId,
+        })
+        .returning();
+      result = created;
     }
 
-    const [created] = await this.drizzle.db
-      .insert(sellerProfilesTable)
-      .values({
-        userId,
-        storeName: dto.storeName,
-        storeSlug,
-        description: dto.description,
-        logoUrl: dto.logoUrl,
-        bannerUrl: dto.bannerUrl,
-        taxId: dto.taxId,
-      })
-      .returning();
-    return created;
+    // Ensure user has seller role assigned in userRolesTable
+    try {
+      const [sellerRole] = await this.drizzle.db
+        .select()
+        .from(rolesTable)
+        .where(eq(rolesTable.codename, 'seller'))
+        .limit(1);
+
+      if (sellerRole) {
+        const [hasRole] = await this.drizzle.db
+          .select()
+          .from(userRolesTable)
+          .where(
+            and(
+              eq(userRolesTable.userId, userId),
+              eq(userRolesTable.roleId, sellerRole.id),
+            ),
+          )
+          .limit(1);
+
+        if (!hasRole) {
+          await this.drizzle.db.insert(userRolesTable).values({
+            userId,
+            roleId: sellerRole.id,
+          });
+        }
+      }
+    } catch {
+      // Non-blocking
+    }
+
+    return result;
   }
 
   async getSellerProducts(sellerId: string) {
