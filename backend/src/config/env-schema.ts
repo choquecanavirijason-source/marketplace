@@ -55,6 +55,7 @@ export const envSchema = z.object({
   BIOMETRICAL_VERIFY_URL: z
     .string()
     .default('http://biometrical-verify-oy4fcb-2818e0-169-58-211-184.sslip.io'),
+  BIOMETRICAL_VERIFY_JWT_SECRET: z.string().optional().default(''),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;

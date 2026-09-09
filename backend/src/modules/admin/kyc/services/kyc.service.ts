@@ -131,26 +131,47 @@ export class KycService {
     // 4. Evaluar resultado si el procesamiento fue inmediato o síncrono
     try {
       const result = await this.biometricalAdapter.getVerification(accepted.job_id);
-      if (result.status === 'done' && result.decision === 'APPROVE') {
-        await this.drizzle.db
-          .update(verificationsTable)
-          .set({
+      if (result.status === 'done') {
+        if (result.decision === 'APPROVE') {
+          await this.drizzle.db
+            .update(verificationsTable)
+            .set({
+              status: KycStatus.APPROVED,
+              notes: `Similitud: ${Math.round((result.similarity ?? 0) * 100)}%, Liveness: ${Math.round((result.liveness_score ?? 0) * 100)}%`,
+              updatedAt: new Date(),
+            })
+            .where(eq(verificationsTable.id, verificationId));
+
+          await this.userRepository.saveOnboardingStep(userId, OnboardingStep.KYC_APPROVED, 'completed');
+
+          this.logger.log(`✅ Verificación biométrica aprobada para el usuario ${userId}`);
+
+          return {
+            verificationId,
+            jobId: accepted.job_id,
             status: KycStatus.APPROVED,
-            notes: `Similitud: ${Math.round((result.similarity ?? 0) * 100)}%, Liveness: ${Math.round((result.liveness_score ?? 0) * 100)}%`,
-            updatedAt: new Date(),
-          })
-          .where(eq(verificationsTable.id, verificationId));
+            message: '¡Identidad verificada exitosamente!',
+          };
+        } else if (result.decision === 'REJECT') {
+          const reason = result.reason || 'No se superó la prueba de vida o no se detectó rostro coincidente.';
+          await this.drizzle.db
+            .update(verificationsTable)
+            .set({
+              status: KycStatus.REJECTED,
+              rejectionReason: reason,
+              updatedAt: new Date(),
+            })
+            .where(eq(verificationsTable.id, verificationId));
 
-        await this.userRepository.saveOnboardingStep(userId, OnboardingStep.KYC_APPROVED, 'completed');
+          this.logger.warn(`❌ Verificación biométrica rechazada para usuario ${userId}: ${reason}`);
 
-        this.logger.log(`✅ Verificación biométrica aprobada para el usuario ${userId}`);
-
-        return {
-          verificationId,
-          jobId: accepted.job_id,
-          status: KycStatus.APPROVED,
-          message: '¡Identidad verificada exitosamente!',
-        };
+          return {
+            verificationId,
+            jobId: accepted.job_id,
+            status: KycStatus.REJECTED,
+            message: reason,
+          };
+        }
       }
     } catch {
       // Si el job aún está en cola en el VPS, se continuará por polling

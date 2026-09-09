@@ -274,15 +274,27 @@ export const BiometricVerificationStep: React.FC<BiometricVerificationStepProps>
 
       setStatusMessage("Analizando autenticidad facial y prueba de vida...");
 
+      // Si fue rechazado de inmediato por el VPS
+      if (submission.status === "REJECTED") {
+        setIsSubmitting(false);
+        setSubStep("error");
+        const rejectReason =
+          submission.message ||
+          "La prueba biométrica fue rechazada. Verifica que tu rostro sea visible en el video y coincida con el documento.";
+        setErrorMessage(rejectReason);
+        toast.error(rejectReason);
+        return;
+      }
+
       // Si ya fue aprobado de inmediato
       if (submission.status === "APPROVED") {
         await handleVerificationSuccess();
         return;
       }
 
-      // Polling de 3 intentos para obtener el veredicto del VPS
+      // Polling de 6 intentos (12 segundos) para consultar el veredicto del VPS
       let attempts = 0;
-      const maxAttempts = 5;
+      const maxAttempts = 6;
       const pollInterval = setInterval(async () => {
         attempts++;
         try {
@@ -294,16 +306,24 @@ export const BiometricVerificationStep: React.FC<BiometricVerificationStepProps>
             clearInterval(pollInterval);
             setIsSubmitting(false);
             setSubStep("error");
-            setErrorMessage(status.rejectionReason || "No se pudo validar el rostro con el documento.");
+            const reason = status.rejectionReason || "No se pudo validar el rostro con el documento.";
+            setErrorMessage(reason);
+            toast.error(reason);
           } else if (attempts >= maxAttempts) {
             clearInterval(pollInterval);
-            // Si el VPS está procesando asíncronamente, permitimos continuar
-            await handleVerificationSuccess("Verificación en proceso de confirmación.");
+            setIsSubmitting(false);
+            setSubStep("error");
+            const timeoutReason =
+              "El análisis biométrico está demorando más de lo esperado. Por favor reintenta con mejor iluminación o intenta más tarde.";
+            setErrorMessage(timeoutReason);
+            toast.warning(timeoutReason);
           }
         } catch {
           if (attempts >= maxAttempts) {
             clearInterval(pollInterval);
-            await handleVerificationSuccess();
+            setIsSubmitting(false);
+            setSubStep("error");
+            setErrorMessage("Error de conexión al consultar el resultado biométrico con el servidor.");
           }
         }
       }, 2000);
