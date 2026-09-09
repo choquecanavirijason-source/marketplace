@@ -83,6 +83,7 @@ export interface UserProps {
   permissions?: string[];
   addresses?: AddressProps[];
   onboardingStates?: OnboardingStateProps[];
+  kycLevel?: number;
 }
 
 export class UserEntity {
@@ -301,7 +302,16 @@ export class UserEntity {
   }
 
   get kycLevel(): number {
-    return 0;
+    if (this.props.kycLevel !== undefined) return this.props.kycLevel;
+    const isKycApproved = this.props.onboardingStates?.some(
+      (s) => s.stepCode === 'kyc_approved' && s.status === 'completed',
+    );
+    return isKycApproved ? 1 : 0;
+  }
+
+  setKycLevel(level: number) {
+    this.props.kycLevel = level;
+    this.props.updatedAt = new Date();
   }
 
   toJSON() {
@@ -310,6 +320,7 @@ export class UserEntity {
       status: this.status,
       type: this.type,
       role: this.role,
+      kycLevel: this.kycLevel,
       email: this.email,
       phone: this.phone,
       emailVerifiedAt: this.emailVerifiedAt,

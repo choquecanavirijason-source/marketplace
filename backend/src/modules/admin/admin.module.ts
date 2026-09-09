@@ -7,6 +7,7 @@ import { AssetsModule } from './assets/assets.module';
 import { CommunityModule } from './community/community.module';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
+import { KycModule } from './kyc/kyc.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { AuthModule } from './auth/auth.module';
     CommunityModule,
     UsersModule,
     AuthModule,
+    KycModule,
   ],
   exports: [
     AdminCatalogModule,
@@ -28,6 +30,7 @@ import { AuthModule } from './auth/auth.module';
     CommunityModule,
     UsersModule,
     AuthModule,
+    KycModule,
   ],
 })
 export class AdminModule {}

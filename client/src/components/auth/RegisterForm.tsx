@@ -23,17 +23,19 @@ import {
   Eye,
   EyeOff,
   Smartphone,
+  ShieldCheck,
   ArrowRight,
   RefreshCw,
   AlertCircle,
 } from "lucide-react";
 import { PhoneCountryInput } from "@/components/ui/phone-country-input";
+import { BiometricVerificationStep } from "./BiometricVerificationStep";
 
 interface RegisterFormProps {
   onSuccess?: () => void;
 }
 
-type Step = 1 | 2 | 3;
+type Step = 1 | 2 | 3 | 4;
 type AccountType = "buyer" | "seller_individual" | "seller_company";
 
 export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
@@ -209,7 +211,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
         void refreshUser();
       }
       toast.success("¡Celular verificado exitosamente!");
-      finishRegistration();
+      setCurrentStep(4);
     } catch (err: any) {
       setErrorMessage(err?.response?.data?.detail || err?.message || "Código de celular inválido.");
       toast.error("El código de teléfono no es válido.");
@@ -219,6 +221,10 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
   };
 
   const handleSkipPhone = () => {
+    setCurrentStep(4);
+  };
+
+  const handleSkipBiometrics = () => {
     finishRegistration();
   };
 
@@ -230,6 +236,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
             { step: 1, label: "Cuenta", icon: UserPlus },
             { step: 2, label: "Email", icon: Mail },
             { step: 3, label: "Celular", icon: Smartphone },
+            { step: 4, label: "Identidad", icon: ShieldCheck },
           ].map((item, idx) => {
             const Icon = item.icon;
             const isDone = currentStep > item.step || (item.step === 2 && emailVerified) || (item.step === 3 && phoneVerified);
@@ -297,6 +304,17 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
             <CardTitle className="text-xl font-bold tracking-tight">Paso 3: Verificá tu Celular</CardTitle>
             <CardDescription className="text-xs text-muted-foreground">
               Asegura tu cuenta para recibir alertas de envíos y notificaciones
+            </CardDescription>
+          </>
+        )}
+        {currentStep === 4 && (
+          <>
+            <div className="mx-auto w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-1">
+              <ShieldCheck className="w-6 h-6" />
+            </div>
+            <CardTitle className="text-xl font-bold tracking-tight">Paso 4: Verificación Biométrica</CardTitle>
+            <CardDescription className="text-xs text-muted-foreground">
+              Escanea tu documento y realiza la prueba de vida para activar tu cuenta
             </CardDescription>
           </>
         )}
@@ -654,17 +672,27 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
                 onClick={handleSkipPhone}
                 className="w-full sm:w-auto text-xs text-muted-foreground hover:text-foreground rounded-xl order-2 sm:order-1"
               >
-                Omitir y finalizar
+                Omitir y continuar
               </Button>
               <Button
                 type="submit"
                 disabled={isSubmitting || phoneOtp.trim().length < 4}
                 className="w-full sm:flex-1 h-11 rounded-xl text-xs font-bold uppercase tracking-wider shadow-sm order-1 sm:order-2"
               >
-                {isSubmitting ? "Verificando..." : "Confirmar Celular y Finalizar"}
+                {isSubmitting ? "Verificando..." : "Confirmar Celular y Continuar"}
               </Button>
             </div>
           </form>
+        )}
+
+        {currentStep === 4 && (
+          <div className="py-2">
+            <BiometricVerificationStep
+              accountType={accountType}
+              onComplete={finishRegistration}
+              onSkip={handleSkipBiometrics}
+            />
+          </div>
         )}
       </CardContent>
 

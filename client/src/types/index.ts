@@ -12,3 +12,4 @@ export * from "./review.types";
 export * from "./hero-slide.types";
 export * from "./admin.types";
 export * from "./ui.types";
+export * from "./kyc.types";

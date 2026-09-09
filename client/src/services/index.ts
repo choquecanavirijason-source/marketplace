@@ -9,3 +9,4 @@ export * from "./product.service";
 export * from "./review.service";
 export * from "./user.service";
 export * from "./auth-config.service";
+export * from "./kyc.service";

@@ -18,6 +18,7 @@ async function bootstrap() {
     new FastifyAdapter({
       logger: false,
       trustProxy: true,
+      bodyLimit: 30 * 1024 * 1024,
     }),
   );
 

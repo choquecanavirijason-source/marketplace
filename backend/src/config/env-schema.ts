@@ -51,6 +51,10 @@ export const envSchema = z.object({
   APPLE_TEAM_ID: z.string().optional().default(''),
   APPLE_KEY_ID: z.string().optional().default(''),
   APPLE_PRIVATE_KEY: z.string().optional().default(''),
+
+  BIOMETRICAL_VERIFY_URL: z
+    .string()
+    .default('http://biometrical-verify-oy4fcb-2818e0-169-58-211-184.sslip.io'),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;
