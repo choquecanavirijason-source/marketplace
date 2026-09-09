@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AuthService } from '../../services/auth.service';
-import { UserEntity } from '../../entities/user.entity';
+import { UserEntity } from '../../../users/entities/user.entity';
 import { SessionEntity } from '../../entities/session.entity';
-import { UserStatus, UserType } from '../../enums';
+import { UserStatus, UserType } from '../../../users/enums';
 import { CryptoUtils, DuplicateEntityException, UnauthorizedException } from '../../../../../shared';
 
 describe('AuthService - Unit Tests', () => {

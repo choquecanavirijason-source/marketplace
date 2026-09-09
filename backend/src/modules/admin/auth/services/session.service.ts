@@ -10,7 +10,7 @@ export class SessionService {
     return sessions.map((s) => s.toJSON());
   }
 
-  async revokeSession(sessionId: string, userId: string): Promise<void> {
+  async revokeSession(sessionId: string, _userId?: string): Promise<void> {
     await this.authRepository.revokeSessionById(sessionId);
   }
 }

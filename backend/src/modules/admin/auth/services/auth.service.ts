@@ -1,14 +1,19 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import * as crypto from 'crypto';
-import { UserRepositoryPort } from '../interfaces/user-repository.interface';
+import { UserRepositoryPort } from '../../users/interfaces/user-repository.interface';
+import { UserEntity } from '../../users/entities/user.entity';
+import { UserRegisteredEvent } from '../../users/events/user.event';
+import { UserType, UserStatus, OnboardingStep } from '../../users/enums';
+
 import { AuthRepositoryPort } from '../interfaces/auth-repository.interface';
 import { TokenGeneratorPort } from '../interfaces/token-generator.interface';
-import { UserEntity } from '../entities/user.entity';
 import { SessionEntity } from '../entities/session.entity';
 import { EmailValidator } from '../validators/email.validator';
-import { UserRegisteredEvent } from '../events/user.event';
-import { UserType, UserStatus, OnboardingStep } from '../enums';
+import { RegisterUserDto, LoginDto, OtpLoginDto, SocialLoginDto, PhoneOtpLoginDto } from '../dto';
+import { AuthConfigService } from './auth-config.service';
+import { GoogleOAuthAdapter, FacebookOAuthAdapter, AppleOAuthAdapter } from '../adapters';
+
 import { CacheService } from '../../../../infrastructure/cache/cache.service';
 import { NodemailerEmailService } from '../../../../infrastructure/mail/nodemailer-email.service';
 import {
@@ -20,8 +25,6 @@ import {
   UnauthorizedException,
   DomainException,
 } from '../../../../shared';
-import { RegisterUserDto, LoginDto, OtpLoginDto, SocialLoginDto, PhoneOtpLoginDto } from '../dto';
-import { AuthConfigService } from './auth-config.service';
 
 @Injectable()
 export class AuthService {
@@ -35,8 +38,10 @@ export class AuthService {
     private readonly mailService: NodemailerEmailService,
     private readonly eventEmitter: EventEmitter2,
     private readonly authConfigService?: AuthConfigService,
+    private readonly googleOAuthAdapter?: GoogleOAuthAdapter,
+    private readonly facebookOAuthAdapter?: FacebookOAuthAdapter,
+    private readonly appleOAuthAdapter?: AppleOAuthAdapter,
   ) {}
-
 
   async register(command: RegisterUserDto): Promise<UserEntity> {
     const cleanEmail = EmailValidator.validate(command.email);
@@ -305,7 +310,7 @@ export class AuthService {
     };
   }
 
-  async logout(sessionId?: string, userId?: string, refreshToken?: string) {
+  async logout(sessionId?: string, _userId?: string, refreshToken?: string) {
     if (sessionId) {
       await this.authRepository.revokeSessionById(sessionId);
     } else if (refreshToken) {
@@ -363,7 +368,7 @@ export class AuthService {
     };
   }
 
-  async sendPhoneOtp(phone: string, ip?: string) {
+  async sendPhoneOtp(phone: string, _ip?: string) {
     const user = await this.userRepository.findByPhone(phone);
     if (!user) {
       throw new NotFoundException('Usuario con teléfono', phone);
@@ -638,7 +643,6 @@ export class AuthService {
 
     await this.authRepository.consumeVerificationToken(tokenRecord.id);
 
-    // Si el usuario no existe, registrarlo automáticamente con su número
     if (!user) {
       const randomEmail = `user.${cleanPhone.replace(/\D/g, '')}@marketplace.local`;
       const dummyPass = await CryptoUtils.hashPassword(crypto.randomUUID());
@@ -727,7 +731,6 @@ export class AuthService {
     let user = await this.userRepository.findByEmail(cleanEmail);
 
     if (!user) {
-      // Registro automático del usuario social
       const dummyPass = await CryptoUtils.hashPassword(crypto.randomUUID());
       const newUser = new UserEntity({
         id: crypto.randomUUID(),
@@ -797,5 +800,79 @@ export class AuthService {
       expiresIn: tokens.expiresIn,
     };
   }
-}
 
+  async getSocialAuthorizationUrl(provider: string, state: string): Promise<string> {
+    const validProviders = ['google', 'facebook', 'apple'];
+    if (!validProviders.includes(provider)) {
+      throw new DomainException(`Proveedor de autenticación no soportado: ${provider}`);
+    }
+
+    if (this.authConfigService) {
+      const config = await this.authConfigService.getSettings();
+      if (!config.socialLoginEnabled) {
+        throw new DomainException('El inicio de sesión con redes sociales está desactivado.');
+      }
+      if (provider === 'google' && !config.googleAuthEnabled) {
+        throw new DomainException('El inicio de sesión con Google está desactivado por el administrador.');
+      }
+      if (provider === 'facebook' && !config.facebookAuthEnabled) {
+        throw new DomainException('El inicio de sesión con Facebook está desactivado por el administrador.');
+      }
+      if (provider === 'apple' && !config.appleAuthEnabled) {
+        throw new DomainException('El inicio de sesión con Apple está desactivado por el administrador.');
+      }
+    }
+
+    switch (provider) {
+      case 'google':
+        if (!this.googleOAuthAdapter) throw new DomainException('Adaptador de Google no disponible');
+        return this.googleOAuthAdapter.getAuthorizationUrl(state);
+      case 'facebook':
+        if (!this.facebookOAuthAdapter) throw new DomainException('Adaptador de Facebook no disponible');
+        return this.facebookOAuthAdapter.getAuthorizationUrl(state);
+      case 'apple':
+        if (!this.appleOAuthAdapter) throw new DomainException('Adaptador de Apple no disponible');
+        return this.appleOAuthAdapter.getAuthorizationUrl(state);
+      default:
+        throw new DomainException(`Proveedor no soportado: ${provider}`);
+    }
+  }
+
+  async handleSocialCallback(
+    provider: string,
+    code: string,
+    appleData?: any,
+    userAgent?: string,
+    clientIp?: string,
+  ) {
+    let profile;
+    switch (provider) {
+      case 'google':
+        if (!this.googleOAuthAdapter) throw new DomainException('Adaptador de Google no disponible');
+        profile = await this.googleOAuthAdapter.getUserProfile(code);
+        break;
+      case 'facebook':
+        if (!this.facebookOAuthAdapter) throw new DomainException('Adaptador de Facebook no disponible');
+        profile = await this.facebookOAuthAdapter.getUserProfile(code);
+        break;
+      case 'apple':
+        if (!this.appleOAuthAdapter) throw new DomainException('Adaptador de Apple no disponible');
+        profile = await this.appleOAuthAdapter.getUserProfile(code, appleData);
+        break;
+      default:
+        throw new DomainException(`Proveedor de autenticación no soportado: ${provider}`);
+    }
+
+    return this.socialLogin(
+      {
+        provider: profile.provider,
+        email: profile.email,
+        firstName: profile.firstName,
+        lastName: profile.lastName,
+        avatarUrl: profile.avatarUrl,
+      },
+      userAgent,
+      clientIp,
+    );
+  }
+}

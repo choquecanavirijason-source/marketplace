@@ -28,6 +28,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "@/hooks/useTranslation";
 import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
 import { ApiError } from "@/config/axios";
+import { API_BASE_URL } from "@/config";
 import { getPublicAuthConfig } from "@/services/auth-config.service";
 import type { PublicAuthSettings } from "@/types";
 import { GoogleIcon, FacebookIcon, AppleIcon } from "@/components/icons/SocialIcons";
@@ -298,34 +299,9 @@ const LoginForm = () => {
     }
   };
 
-  const handleSocialClick = async (provider: "google" | "facebook" | "apple") => {
-    try {
-      const mockEmail = `user.${provider}@marketplace.com`;
-      const providerName = provider.charAt(0).toUpperCase() + provider.slice(1);
-      const session = await (socialLogin
-        ? socialLogin({
-            provider,
-            email: mockEmail,
-            firstName: "Usuario",
-            lastName: providerName,
-          })
-        : authService.socialLogin({
-            provider,
-            email: mockEmail,
-            firstName: "Usuario",
-            lastName: providerName,
-          }));
-
-      toast.success(`¡Sesión iniciada con ${providerName}!`);
-      redirectAfterLogin(session);
-    } catch (err: any) {
-      const msg =
-        err?.response?.data?.detail ||
-        err?.response?.data?.message ||
-        `Error al conectar con ${provider}.`;
-      setFormError(msg);
-      toast.error(msg);
-    }
+  const handleSocialClick = (provider: "google" | "facebook" | "apple") => {
+    const targetRedirect = rawRedirect || "/";
+    window.location.href = `${API_BASE_URL}/auth/${provider}?redirect=${encodeURIComponent(targetRedirect)}`;
   };
 
   const handleFillAccount = (email: string, pass: string) => {

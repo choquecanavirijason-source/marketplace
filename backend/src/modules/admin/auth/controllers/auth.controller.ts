@@ -3,6 +3,8 @@ import {
   Post,
   Get,
   Patch,
+  Param,
+  Query,
   Body,
   Req,
   Res,
@@ -10,9 +12,12 @@ import {
   HttpCode,
   HttpStatus,
   UnauthorizedException,
+  NotFoundException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { FastifyRequest, FastifyReply } from 'fastify';
+import * as crypto from 'crypto';
+import { env } from '../../../../config/env-schema';
 import { AuthService } from '../services/auth.service';
 import { AuthConfigService } from '../services/auth-config.service';
 import {
@@ -60,7 +65,6 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly authConfigService?: AuthConfigService,
   ) {}
-
 
   @Public()
   @Post('register')
@@ -331,5 +335,136 @@ export class AuthController {
 
     return result;
   }
-}
 
+  @Public()
+  @Get(':provider')
+  @ApiOperation({ summary: 'Iniciar redirección OAuth hacia el proveedor (google, facebook, apple)' })
+  async socialAuthRedirect(
+    @Param('provider') provider: string,
+    @Query('redirect') redirectQuery: string | undefined,
+    @Res() reply: FastifyReply,
+  ) {
+    const validProviders = ['google', 'facebook', 'apple'];
+    if (!validProviders.includes(provider)) {
+      throw new NotFoundException(`Proveedor de autenticación no soportado: ${provider}`);
+    }
+
+    const statePayload = JSON.stringify({
+      nonce: crypto.randomUUID(),
+      redirect: redirectQuery || '/',
+    });
+    const state = Buffer.from(statePayload).toString('base64url');
+
+    (reply as any).setCookie?.('oauth_state', state, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 10 * 60,
+    });
+
+    const redirectUrl = await this.authService.getSocialAuthorizationUrl(provider, state);
+    return reply.status(302).redirect(redirectUrl);
+  }
+
+  @Public()
+  @Get(':provider/callback')
+  @ApiOperation({ summary: 'Callback OAuth de retorno para Google, Facebook y Apple (GET)' })
+  async socialAuthCallback(
+    @Param('provider') provider: string,
+    @Query('code') code: string | undefined,
+    @Query('state') state: string | undefined,
+    @Query('error') error: string | undefined,
+    @Req() req: FastifyRequest,
+    @Res() reply: FastifyReply,
+  ) {
+    if (error || !code) {
+      const errorMsg = encodeURIComponent(error || 'No se recibió el código de autorización.');
+      return reply.status(302).redirect(`${env.FRONTEND_URL}/account/login?error=${errorMsg}`);
+    }
+
+    let redirectTarget = '/';
+    try {
+      if (state) {
+        const parsed = JSON.parse(Buffer.from(state, 'base64url').toString('utf-8'));
+        if (parsed.redirect) redirectTarget = parsed.redirect;
+      }
+    } catch {
+      // Ignorar fallo de parseo de state
+    }
+
+    try {
+      const result = await this.authService.handleSocialCallback(
+        provider,
+        code,
+        undefined,
+        req.headers['user-agent'],
+        req.ip,
+      );
+
+      (reply as any).setCookie?.('refresh_token', result.refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 7 * 24 * 60 * 60,
+      });
+      (reply as any).clearCookie?.('oauth_state', { path: '/' });
+
+      const finalUrl = `${env.FRONTEND_URL}/auth/callback?token=${encodeURIComponent(result.accessToken)}&redirect=${encodeURIComponent(redirectTarget)}`;
+      return reply.status(302).redirect(finalUrl);
+    } catch (err: any) {
+      const errorMsg = encodeURIComponent(err?.message || 'Error en autenticación social.');
+      return reply.status(302).redirect(`${env.FRONTEND_URL}/account/login?error=${errorMsg}`);
+    }
+  }
+
+  @Public()
+  @Post('apple/callback')
+  @ApiOperation({ summary: 'Callback form_post de Apple Sign In' })
+  async appleAuthCallbackPost(
+    @Body() body: { code?: string; state?: string; id_token?: string; user?: string; error?: string },
+    @Req() req: FastifyRequest,
+    @Res() reply: FastifyReply,
+  ) {
+    if (body?.error || !body?.code) {
+      const errorMsg = encodeURIComponent(body?.error || 'No se recibió el código de autorización de Apple.');
+      return reply.status(302).redirect(`${env.FRONTEND_URL}/account/login?error=${errorMsg}`);
+    }
+
+    let redirectTarget = '/';
+    try {
+      if (body.state) {
+        const parsed = JSON.parse(Buffer.from(body.state, 'base64url').toString('utf-8'));
+        if (parsed.redirect) redirectTarget = parsed.redirect;
+      }
+    } catch {
+      // Ignorar fallo de parseo de state
+    }
+
+    try {
+      const result = await this.authService.handleSocialCallback(
+        'apple',
+        body.code,
+        { id_token: body.id_token, user: body.user },
+        req.headers['user-agent'],
+        req.ip,
+      );
+
+      (reply as any).setCookie?.('refresh_token', result.refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 7 * 24 * 60 * 60,
+      });
+      (reply as any).clearCookie?.('oauth_state', { path: '/' });
+
+      const finalUrl = `${env.FRONTEND_URL}/auth/callback?token=${encodeURIComponent(result.accessToken)}&redirect=${encodeURIComponent(redirectTarget)}`;
+      return reply.status(302).redirect(finalUrl);
+    } catch (err: any) {
+      const errorMsg = encodeURIComponent(err?.message || 'Error en autenticación con Apple.');
+      return reply.status(302).redirect(`${env.FRONTEND_URL}/account/login?error=${errorMsg}`);
+    }
+  }
+}

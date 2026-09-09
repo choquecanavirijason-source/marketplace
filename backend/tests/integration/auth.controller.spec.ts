@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { AuthController } from '../../src/modules/admin/users/controllers/auth.controller';
-import { AuthService } from '../../src/modules/admin/users/services/auth.service';
+import { AuthController } from '../../src/modules/admin/auth/controllers/auth.controller';
+import { AuthService } from '../../src/modules/admin/auth/services/auth.service';
 
 describe('AuthController - Integration Suite', () => {
   let controller: AuthController;

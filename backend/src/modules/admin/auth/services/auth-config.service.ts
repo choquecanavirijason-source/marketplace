@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
 import { DrizzleService } from '../../../../infrastructure/database/drizzle.service';
 import { authSettingsTable, AuthSettingsDb } from '../../../../infrastructure/database/schema';
-import { UpdateAuthSettingsDto } from '../dto/auth/auth-settings.dto';
+import { UpdateAuthSettingsDto } from '../dto/auth-settings.dto';
 
 export interface PublicAuthSettings {
   emailPasswordEnabled: boolean;

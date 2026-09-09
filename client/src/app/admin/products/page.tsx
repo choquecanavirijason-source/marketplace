@@ -51,7 +51,8 @@ const AdminProductsPage = () => {
   const isUpdating = updateMutation.isLoading;
 
   const removeMutation = useApiMutation((id: number) => ProductService.remove(id), {
-    invalidateQueries: [["admin-products"], ["products"], ["admin-stats"]] },
+    invalidateQueries: [["admin-products"], ["products"], ["admin-stats"]]
+  },
   );
   const remove = removeMutation.mutateAsync;
   const isRemoving = removeMutation.isLoading;
@@ -155,6 +156,7 @@ const AdminProductsPage = () => {
       },
       {
         header: "Categoría",
+        accessorKey: "category",
         cell: (product) => (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-muted text-foreground border border-border">
             {product.category || "Sin categoría"}
@@ -186,13 +188,12 @@ const AdminProductsPage = () => {
           return (
             <div className="flex items-center gap-1.5">
               <span
-                className={`font-semibold ${
-                  isOutOfStock
-                    ? "text-red-600"
-                    : isLow
+                className={`font-semibold ${isOutOfStock
+                  ? "text-red-600"
+                  : isLow
                     ? "text-amber-600"
                     : "text-foreground"
-                }`}
+                  }`}
               >
                 {stock} u.
               </span>
@@ -203,6 +204,7 @@ const AdminProductsPage = () => {
       },
       {
         header: "Estado",
+        accessorKey: "isActive",
         cell: (product) => {
           const isActive = product.isActive ?? true;
           const isCurrentToggling = togglingId === product.id;
@@ -212,11 +214,10 @@ const AdminProductsPage = () => {
               type="button"
               disabled={isCurrentToggling}
               onClick={() => handleToggle(product)}
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50 ${
-                isActive
-                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20"
-                  : "bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-500/20"
-              }`}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50 ${isActive
+                ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20"
+                : "bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-500/20"
+                }`}
             >
               {isActive ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
               <span>{isActive ? "Publicado" : "Pausado"}</span>

@@ -112,6 +112,7 @@ const AdminCategoriesPage = () => {
       },
       {
         header: "Productos",
+        accessorKey: "products_count",
         cell: (category) => (
           <span className="font-semibold text-foreground">
             {category.products_count ?? category.count ?? 0}
@@ -121,6 +122,7 @@ const AdminCategoriesPage = () => {
       {
         header: "Acciones",
         align: "right",
+        key: "actions",
         cell: (category) => (
           <div className="flex items-center justify-end gap-2">
             <Can permission="categoria.editar">

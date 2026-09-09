@@ -1,9 +1,9 @@
 import { describe, it, expect, vi } from 'vitest';
-import { AuthService } from '../../src/modules/admin/users/services/auth.service';
+import { AuthService } from '../../src/modules/admin/auth/services/auth.service';
 import { UserService } from '../../src/modules/admin/users/services/user.service';
-import { SessionService } from '../../src/modules/admin/users/services/session.service';
+import { SessionService } from '../../src/modules/admin/auth/services/session.service';
 import { UserEntity } from '../../src/modules/admin/users/entities/user.entity';
-import { SessionEntity } from '../../src/modules/admin/users/entities/session.entity';
+import { SessionEntity } from '../../src/modules/admin/auth/entities/session.entity';
 import { UserStatus, UserType } from '../../src/modules/admin/users/enums';
 import { CryptoUtils } from '../../src/shared';
 

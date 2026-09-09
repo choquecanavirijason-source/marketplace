@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as crypto from 'crypto';
 import { UserRepositoryPort, UserListFilters } from '../interfaces/user-repository.interface';
-import { AuthRepositoryPort } from '../interfaces/auth-repository.interface';
+import { AuthRepositoryPort } from '../../auth/interfaces/auth-repository.interface';
 import { UserEntity } from '../entities/user.entity';
 import { EmailValidator } from '../validators/email.validator';
 import { UserStatus, UserType } from '../enums';

@@ -37,6 +37,20 @@ export const envSchema = z.object({
   RESEND_API_KEY: z.string().optional().default('re_mock_api_key'),
   WHATSAPP_API_TOKEN: z.string().optional().default('mock_wa_token'),
   WHATSAPP_PHONE_NUMBER_ID: z.string().optional().default('mock_wa_phone_id'),
+
+  FRONTEND_URL: z.string().default('http://localhost:3000'),
+  BACKEND_URL: z.string().default('http://localhost:3001'),
+
+  GOOGLE_CLIENT_ID: z.string().optional().default(''),
+  GOOGLE_CLIENT_SECRET: z.string().optional().default(''),
+
+  FACEBOOK_APP_ID: z.string().optional().default(''),
+  FACEBOOK_APP_SECRET: z.string().optional().default(''),
+
+  APPLE_CLIENT_ID: z.string().optional().default(''),
+  APPLE_TEAM_ID: z.string().optional().default(''),
+  APPLE_KEY_ID: z.string().optional().default(''),
+  APPLE_PRIVATE_KEY: z.string().optional().default(''),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;

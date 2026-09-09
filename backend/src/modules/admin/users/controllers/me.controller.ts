@@ -15,7 +15,7 @@ import {
 import { FastifyRequest } from 'fastify';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { UserService } from '../services/user.service';
-import { SessionService } from '../services/session.service';
+import { SessionService } from '../../auth/services/session.service';
 import { StorageService } from '../../../../infrastructure/storage/storage.service';
 import {
   ProfileDto,
