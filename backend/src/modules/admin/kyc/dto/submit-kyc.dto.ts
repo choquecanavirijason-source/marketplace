@@ -18,11 +18,12 @@ export const submitKycSchema = z.object({
     .default('video/webm'),
   challenge: z
     .string()
-    .min(1, 'El código del reto biométrico es requerido')
+    .optional()
     .default('blink_twice'),
   nonce: z
     .string()
-    .min(1, 'El nonce criptográfico anti-replay es requerido'),
+    .optional()
+    .default(() => crypto.randomUUID()),
   documentType: z
     .nativeEnum(DocumentType)
     .optional()

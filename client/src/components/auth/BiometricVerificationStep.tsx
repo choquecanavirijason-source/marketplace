@@ -80,13 +80,19 @@ export const BiometricVerificationStep: React.FC<BiometricVerificationStepProps>
   // Cargar reto desde el backend
   const loadChallenge = useCallback(async () => {
     try {
-      const challengeData = await kycService.getChallenge();
-      setChallenge(challengeData);
+      const res = await kycService.getChallenge();
+      const challengeData = (res as any)?.data ?? res;
+      setChallenge({
+        challenge: challengeData?.challenge || "blink_twice",
+        instruction: challengeData?.instruction || "Mira fijamente a la cámara y parpadea dos veces lentamente.",
+        nonce: challengeData?.nonce || `nonce_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+        expires_at: challengeData?.expires_at || new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+      });
     } catch {
       setChallenge({
         challenge: "blink_twice",
         instruction: "Mira fijamente a la cámara y parpadea dos veces lentamente.",
-        nonce: `nonce_${Date.now()}`,
+        nonce: `nonce_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
         expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
       });
     }
@@ -248,14 +254,21 @@ export const BiometricVerificationStep: React.FC<BiometricVerificationStepProps>
     setErrorMessage(null);
     setStatusMessage("Enviando documento y video al motor de verificación...");
 
+    const effectiveChallenge =
+      challenge?.challenge || (challenge as any)?.data?.challenge || "blink_twice";
+    const effectiveNonce =
+      challenge?.nonce ||
+      (challenge as any)?.data?.nonce ||
+      `nonce_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+
     try {
       const submission = await kycService.submitVerification({
         idImage: idImageBase64,
         idImageMimeType: idImageMime,
         selfieVideo: selfieVideoBase64,
         selfieVideoMimeType: "video/webm",
-        challenge: challenge.challenge,
-        nonce: challenge.nonce,
+        challenge: effectiveChallenge,
+        nonce: effectiveNonce,
         documentType,
       });
 
