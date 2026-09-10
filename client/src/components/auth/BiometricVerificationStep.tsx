@@ -48,6 +48,7 @@ export const BiometricVerificationStep: React.FC<BiometricVerificationStepProps>
   const [countdown, setCountdown] = useState<number | null>(null);
   const [recordingProgress, setRecordingProgress] = useState(0);
   const [selfieVideoBase64, setSelfieVideoBase64] = useState<string | null>(null);
+  const [selfieVideoMimeType, setSelfieVideoMimeType] = useState<string>("video/webm");
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [statusMessage, setStatusMessage] = useState("Preparando verificación...");
@@ -77,24 +78,31 @@ export const BiometricVerificationStep: React.FC<BiometricVerificationStepProps>
     };
   }, [stopCamera]);
 
-  // Cargar reto desde el backend
+  // Cargar reto desde el backend. El nonce debe venir del VPS de biometría
+  // (queda persistido ahí para el chequeo anti-replay de /verify/submit);
+  // inventar uno local aquí produce verificaciones que el VPS termina
+  // rechazando silenciosamente, así que ante un fallo se muestra el error
+  // en vez de fabricar un challenge falso.
   const loadChallenge = useCallback(async () => {
     try {
       const res = await kycService.getChallenge();
       const challengeData = (res as any)?.data ?? res;
+      if (!challengeData?.nonce) {
+        throw new Error("Respuesta de challenge inválida");
+      }
       setChallenge({
-        challenge: challengeData?.challenge || "blink_twice",
-        instruction: challengeData?.instruction || "Mira fijamente a la cámara y parpadea dos veces lentamente.",
-        nonce: challengeData?.nonce || `nonce_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-        expires_at: challengeData?.expires_at || new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+        challenge: challengeData.challenge || "blink_twice",
+        instruction: challengeData.instruction || "Mira fijamente a la cámara y parpadea dos veces lentamente.",
+        nonce: challengeData.nonce,
+        expires_at: challengeData.expires_at || new Date(Date.now() + 10 * 60 * 1000).toISOString(),
       });
-    } catch {
-      setChallenge({
-        challenge: "blink_twice",
-        instruction: "Mira fijamente a la cámara y parpadea dos veces lentamente.",
-        nonce: `nonce_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-        expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
-      });
+    } catch (err: any) {
+      setChallenge(null);
+      const msg =
+        err?.response?.data?.detail ||
+        err?.response?.data?.message ||
+        "No se pudo obtener el reto de verificación biométrica del servidor. Intenta recargar la página.";
+      toast.error(msg);
     }
   }, []);
 
@@ -178,10 +186,17 @@ export const BiometricVerificationStep: React.FC<BiometricVerificationStepProps>
     if (!mediaStreamRef.current) return;
 
     recordedChunksRef.current = [];
-    let mimeType = "video/webm";
-    if (!MediaRecorder.isTypeSupported("video/webm")) {
-      mimeType = MediaRecorder.isTypeSupported("video/mp4") ? "video/mp4" : "";
-    }
+    // Se prefiere VP8 explícitamente: Chrome graba VP9 por defecto con
+    // "video/webm" a secas, pero muchos pipelines de decodificación en
+    // servidor (ffmpeg/OpenCV) no lo soportan bien dentro de webm y fallan
+    // silenciosamente al extraer frames, aunque el navegador lo reproduzca sin problema.
+    const candidateMimeTypes = [
+      "video/webm;codecs=vp8,opus",
+      "video/webm;codecs=vp8",
+      "video/webm",
+      "video/mp4",
+    ];
+    const mimeType = candidateMimeTypes.find((type) => MediaRecorder.isTypeSupported(type)) || "";
 
     try {
       const recorder = new MediaRecorder(mediaStreamRef.current, mimeType ? { mimeType } : undefined);
@@ -194,7 +209,10 @@ export const BiometricVerificationStep: React.FC<BiometricVerificationStepProps>
       };
 
       recorder.onstop = () => {
-        const videoBlob = new Blob(recordedChunksRef.current, { type: mimeType || "video/webm" });
+        const effectiveMimeType = mimeType || "video/webm";
+        const baseMimeType = effectiveMimeType.split(";")[0];
+        const videoBlob = new Blob(recordedChunksRef.current, { type: baseMimeType });
+        setSelfieVideoMimeType(baseMimeType);
         const reader = new FileReader();
         reader.onload = () => {
           if (typeof reader.result === "string") {
@@ -266,7 +284,7 @@ export const BiometricVerificationStep: React.FC<BiometricVerificationStepProps>
         idImage: idImageBase64,
         idImageMimeType: idImageMime,
         selfieVideo: selfieVideoBase64,
-        selfieVideoMimeType: "video/webm",
+        selfieVideoMimeType,
         challenge: effectiveChallenge,
         nonce: effectiveNonce,
         documentType,
@@ -514,10 +532,14 @@ export const BiometricVerificationStep: React.FC<BiometricVerificationStepProps>
               />
 
               {selfieVideoBase64 && !isCameraActive && (
-                <div className="flex flex-col items-center justify-center text-white space-y-2">
-                  <CheckCircle2 className="w-12 h-12 text-emerald-400 animate-pulse" />
-                  <p className="text-xs font-bold">Video selfie capturado correctamente</p>
-                </div>
+                // eslint-disable-next-line jsx-a11y/media-has-caption
+                <video
+                  src={selfieVideoBase64}
+                  controls
+                  loop
+                  playsInline
+                  className="w-full h-full object-contain bg-black"
+                />
               )}
 
               {/* Marco ovalado de centrado de rostro */}
@@ -556,6 +578,13 @@ export const BiometricVerificationStep: React.FC<BiometricVerificationStepProps>
                 </div>
               )}
             </div>
+
+            {selfieVideoBase64 && !isCameraActive && (
+              <p className="text-[10px] text-muted-foreground text-center">
+                Formato: {selfieVideoMimeType} · Tamaño aprox:{" "}
+                {Math.round((selfieVideoBase64.length * 0.75) / 1024)} KB
+              </p>
+            )}
 
             {errorMessage && (
               <div className="p-3 bg-destructive/10 border border-destructive/20 text-destructive rounded-xl text-xs flex items-center gap-2">
@@ -687,6 +716,8 @@ export const BiometricVerificationStep: React.FC<BiometricVerificationStepProps>
                 onClick={() => {
                   setSubStep("camera");
                   setSelfieVideoBase64(null);
+                  setErrorMessage(null);
+                  void loadChallenge();
                   void startCamera();
                 }}
                 className="gap-1.5"
