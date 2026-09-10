@@ -27,6 +27,57 @@ export class KycService {
     return this.biometricalAdapter.getChallenge();
   }
 
+  /**
+   * El VPS de biometría devuelve `reason` en inglés y con formato técnico
+   * (ej. "ID quality unacceptable (blur=30.0 glare=0.000 face=False)").
+   * Se traduce a un mensaje en español entendible para el usuario final;
+   * si no coincide con ningún patrón conocido, cae en un mensaje genérico.
+   */
+  private translateBiometricReason(raw: string | null | undefined): string {
+    if (!raw) {
+      return 'No se pudo verificar tu identidad. Intenta nuevamente con mejor iluminación.';
+    }
+
+    const lower = raw.toLowerCase();
+
+    const qualityMatch = raw.match(/blur=([\d.]+).*glare=([\d.]+).*face=(True|False)/i);
+    if (qualityMatch) {
+      const faceDetected = qualityMatch[3].toLowerCase() === 'true';
+      if (!faceDetected) {
+        return 'No se detectó tu rostro en la foto del documento. Asegúrate de que la foto/rostro impreso sea claramente visible.';
+      }
+      return 'La foto del documento no tiene suficiente calidad (borrosa o con reflejos). Sube una foto más nítida, bien iluminada y sin brillos.';
+    }
+
+    if (lower.includes('no usable frame')) {
+      return 'No se pudo procesar el video grabado. Verifica que tu cámara funcione correctamente e intenta grabar de nuevo con buena iluminación.';
+    }
+
+    if (lower.includes('similarity below') || lower.includes('similarity too low')) {
+      return 'El rostro del video no coincide lo suficiente con la foto del documento. Verifica que seas la misma persona del documento y que ambas imágenes sean claras.';
+    }
+
+    if (lower.includes('liveness')) {
+      return 'No se pudo confirmar la prueba de vida. Asegúrate de mirar a la cámara y parpadear cuando se te indique.';
+    }
+
+    if (lower.includes('deepfake') || lower.includes('spoof')) {
+      return 'El sistema detectó una posible manipulación en el video. Intenta grabar de nuevo en persona, sin filtros ni pantallas de por medio.';
+    }
+
+    if (lower.includes('challenge') && lower.includes('fail')) {
+      return 'No se completó correctamente el reto de prueba de vida (parpadeo/movimiento). Vuelve a intentarlo siguiendo la instrucción en pantalla.';
+    }
+
+    if (lower.includes('expired') || lower.includes('nonce')) {
+      return 'La sesión de verificación expiró. Por favor reintenta el escaneo desde el inicio.';
+    }
+
+    // Mensaje genérico de respaldo; el texto original queda en los logs del
+    // backend para diagnóstico.
+    return 'No se pudo verificar tu identidad. Asegúrate de que haya buena iluminación, que el rostro coincida con el documento y que parpadees durante la grabación.';
+  }
+
   private parseBase64(data: string, defaultMime: string): { buffer: Buffer; mimeType: string } {
     let mimeType = defaultMime;
     let base64 = data;
@@ -153,7 +204,7 @@ export class KycService {
             message: '¡Identidad verificada exitosamente!',
           };
         } else if (result.decision === 'REJECT') {
-          const reason = result.reason || 'No se superó la prueba de vida o no se detectó rostro coincidente.';
+          const reason = this.translateBiometricReason(result.reason);
           await this.drizzle.db
             .update(verificationsTable)
             .set({
@@ -163,7 +214,7 @@ export class KycService {
             })
             .where(eq(verificationsTable.id, verificationId));
 
-          this.logger.warn(`❌ Verificación biométrica rechazada para usuario ${userId}: ${reason}`);
+          this.logger.warn(`❌ Verificación biométrica rechazada para usuario ${userId}: ${result.reason}`);
 
           return {
             verificationId,
@@ -172,6 +223,25 @@ export class KycService {
             message: reason,
           };
         }
+      } else if (result.status === 'error') {
+        const reason = this.translateBiometricReason(result.reason);
+        await this.drizzle.db
+          .update(verificationsTable)
+          .set({
+            status: KycStatus.REJECTED,
+            rejectionReason: reason,
+            updatedAt: new Date(),
+          })
+          .where(eq(verificationsTable.id, verificationId));
+
+        this.logger.warn(`❌ El VPS reportó error de procesamiento para usuario ${userId}: ${result.reason}`);
+
+        return {
+          verificationId,
+          jobId: accepted.job_id,
+          status: KycStatus.REJECTED,
+          message: reason,
+        };
       }
     } catch {
       // Si el job aún está en cola en el VPS, se continuará por polling
@@ -249,7 +319,7 @@ export class KycService {
               isVerified: true,
             };
           } else if (result.decision === 'REJECT') {
-            const reason = result.reason || 'No se superó la prueba de vida o el rostro no coincide con el documento.';
+            const reason = this.translateBiometricReason(result.reason);
             await this.drizzle.db
               .update(verificationsTable)
               .set({
@@ -269,6 +339,26 @@ export class KycService {
               isVerified: false,
             };
           }
+        } else if (result.status === 'error') {
+          const reason = this.translateBiometricReason(result.reason);
+          await this.drizzle.db
+            .update(verificationsTable)
+            .set({
+              status: KycStatus.REJECTED,
+              rejectionReason: reason,
+              updatedAt: new Date(),
+            })
+            .where(eq(verificationsTable.id, verification.id));
+
+          return {
+            verificationId: verification.id,
+            jobId: verification.providerSessionId,
+            status: KycStatus.REJECTED,
+            kycLevel: user.kycLevel,
+            decision: 'REJECT',
+            rejectionReason: reason,
+            isVerified: false,
+          };
         }
       } catch (err: any) {
         this.logger.warn(`Error al consultar estado de verificación con VPS: ${err.message}`);

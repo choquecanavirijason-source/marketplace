@@ -84,28 +84,22 @@ export class BiometricalVerifyAdapter {
   }
 
   async getChallenge(): Promise<ChallengeResponse> {
-    try {
-      const response = await fetch(`${this.baseUrl}/api/v1/verify/challenge`, {
-        method: 'GET',
-        headers: this.getAuthHeaders(),
-        signal: AbortSignal.timeout(5000),
-      });
+    const response = await fetch(`${this.baseUrl}/api/v1/verify/challenge`, {
+      method: 'GET',
+      headers: this.getAuthHeaders(),
+      signal: AbortSignal.timeout(5000),
+    });
 
-      if (response.ok) {
-        return (await response.json()) as ChallengeResponse;
-      }
-
-      this.logger.warn(`El VPS devolvió estado HTTP ${response.status} al solicitar challenge. Usando fallback.`);
-    } catch (err: any) {
-      this.logger.warn(`No se pudo conectar con el servicio Biometrical Verify en ${this.baseUrl}: ${err.message}. Usando challenge de desarrollo.`);
+    if (response.ok) {
+      return (await response.json()) as ChallengeResponse;
     }
 
-    return {
-      challenge: 'blink_twice',
-      instruction: 'Mira fijamente a la cámara y parpadea dos veces lentamente.',
-      nonce: crypto.randomUUID(),
-      expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
-    };
+    const errorText = await response.text();
+    this.logger.error(`El VPS devolvió estado HTTP ${response.status} al solicitar challenge: ${errorText}`);
+    // El nonce debe quedar persistido en el VPS para que /verify/submit lo valide
+    // (anti-replay). Inventar uno local aquí produce jobs que el VPS rechaza
+    // silenciosamente más adelante, así que es mejor fallar de forma explícita.
+    throw new Error(`No se pudo obtener un challenge válido del servicio biométrico (${response.status}).`);
   }
 
   async submitVerification(params: SubmitVerificationParams): Promise<VerifyAccepted> {
